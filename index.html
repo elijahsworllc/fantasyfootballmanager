@@ -1006,7 +1006,7 @@ function renderWaivers(){
     <div class="chips">${[["all","All"],["holes","Lineup holes"],["open","Open spots"],["value","Stashes"]].map(([k,l])=>`<button class="chip" data-wf="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
     <p>Bids come from ${W.bids} winning FAAB claims across your leagues this season (${W.txSource}). Typical winning bid by value tier: ${W.tierMed.map((m,i)=>`${TIER_NAME[i]} ${Math.round(m*100)}%`).join(" · ")} of budget, then adjusted for how each league bids.</p></section>`;
   if(W.hot.length && f==="all") h += `<section class="summary"><h3>Best adds across your leagues</h3><div class="plist">${W.hot.map(x=>`<div class="prow"><div class="ptop">${faLine({f:x.f})}<span class="num">×${x.need+x.value}</span></div>
-      <div class="pstat">${fmt(x.f.eff)} pts this week (PPR, league scoring varies)${x.v?` · dynasty value ${x.v.toLocaleString()}`:""} · fills a hole in ${x.need}, stash in ${x.value}${x.trend?` · added in ${x.trend.toLocaleString()} Sleeper leagues in 24h`:""}</div></div>`).join("")}</div></section>`;
+      <div class="pstat">${fmt(x.f.eff)} pts this week (PPR, league scoring varies)${x.v?` · dynasty value ${x.v.toLocaleString()}`:""} · fills a hole in ${x.need}, stash in ${x.value}${x.trend?` · ${x.trend>=1e6?(x.trend/1e6).toFixed(1)+"M":x.trend>=1e3?Math.round(x.trend/1e3)+"K":x.trend} Sleeper adds in 24h`:""}</div></div>`).join("")}</div></section>`;
   h += list.map(l=>{
     const lg = l.x.lg, id = lg.league_id;
     const sev = l.prio===0 ? "crit" : l.prio===1 ? "warn" : "up";
@@ -1082,7 +1082,7 @@ async function buildTrades(lid){
       const why = [];
       if(theyHave.includes(getPos)) why.push(`They're ${t.grades[getPos]} at ${getPos}, where you're ${me.grades[getPos]}`);
       if(givePos && theyNeed.includes(givePos) && myHave.includes(givePos)) why.push(`they need ${givePos} (${t.grades[givePos]}) and you're ${me.grades[givePos]}`);
-      if(contender(me) !== contender(t)) why.push(contender(me) ? "they're rebuilding, so they sell veterans" : "they're contending, so they pay for veterans");
+      if(contender(me) !== contender(t)) why.push(contender(me) ? (t.arch==="mid" ? "they're stuck in the middle, so veterans are for sale" : "they're rebuilding, so they sell veterans") : "they're contending, so they pay for veterans");
       const fit = 2*myNeed.filter(p=>theyHave.includes(p)).length + 2*theyNeed.filter(p=>myHave.includes(p)).length + (contender(me)!==contender(t)?1.5:0)
         + Math.min(2, a.trades*0.5) + (a.last && Date.now()-a.last < 14*864e5 ? 0.5 : 0) - (a.moves===0 ? 2 : 0);
       const offer = buildOffer(me, t, getPos, givePos, fc, b);
