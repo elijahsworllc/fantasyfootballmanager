@@ -34,6 +34,13 @@ Automated version of Dynasty Domain's $79 team review / $97-a-year Blueprint, fo
 - Rule-based strategy with named trade partners (contenders weak at the position you sell; non-contenders strong where you need).
 - League map scatter and team table per league.
 
+## V1.2 shipped: Crystal Ball (Oct 12, 2026)
+Floating orb on every screen. Data only, no AI calls. Smoke animation is 1.1s on the first ask, 0.45s on follow-ups within 2 minutes, tap to skip, off with reduced motion.
+- Start/Sit: 2+ players, one league (that league's scoring, injury weighting) or all leagues (per-league table where scoring flips the call). Confidence = P(A outscores B) with sd = 45% of projection.
+- Trade check: players and picks; value with a stud premium (power mean, exponent 1.3), win-now and future rank before/after, grade changes, weighted by the team's Blueprint archetype. Verdicts: Smash accept, Accept, Fair, Lean decline, Decline.
+- Compare: dynasty value, 30-day trend, age, this week's points, your exposure.
+- Each answer shows the data behind it and what would change the call.
+
 ## Next up (proposed order)
 1. **Hosting** — put index.html on a URL (GitHub Pages) so it installs to the phone home screen.
 2. **Alerts** — small backend job (e.g. Cloudflare Worker / Supabase cron) that runs the same checks Thu 6pm, Sat 9pm, Sun 11am/3pm ET and pushes "these 7 leagues have an OUT starter" notifications.
