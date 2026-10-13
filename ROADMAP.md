@@ -26,6 +26,14 @@ Single-file mobile web app. Runs entirely in the browser against Sleeper's publi
 - API doesn't expose whether a user set an auto-sub on a player.
 - Schedule has dates, not kickoff times; "locked" comes from game status.
 
+## V1.1 shipped: Blueprints (Oct 12, 2026)
+Automated version of Dynasty Domain's $79 team review / $97-a-year Blueprint, for every team at once.
+- Dynasty + redraft values from FantasyCalc's public values feed (matched per league: QB count, team count, PPR). Commercial launch needs their permission or our own value model.
+- Pick ownership from Sleeper `/league/{id}/traded_picks`; next year's picks tiered Early/Mid/Late by the original team's win-now rank.
+- Per team: win-now rank (best lineup by redraft value), future rank (players RB<=24 / WR,TE<=25 / QB<=27 plus picks), archetype (Juggernaut, Win-now, Rising, Middle, Rebuilding, Full rebuild), A–F positional grades, value-weighted age, 2-season value outlook from age curves.
+- Rule-based strategy with named trade partners (contenders weak at the position you sell; non-contenders strong where you need).
+- League map scatter and team table per league.
+
 ## Next up (proposed order)
 1. **Hosting** — put index.html on a URL (GitHub Pages) so it installs to the phone home screen.
 2. **Alerts** — small backend job (e.g. Cloudflare Worker / Supabase cron) that runs the same checks Thu 6pm, Sat 9pm, Sun 11am/3pm ET and pushes "these 7 leagues have an OUT starter" notifications.
