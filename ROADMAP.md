@@ -41,6 +41,16 @@ Floating orb on every screen. Data only, no AI calls. Smoke animation is 1.1s on
 - Compare: dynasty value, 30-day trend, age, this week's points, your exposure.
 - Each answer shows the data behind it and what would change the call.
 
+## V1.3 shipped: speed, waivers, trades, backend (Oct 13, 2026)
+- **Instant open:** every Sleeper/FantasyCalc response is saved in the browser's Cache Storage. The app paints from the saved copy, then refreshes quietly. `sw.js` keeps the app shell available offline (network-first, so updates still land).
+- **Waivers tab:** per league, fills for lineup holes and real upgrades (league scoring), dynasty stashes worth more than your weakest bench piece, a drop suggestion, and a FAAB bid. Bids come from every winning FAAB claim in your leagues this season, bucketed by value tier (Depth <300, Useful <1000, Starter-level <2500, Impact) as a share of budget, then scaled by how that league bids. Shows league bid history and who has the most FAAB left. Cross-league "best adds" list with Sleeper's 24h trending adds.
+- **Trades tab:** partners ranked by roster fit (their surplus vs your needs and vice versa, contender/rebuilder complement) and real activity (trades and moves this season, last move). Suggested 1-for-1 or 2-for-1 offer from your surplus and picks, priced with FantasyCalc and leaning slightly toward them; one tap sends it to Crystal Ball. Trade market search shows every real trade for a player across your leagues.
+- **Today card:** day-aware nudge at the top of the Queue (waiver night, Thursday kickoff, trade window, game day).
+- **Backend (GitHub Actions, free on a public repo):**
+  - `alerts.yml` runs every 15 minutes on Thu/Sun/Mon (UTC) and sends one push per New York window (Thu 6:30pm, Sat 9pm, Sun 8:30am / 11:30am / 3pm / 7:15pm, Mon 6:30pm) via ntfy.sh. Needs the `NTFY_TOPIC` repo secret. State lives on the `data` branch.
+  - `market.yml` runs nightly (~5:20am ET): writes `market.json` (all completed transactions in your leagues, no usernames) and a daily FantasyCalc value snapshot to the `data` branch. The app reads it from raw.githubusercontent.com and only fetches the last two weeks live.
+  - Data on the `data` branch is public (league IDs, roster numbers, player IDs). Move to a private store before adding other users.
+
 ## Next up (proposed order)
 1. **Hosting** — put index.html on a URL (GitHub Pages) so it installs to the phone home screen.
 2. **Alerts** — small backend job (e.g. Cloudflare Worker / Supabase cron) that runs the same checks Thu 6pm, Sat 9pm, Sun 11am/3pm ET and pushes "these 7 leagues have an OUT starter" notifications.
