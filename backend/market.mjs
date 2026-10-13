@@ -1,3 +1,4 @@
+// Run on push, nightly, or by hand from the Actions tab.
 // Nightly: collect every completed transaction in the user's leagues (trades, waiver bids, adds)
 // so the app loads one file instead of hundreds of requests, and snapshot dynasty values for trend history.
 import fs from "node:fs";
