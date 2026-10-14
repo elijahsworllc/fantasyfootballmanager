@@ -51,10 +51,17 @@ Floating orb on every screen. Data only, no AI calls. Smoke animation is 1.1s on
   - `market.yml` runs nightly (~5:20am ET): writes `market.json` (all completed transactions in your leagues, no usernames) and a daily FantasyCalc value snapshot to the `data` branch. The app reads it from raw.githubusercontent.com and only fetches the last two weeks live.
   - Data on the `data` branch is public (league IDs, roster numbers, player IDs). Move to a private store before adding other users.
 
+## V1.4 shipped: Direction + Trade Finder (Oct 13, 2026)
+Replaces the Trades tab. First decides which way each team should go, then finds the trades that get it there.
+- **Season simulator:** 1,000 simulated seasons per league from your real record and points (Sleeper roster settings), the actual remaining schedule (`/league/{id}/matchups/{week}` for future weeks, cached), and each team's weekly strength. Strength blends real points per game with the best lineup's projection (this week + next week, so byes don't zero a player; long-term injuries discounted), weighted toward real scoring as the season goes on. Handles median-scoring leagues. Then plays the playoff bracket (top seeds get byes).
+- **Outputs per team:** playoff odds, bubble risk (chance to finish first team out), title odds vs league average, remaining schedule difficulty, games back, and leverage (what +6 pts/week does to your playoff odds).
+- **Direction, 8 levels:** Stay the course, All-in, Contend, Push now, Retool, Sell, Rebuild, Teardown. Limbo = 20–60% playoff odds; Push if one upgrade gets you to 55%+, otherwise Retool (young core) or Sell. Every verdict shows the numbers behind it.
+- **Trade Finder:** buy offers (players who raise your lineup, mostly from sellers, paid with bench pieces and picks) and sell offers (your veterans to teams whose lineup they improve, for youth and picks). Each offer is re-simulated for both sides: your playoff/title odds or future rank, their playoff odds or young value. Shows FantasyCalc value balance, accept odds (value, fit for them, how often they trade), market comps from your leagues, 30-day value trend (buy-low / sell-high), and a ready-to-send message for the other manager.
+- **Paths compared:** Hold vs best Buy vs best Sell, run through the same simulated seasons, with a close-call warning when the other path is realistic.
+- Known limits: playoff spots stand in for payout spots; divisions aren't modeled; FantasyCalc's public trade database isn't wired in yet (comps come from your own leagues via `market.json`).
+
 ## Next up (proposed order)
-1. **Hosting** — put index.html on a URL (GitHub Pages) so it installs to the phone home screen.
-2. **Alerts** — small backend job (e.g. Cloudflare Worker / Supabase cron) that runs the same checks Thu 6pm, Sat 9pm, Sun 11am/3pm ET and pushes "these 7 leagues have an OUT starter" notifications.
-3. **Waiver assistant** — free agents per league ranked by projection vs your worst starter at each position; flags open roster spots with best pickup.
-4. **Trade analyzer + dynasty values** (needs a value source: own model or licensed feed).
-5. **League insights** — contender/rebuild status, age curves, positional strength per team.
-6. **Accounts + payments** when opening beyond the control group.
+1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
+2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
+3. **Trade alerts** — nightly job flags when a league mate's direction flips (contender becomes a seller) and pushes the best offer.
+4. **Accounts + payments** when opening beyond the control group.
