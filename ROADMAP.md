@@ -98,6 +98,16 @@ Goal: trade recs backed by real trades in identical league types, plus market de
 - Signals: market vs consensus value (deviation), 7/30-day trend, volume, cohort shifts (e.g. RBs 30+), what contenders vs rebuilders actually pay.
 - Recs: real trade shapes from the same bucket, filtered to what a partner can supply, scored by fairness at market price + fit with the team's direction + positional need, shown with comps ("19 trades in SF 12-team, last 30 days").
 
+## Idea board (future)
+### Sleeper companion extension: make the moves where you play
+Goal: no gap between the Command Center and the actual lineup. Suggested swaps, waiver claims and trade offers are applied in Sleeper with one tap, from inside Sleeper.
+- **Why an extension:** Sleeper's public API is read-only and has no plugin system. The Sleeper mobile app can't load extensions; sleeper.com in a desktop or mobile browser can.
+- **Form:** a browser extension for Chrome/Edge (desktop) and Safari on iPhone/Mac (Safari Web Extensions). It reads the Command Center's suggestions for the league you're viewing and overlays them on Sleeper's own pages: lineup swaps highlighted with an "Apply" button, waiver adds with the suggested bid, trade recs prefilled in Sleeper's trade screen.
+- **How actions happen:** with the user's own signed-in Sleeper session in their own browser, either by driving Sleeper's web UI or by calling the same endpoints the web app uses. Always shown first, confirmed by the user, one league at a time. Never stores the Sleeper password.
+- **Open questions to settle before building:** Sleeper's terms of service on automation; how often Sleeper's web app changes (maintenance cost); rate limits; whether to ask Sleeper about an official partnership or developer access instead.
+- **Prerequisites:** accounts (so the extension and app share suggestions), hosted suggestions per league, then the extension.
+- **Next stage after that:** batch mode (apply every safe lineup fix across all leagues before Thursday kickoff, with a review screen).
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
