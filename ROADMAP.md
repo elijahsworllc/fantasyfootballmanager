@@ -78,6 +78,18 @@ Same data engine (lineups, Blueprints, Direction sims, trade finder, waivers, Cr
 - Weekly brief: generated on demand from the scan (theme, story, projected wins, fixes, coin flips, three items that link to the fix, long-game note on undecided teams).
 - Nav: Home · Must fix (badge) · crystal ball · Waivers · Players (exposure + team reviews).
 
+## V2.1 shipped: one flow (Oct 14, 2026)
+Reorganized around the order you actually manage a team: diagnose, trades, offers, lineups, waivers. Time-sensitive lineup work always jumps the line.
+- **Pinned crystal ball** on every screen. It reads what you type live (players by full name, last name, first name, nickname or typo; your leagues by name; NFL teams; positions; picks) and shows what it heard plus the best 3–5 actions. Enter runs the top one; arrows pick another. Examples: "start bijan or puka", "sell davante", "trade for waddle", "is the commish league a rebuild", "top 12 rb dynasty", "what did ceedee cost", "chiefs".
+- **Spin or shake to ask:** flick the small ball in the bar (or the big ball on the Ask screen) to send; shake the phone to ask too (Settings toggle; iPhone asks for motion permission once).
+- **Game plan rail** under the bar: 1 Diagnose · 2 Trades · 3 Offers · 4 Lineups · 5 Waivers, with live badges. The urgent step turns red and scrolls into view.
+- **Top-left menu:** Right now (must fix, game-time, better lineups, brief) · the game plan with status lines · every tool · jump to any league (search, soonest lock first).
+- **Home:** Thursday/early-game card condensed (counts, the most urgent fix, the rest behind "Show more"), or a Next-lock card; tiles; game plan; teams sorted by next lock by default.
+- **New screens:** Diagnose (cross-league season sims, limbo first), Trades hub (trade finder per team, trade check, compare, trade market search), Offers (every copied trade message is tracked: waiting / countered / accepted / declined, nudge after 2 days, acceptance rate).
+- **Dock:** Home · Lineups · ball · Trades · Rankings (Waivers lives in the rail and menu).
+- **Rankings:** tiers that break where value drops off, 30-day risers/fallers, value bar, age, PPG, and per player a "why he's here" panel (tier spread and cliff, market rank, age curve, production rank, last-3 trend, target share/snaps/carries, 30-day value move, matchup in weekly mode, your exposure) with a weekly points sparkline.
+- Known limits: offers are saved on this device only; FantasyCalc volatility/tier fields are used only when present.
+
 ## Trade market database (plan)
 Goal: trade recs backed by real trades in identical league types, plus market deviation (who is selling above or below value right now), owned by us instead of depending on FantasyCalc.
 - Collect: Sleeper `/v1/league/{id}/transactions/{week}` trades (adds, `draft_picks`, timestamps), snowball-crawled from our leagues → every manager in them → their leagues, under Sleeper's rate limits. Extends `backend/market.mjs`.
