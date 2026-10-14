@@ -5,7 +5,7 @@
     python3 tools/assemble.py
 
 - `head.html`: document head, all CSS, page skeleton
-- `engine-v1.html`: the original data engine (lines 348–1785 are kept: lineups, blueprints, sims, trade finder, waivers)
+- `engine-v1.html`: the original data engine (lines 348–1774 are kept: lineups, blueprints, sims, trade finder, waivers)
 - `ui.js`: views, navigation, render loop, space background and crystal ball
 - `ui2.js`: kickoff times, Thursday bulletin, tap feedback, warp transition
 - `ui3.js`: Start/sit, Trade and Compare tools

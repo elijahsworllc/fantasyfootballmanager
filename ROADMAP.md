@@ -120,6 +120,10 @@ Supabase project `uxqevvuqibqvypwpccjz`, called directly over its REST endpoints
 - Entry points: "Take control of your command center" card on Home (dismissible), "Have an account? Sign in" on Connect, account button in the header, account row in Settings. Account sheet: sync now, sign out, delete account (tap twice).
 - Setup: `backend/supabase.sql` (table, row-level security so each user only sees their own row, `delete_me()` function). Site URL in Authentication → URL Configuration must be the app's address so email links come back to it.
 
+## Fix: V2.1 restored (Oct 14, 2026)
+The accounts build (05290fb) was made from the V2 code and dropped the whole V2.1 "one flow" release (pinned crystal ball, game plan rail, menu, Diagnose / Trades / Offers screens, spin and shake to ask, richer rankings). Restored by a three-way merge of V2 → V2.1 onto the accounts build; the three overlapping spots kept both sides, with the account button added to the V2.1 header. V2.1's code now lives in `src/ui6.js`; `tools/assemble.py` keeps engine lines 348–1774. Full app and account tests pass.
+**Rule for every session:** pull `main` first, edit `src/`, run `python3 tools/assemble.py` and both tests before pushing.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

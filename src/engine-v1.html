@@ -624,7 +624,7 @@ function fcValues(key){
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
-      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0};
+      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency};
     }
     return {players, picks};
   });
@@ -1485,9 +1485,9 @@ function renderDirList(){
   let list = f === "limbo" ? limbo : f ? all.filter(L=>L.me.dir===f) : all;
   list = list.slice().sort((a,b)=>(LIMBO.has(b.me.dir)-LIMBO.has(a.me.dir)) || (LIMBO.has(a.me.dir) ? b.me.odds.bub-a.me.odds.bub : 0) || DIR_ORDER.indexOf(a.me.dir)-DIR_ORDER.indexOf(b.me.dir) || b.me.odds.po-a.me.odds.po);
   const avgBub = all.length ? all.reduce((s,L)=>s+L.me.odds.bub,0)/all.length : 0;
-  let h = `<section class="summary"><h3>Direction</h3>
+  let h = `<section class="summary dirsum"><h3>Where every team stands</h3>
     <p><b>${limbo.length} of ${all.length}</b> teams are in limbo: 20–60% playoff odds without a real title shot. Those come first, sorted by the chance you finish one spot outside the playoffs (average ${pct(avgBub)} across your teams).</p>
-    <div class="chips"><button class="chip" data-dirf="" aria-pressed="${!f}">All · ${all.length}</button><button class="chip" data-dirf="limbo" aria-pressed="${f==="limbo"}">Limbo · ${limbo.length}</button>${DIR_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-dirf="${k}" aria-pressed="${f===k}">${DIR[k].label} · ${counts[k]}</button>`).join("")}</div>
+    <div class="chips"><button class="chip" data-dlf="" aria-pressed="${!f}">All · ${all.length}</button><button class="chip" data-dlf="limbo" aria-pressed="${f==="limbo"}">Limbo · ${limbo.length}</button>${DIR_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-dlf="${k}" aria-pressed="${f===k}">${DIR[k].label} · ${counts[k]}</button>`).join("")}</div>
     <p>Each season is simulated 1,000 times from your real record, the remaining schedule and every team's projected lineup in that league's scoring. Playoff spots stand in for payout spots.</p></section>`;
   h += list.map(L=>{ const t = L.me, d = DIR[t.dir], id = L.lg.league_id;
     return `<article class="card s-${d.sev}"><div class="chead"><div class="t"><div class="lname">${esc(L.lg.name)}</div>
@@ -1495,20 +1495,8 @@ function renderDirList(){
       <div class="score"><span class="pill p-${d.sev}">${d.label}</span></div></div>
       <div class="oddsrow"><span><b class="num">${pct(t.odds.po)}</b> playoffs</span><span><b class="num">${pct(t.odds.bub)}</b> bubble</span><span><b class="num">${pct(t.odds.title)}</b> title</span></div>
       <div class="bpline">${esc(headline(L, t))}</div>
-      <div class="cfoot"><button class="ghost go" data-dir="${id}">Diagnose + find trades →</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`; }).join("") || `<div class="empty">No teams in this group.</div>`;
-  // market search
-  const q = (S.mq||"").trim().toLowerCase();
-  h += `<section class="summary"><h3>Trade market</h3><p>Real trades from all your leagues this season. Search a player to see what he actually cost.</p>
-    <input class="search" id="mq" type="search" placeholder="Search a player (e.g. Jeanty)" value="${esc(S.mq||"")}" autocomplete="off">`;
-  if(q.length >= 3){
-    const ids = Object.keys(S.proj).filter(id=>pname(id).toLowerCase().includes(q)).slice(0,5);
-    const rows = ids.flatMap(id=>marketFor(id).map(r=>({...r, pid:id})));
-    h += rows.length ? `<div class="plist">${rows.slice(0,25).map(r=>`<div class="prow"><div class="ptop"><span class="nm">${esc(pname(r.pid))}</span><span class="pos">${new Date(r.ts).toLocaleDateString([], {month:"short", day:"numeric"})}</span></div>
-      <div class="pstat">${esc(r.name)} · bought by ${esc(r.buyer)}${r.mine?" · your trade":""}</div>
-      <div class="pstat">Cost: ${esc(r.paid.join(", ")||"nothing listed")}${r.got.length?` · buyer also got ${esc(r.got.join(", "))}`:""}</div></div>`).join("")}</div>`
-      : `<div class="empty">No trades for that player in your leagues this season.</div>`;
-  }
-  return h + `</section>`;
+      <div class="cfoot"><button class="ghost go" data-dir="${id}">Direction + trades →</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`; }).join("") || `<div class="empty">No teams in this group.</div>`;
+  return h;
 }
 function renderDirDetail(L){
   const t = L.me, d = DIR[t.dir], id = L.lg.league_id, N = L.N;
@@ -1633,7 +1621,7 @@ function cardHTML(r, full){
   const m = r.match;
   let h = `<article class="card s-${r.sev}${done?" done":""}"><div class="chead"><div class="t"><div class="lname">${esc(lg.name)}</div>
     <div class="meta"><span>${typ}</span><span>${sf}</span>${rec?`<span>${rec}</span>`:""}${r.firstGame?`<span>First issue: ${weekdayOf(r.firstGame)}</span>`:""}</div></div>`;
-  if(m) h += `<div class="score">Proj vs opp<span class="num">${fmt(r.moves?m.meOpt:m.me)} – ${fmt(m.opp)}</span>${Math.round(m.win*100)}% win</div>`;
+  if(m) h += `<div class="score">Proj vs opp<span class="num">${fmt(r.moves?m.meOpt:m.me)} – ${fmt(m.opp)}</span></div>`;
   h += `</div>`;
   const iss = r.issues.filter(x=>full || x.sev!=="info" || r.issues.length===1);
   if(iss.length){ h += `<ul class="issues">` + iss.map(x=>`<li class="issue"><span class="pill p-${x.sev}">${{crit:"Fix",warn:"Check",up:"Boost",info:"Note"}[x.sev]}</span><span class="txt">${esc(x.text)}</span></li>`).join("") + `</ul>`; }
@@ -1780,6 +1768,7 @@ function renderSettings(){
   return `<details class="settings"><summary>Settings</summary>
     <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
     <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
+    <div class="srow"><span>Shake your phone to ask the crystal ball</span><button class="ghost${typeof SHAKE !== "undefined" && SHAKE.on ? " on" : ""}" id="shakeT" aria-pressed="${typeof SHAKE !== "undefined" && SHAKE.on}">${typeof SHAKE !== "undefined" && SHAKE.on ? "On" : "Off"}</button></div>
     <div class="srow"><span>Signed in as <b>${esc(S.displayName||S.username)}</b></span><button class="ghost" id="switch">Switch user</button></div>
     <p class="note">Projections come from Sleeper (Rotowire) and are rescored with each league's settings. Questionable players count at 85% and Doubtful at 20% when comparing options. Sleeper doesn't share whether you've set an auto-sub, so Questionable starters stay flagged until you swap them.</p></details>`;
 }

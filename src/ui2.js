@@ -89,10 +89,15 @@ function bulletinHTML(){
   const games = window.map(g=>esc(g.short)).join(" · ");
   const order = {crit:0, warn:1, up:2};
   rows.sort((a,b)=>order[a.sev]-order[b.sev] || a.r.league.name.localeCompare(b.r.league.name));
-  const head = `<div class="bh"><span class="t"><b>${esc(title)}</b><small>${games} · ${esc(kickLabel(first))}${first.intl ? " · " + esc(first.city || "") : ""} · you start ${startCount} player${startCount===1?"":"s"} here in ${starters.size} league${starters.size===1?"":"s"}</small></span><span class="cd">${esc(untilText(first.ts))}</span></div>`;
+  const n = {crit:0, warn:0, up:0}; rows.forEach(x=>n[x.sev]++);
+  const head = `<div class="bh"><span class="ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/></svg></span><span class="t"><b>${esc(title)}</b><small>${games} · ${esc(kickLabel(first))}${first.intl ? " · " + esc(first.city || "") : ""} · ${startCount} starter${startCount===1?"":"s"}</small></span><span class="cd" title="${esc(untilText(first.ts))}">${esc(untilText(first.ts).replace("locks in ",""))}</span></div>`;
   if(!rows.length) return `<section class="bulletin calm">${head}<div class="sub">Every lineup with a player in this game is set. Nothing to do before kickoff.</div></section>`;
-  return `<section class="bulletin">${head}${rows.slice(0, 8).map(x=>`<div class="brow"><span class="pill p-${x.sev}">${{crit:"Fix",warn:"Check",up:"Boost"}[x.sev]}</span><span class="t"><b>${esc(x.r.league.name)}</b><span>${esc(x.what)} · ${esc(x.how)}</span></span><a class="openbtn" href="${leagueLink(x.id)}" target="_blank" rel="noopener">Open ${ICON.ext}</a></div>`).join("")}
-    ${rows.length > 8 ? `<button class="ghost tint" data-go="fix" data-tab="fix">See all ${rows.length}</button>` : ""}</section>`;
+  const row = x => `<div class="brow"><span class="pill p-${x.sev}">${{crit:"Fix",warn:"Check",up:"Boost"}[x.sev]}</span><span class="t"><b>${esc(x.r.league.name)}</b><span>${esc(x.what)} · ${esc(x.how)}</span></span><a class="openbtn" href="${leagueLink(x.id)}" target="_blank" rel="noopener">Open ${ICON.ext}</a></div>`;
+  const lead = rows.filter(x=>x.sev === "crit").slice(0, 2), shown = lead.length ? lead : rows.slice(0, 1), rest = rows.filter(x=>!shown.includes(x));
+  return `<section class="bulletin">${head}
+    <div class="bsum">${n.crit ? `<span class="pill p-crit">${n.crit} fix</span>` : ""}${n.warn ? `<span class="pill p-warn">${n.warn} check</span>` : ""}${n.up ? `<span class="pill p-up">${n.up} boost${n.up>1?"s":""}</span>` : ""}<span>Locks before Sunday: do these first.</span></div>
+    ${shown.map(row).join("")}
+    ${rest.length ? `<details class="bmore"><summary><span class="more">Show ${rest.length} more</span><span class="less">Show less</span></summary>${rest.map(row).join("")}</details>` : ""}</section>`;
 }
 
 /* ---------- touch feedback: press in, spring back with a glow ring, and a light haptic tick ---------- */

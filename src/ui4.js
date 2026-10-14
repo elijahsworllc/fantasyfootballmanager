@@ -37,32 +37,6 @@ function rkCompute(){
   const rows = order.map((id,i)=>{ const s = by[id]; const pr = (posCount[s.pos] = (posCount[s.pos]||0) + 1); myRank[id] = {overall:i+1, pos:pr, posLabel:s.pos + pr}; return {...s, rank:i+1, posRank:pr, posSrcRank:posSrc[id]}; });
   return {rows, edited: !!store.get(rkKey(), null)};
 }
-function viewRankings(){
-  const data = rkCompute();
-  const owned = {}; for(const y of cbLeagues()) for(const p of y.mine.players||[]) owned[p] = (owned[p]||0) + 1;
-  const posOpts = RK.mode === "week" ? ["ALL","QB","RB","WR","TE","K","DEF"] : ["ALL","QB","RB","WR","TE"];
-  if(!posOpts.includes(RK.pos)) RK.pos = "ALL";
-  const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">My rankings</h1><div class="sub">Start from the source, then drag players to set your own order. Your ranks show up in Start/Sit and Compare.</div></section>
-    <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
-      ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
-      <button class="chip" data-rkmine="1" aria-pressed="${RK.mine}">My players</button></div>`;
-  if(!data) return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading FantasyCalc values…</div>`;
-  let rows = data.rows;
-  if(RK.pos !== "ALL") rows = rows.filter(r=>r.pos === RK.pos);
-  if(RK.mine) rows = rows.filter(r=>owned[r.id]);
-  const q = RK.q.trim().toLowerCase(); if(q) rows = rows.filter(r=>r.name.toLowerCase().includes(q));
-  const cap = RK.pos === "ALL" && !RK.mine && !q ? 200 : 120;
-  h += `<div style="display:flex;gap:8px;align-items:center"><input class="search" id="rkq" type="search" placeholder="Find a player" value="${esc(RK.q)}" autocomplete="off" style="flex:1">${data.edited ? `<button class="ghost" data-rkreset="1">Reset</button>` : ""}</div>
-    <section class="rklist glass" id="rklist" data-canDrag="${!q && !RK.mine}">${rows.slice(0, cap).map(r=>{
-      const shown = RK.pos === "ALL" ? r.rank : r.posRank, srcR = RK.pos === "ALL" ? r.srcRank : r.posSrcRank, d = srcR - shown;
-      return `<div class="rkrow" data-id="${esc(r.id)}"><button class="grip" aria-label="Move ${esc(r.name)}. Arrow keys move it up or down." data-grip="${esc(r.id)}"><svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="9" r="1.6"/><circle cx="10" cy="9" r="1.6"/><circle cx="4" cy="14" r="1.6"/><circle cx="10" cy="14" r="1.6"/></g></svg></button>
-        <span class="rn">${shown}</span>${headshot(r.id,"mini")}<span class="t"><b>${esc(r.name)}</b><small>${r.pos}${RK.pos==="ALL"?r.posRank:""} · ${esc(r.team||"FA")}${owned[r.id]?` · <span style="color:var(--cyan-2)">yours ×${owned[r.id]}</span>`:""}</small></span>
-        <span class="rv">${d ? `<i class="${d>0?"up":"dn"}">${d>0?"▲":"▼"}${Math.abs(d)}</i>` : ""}<small>${esc(r.label)}</small></span></div>`; }).join("")}</section>
-    <p class="src">${RK.mode === "week" ? `Source order: Sleeper (Rotowire) week ${S.week} PPR projections.` : `Source order: FantasyCalc ${RK.mode === "ros" ? "redraft (rest of season)" : "dynasty"} values, ${RK.qb === 2 ? "Superflex" : "1QB"}, 12 teams, PPR, built from real trades.`} ▲▼ shows how far you've moved a player from the source. ${RK.mode === "week" ? "Weekly ranks start fresh each week." : ""} Saved on this device.</p>`;
-  return h;
-}
 function rkMove(id, delta){
   const src = rkSource(); if(!src) return;
   let order = rkOrder(src);
@@ -73,27 +47,194 @@ function rkMove(id, delta){
   else { const slots = order.map((i,k)=>visible.includes(i) ? k : -1).filter(k=>k >= 0); slots.forEach((k,n)=>{ order[k] = moved[n]; }); }   // reorder inside the position, keep everyone else's overall slot
   store.set(rkKey(), order);
 }
-// drag to reorder (touch and mouse), with auto-scroll near the edges
+/* ---------- My Rankings: tiers, 30-day movers, production, and the case for each spot ---------- */
+RK.sort = "rank"; RK.open = null;
+const SEASON = {p:null, by:null, last:0};
+function weekStats(){
+  if(S._ws && S._wsFor === S.season + ":" + S.nflWeek) return S._ws;
+  const last = Math.max(0, (S.nflWeek || 1) - 1), pos = ["QB","RB","WR","TE"].map(p=>"position%5B%5D="+p).join("&");
+  S._wsFor = S.season + ":" + S.nflWeek;
+  S._ws = Promise.all(Array.from({length:last}, (_,i)=>getJSON(`/stats/nfl/${S.season}/${i+1}?season_type=regular&${pos}`, {cache:"prefer"}).catch(()=>null)));
+  return S._ws;
+}
+function loadSeason(){
+  if(SEASON.p) return SEASON.p;
+  SEASON.p = weekStats().then(weeks=>{
+    const by = {}, tt = {};
+    weeks.forEach((rows, wi)=>{ if(!Array.isArray(rows)) return; const w = wi + 1;
+      for(const r of rows){ const s = r.stats || {}, tm = r.team || (r.player && r.player.team); if(tm && s.rec_tgt) tt[tm+"|"+w] = (tt[tm+"|"+w] || 0) + s.rec_tgt; }
+      for(const r of rows){ const s = r.stats || {}; if(!(s.gp > 0) && !s.pts_ppr) continue; const tm = r.team || (r.player && r.player.team);
+        const e = by[r.player_id] ||= {w:{}, g:0, pts:0, tgt:0, tt:0, snp:[], car:0};
+        e.w[w] = s.pts_ppr || 0; e.g++; e.pts += s.pts_ppr || 0; e.car += s.rush_att || 0;
+        if(s.rec_tgt != null && tm && tt[tm+"|"+w]){ e.tgt += s.rec_tgt; e.tt += tt[tm+"|"+w]; }
+        if(s.off_snp && s.tm_off_snp) e.snp.push(s.off_snp / s.tm_off_snp); } });
+    const last = weeks.length, mean = a => a.reduce((x,y)=>x+y, 0) / a.length;
+    for(const id in by){ const e = by[id], ws = Object.keys(e.w).map(Number).sort((a,b)=>a-b);
+      e.ppg = e.pts / e.g; e.l3 = mean(ws.slice(-3).map(w=>e.w[w])); e.ts = e.tt ? e.tgt / e.tt : null; e.snap = e.snp.length ? mean(e.snp) : null; e.cpg = e.car / e.g; }
+    const posOf = id => (S.proj[id] && S.proj[id].player || {}).position, minG = Math.max(1, Math.floor(last/2));
+    for(const P of ["QB","RB","WR","TE"]) Object.keys(by).filter(id=>posOf(id) === P && by[id].g >= minG).sort((a,b)=>by[b].ppg - by[a].ppg).forEach((id,i)=>{ by[id].prk = i + 1; });
+    SEASON.by = by; SEASON.last = last;
+    if(S.view === "rankings") render();
+  }).catch(()=>{ SEASON.by = {}; SEASON.last = 0; });
+  return SEASON.p;
+}
+const TIER_NAMES = {dyn:["Elite","Cornerstones","Difference makers","Strong starters","Starters","Flex & upside","Depth","Dart throws"],
+  ros:["League winners","Every-week studs","Strong starters","Starters","Flex plays","Matchup plays","Depth","Bench"],
+  week:["Locked in","Strong starts","Solid starts","Flex plays","Matchup dependent","Deep plays","Bench"]};
+function tiersFor(src){
+  const out = {}; let tier = 1, size = 0, start = 0;
+  const gaps = []; for(let i=1;i<Math.min(src.length, 80);i++) gaps.push(RK.mode === "week" ? src[i-1].val - src[i].val : (src[i-1].val - src[i].val)/Math.max(src[i-1].val, 1));
+  const med = gaps.length ? gaps.slice().sort((a,b)=>a-b)[gaps.length>>1] : 0, cut = Math.max(RK.mode === "week" ? .9 : .045, med*3.2);
+  src.forEach((s,i)=>{ if(i){ const g = RK.mode === "week" ? src[i-1].val - s.val : (src[i-1].val - s.val)/Math.max(src[i-1].val, 1);
+      if((g >= cut && size >= 2) || size >= (tier <= 2 ? 8 : 14)){ tier++; size = 0; start = i; } }
+    out[s.id] = tier; size++; });
+  return out;
+}
+const tierName = t => (TIER_NAMES[RK.mode] || TIER_NAMES.dyn)[t-1] || `Tier ${t}`;
+const trendPct = r => r.trend && (r.dv || r.val) ? r.trend / Math.max(1, (r.dv || r.val) - r.trend) : 0;
+function trChip(r){ if(RK.mode === "week" || r.trend == null) return ""; const p = trendPct(r);
+  return Math.abs(p) < .015 ? `<i class="tr flat">—</i>` : `<i class="tr ${p > 0 ? "up" : "dn"}" title="30-day value change">${p > 0 ? "▲" : "▼"}${Math.abs(Math.round(p*100))}%</i>`; }
+function ageNote(pos, age){
+  if(!age) return null; const a = Math.floor(age);
+  const W = {RB:[[23,"ascending"],[26,"prime"],[27,"end of prime"],[99,"decline years"]], WR:[[24,"ascending"],[28,"prime"],[30,"late prime"],[99,"decline years"]],
+    TE:[[25,"developing"],[29,"prime"],[31,"late prime"],[99,"decline years"]], QB:[[25,"developing"],[33,"prime"],[36,"late prime"],[99,"twilight"]]}[pos];
+  if(!W) return null; const st = W.find(([m])=>a <= m)[1], peak = {RB:"23–26", WR:"25–28", TE:"26–29", QB:"26–33"}[pos];
+  return {st, text:`Age ${age.toFixed(1)}: ${st} (${pos}s usually peak ${peak})`, tone: /ascending|developing|prime$/.test(st) && st !== "end of prime" ? "g" : /decline|twilight/.test(st) ? "r" : ""};
+}
+function spark(id){
+  const s = SEASON.by && SEASON.by[id]; if(!s || !SEASON.last) return "";
+  const W = 180, H = 40, n = SEASON.last, max = Math.max(10, ...Object.values(s.w)), X = w => 4 + (w-1)/Math.max(1, n-1)*(W-8), Y = v => H - 4 - v/max*(H-10);
+  const pts = Object.keys(s.w).map(Number).sort((a,b)=>a-b);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PPR points by week"><line x1="4" x2="${W-4}" y1="${Y(s.ppg).toFixed(1)}" y2="${Y(s.ppg).toFixed(1)}" stroke="rgba(170,190,255,.3)" stroke-dasharray="3 3"/>
+    <polyline fill="none" stroke="#8FEAF5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts.map(w=>`${X(w).toFixed(1)},${Y(s.w[w]).toFixed(1)}`).join(" ")}"/>
+    ${pts.map(w=>`<circle cx="${X(w).toFixed(1)}" cy="${Y(s.w[w]).toFixed(1)}" r="2.2" fill="${s.w[w] >= s.ppg ? "#8FEAF5" : "#6F7C8A"}"/>`).join("")}</svg>`;
+}
+function whyRank(r, ctx){
+  const out = [], s = SEASON.by && SEASON.by[r.id], fcv = ctx.fc && ctx.fc.players[r.id] || {};
+  // tier and the cliff below it
+  const mates = ctx.view.filter(z=>ctx.tiers[z.id] === ctx.tiers[r.id]), next = ctx.view.find(z=>ctx.tiers[z.id] === ctx.tiers[r.id] + 1);
+  const lastMate = mates[mates.length-1];
+  if(RK.mode === "week"){
+    out.push(["Tier", `<b>${esc(tierName(ctx.tiers[r.id]))}</b> · ${mates.length} players between ${fmt(lastMate.val)} and ${fmt(mates[0].val)} projected${next ? ` · next tier starts at ${fmt(next.val)}` : ""}`, ""]);
+  } else {
+    const spread = mates.length > 1 ? (mates[0].val - lastMate.val)/mates[0].val : 0, cliff = next ? (lastMate.val - next.val)/lastMate.val : null;
+    out.push(["Tier", `<b>${esc(tierName(ctx.tiers[r.id]))}</b> · ${mates.length} player${mates.length>1?"s":""} within ${Math.round(spread*100)}% of each other${cliff != null ? ` · <b>${Math.round(cliff*100)}%</b> value drop to the next tier` : ""}`, ""]);
+    out.push(["Value", `<b>${r.val.toLocaleString()}</b> FantasyCalc ${RK.mode === "ros" ? "redraft" : "dynasty"} value · market rank #${r.srcRank}${r.pos !== "PICK" ? ` (${r.pos}${r.posSrcRank})` : ""}`, ""]);
+  }
+  const d = (RK.pos === "ALL" ? r.srcRank - r.rank : r.posSrcRank - r.posRank);
+  if(d) out.push(["Your call", `You have him <b>${Math.abs(d)} spot${Math.abs(d)>1?"s":""} ${d > 0 ? "higher" : "lower"}</b> than the source`, d > 0 ? "g" : "r"]);
+  const an = ageNote(r.pos, r.age || fcv.age); if(an && RK.mode !== "week") out.push(["Age", esc(an.text) + (fcv.yoe != null ? ` · year ${fcv.yoe + 1} in the NFL` : ""), an.tone]);
+  if(s && s.g){
+    const l3 = s.l3 - s.ppg, l3p = s.ppg ? l3/s.ppg : 0;
+    out.push(["Production", `<b>${fmt(s.ppg)}</b> PPR/g${s.prk ? ` · <b>${r.pos}${s.prk}</b> in scoring` : ""} · ${s.g} games${Math.abs(l3p) >= .1 ? ` · last 3: <b>${fmt(s.l3)}</b> (${l3 > 0 ? "up" : "down"} ${Math.abs(Math.round(l3p*100))}%)` : ""}`, s.prk && s.prk <= ({QB:6,RB:12,WR:12,TE:5}[r.pos]||12) ? "g" : ""]);
+    const u = []; if(s.ts != null && r.pos !== "QB") u.push(`${Math.round(s.ts*100)}% target share`); if(r.pos === "RB" && s.cpg) u.push(`${fmt(s.cpg)} carries/g`); if(s.snap != null) u.push(`${Math.round(s.snap*100)}% of snaps`);
+    if(u.length) out.push(["Usage", u.join(" · "), ""]);
+  } else if(SEASON.by) out.push(["Production", "No games this season", "r"]);
+  if(RK.mode === "week"){
+    const f = weekInfo(r.id, null);
+    if(f){ const dr = defRank(f); out.push(["Matchup", `${esc(oppText(f) || "—")}${dr ? ` · ${esc(dr.opp)} allows the <b>${ord(dr.rank)}-most</b> PPR to ${f.pos}s (${fmt(dr.per)}/g)` : ""}${f.team && kickoff(f.team) ? ` · ${esc(kickLabel(kickoff(f.team)))}` : ""}`, ""]);
+      if(f.status) out.push(["Status", esc(f.status), "r"]); }
+  } else if(r.trend != null){
+    const p = trendPct(r);
+    out.push(["Market", Math.abs(p) < .015 ? "Value steady over 30 days" : `${p > 0 ? "Up" : "Down"} <b>${Math.abs(Math.round(p*100))}%</b> in 30 days (${((r.dv||r.val) - r.trend).toLocaleString()} → ${(r.dv||r.val).toLocaleString()} dynasty): ${p > 0 ? "buyers are paying up" : "the market is selling"}${fcv.sd ? ` · price swings about ±${Math.round(fcv.sd)}%` : ""}`, p >= .015 ? "g" : p <= -.015 ? "r" : ""]);
+  }
+  if(ctx.owned[r.id]) out.push(["Your teams", `On <b>${ctx.owned[r.id]}</b> of your rosters`, ""]);
+  return out;
+}
+function rkSourceAll(){
+  const src = rkSource(); if(!src) return null;
+  const key = `${RK.qb}|12|1`, fc = RK.mode === "week" ? null : S.fc[key] && S.fc[key].done;
+  if(fc) src.forEach(s=>{ const v = fc.players[s.id]; if(v){ s.age = v.age; s.trend = v.trend; s.dv = v.v; } });
+  else if(RK.mode === "week"){ const k2 = `${RK.qb}|12|1`, f2 = S.fc[k2] && S.fc[k2].done; if(!f2) fcValues(k2).then(v=>{ S.fc[k2].done = v; }).catch(()=>{}); else src.forEach(s=>{ const v = f2.players[s.id]; if(v) s.age = v.age; }); }
+  return src;
+}
+function viewRankings(){
+  if(!SEASON.p) loadSeason();
+  if(RK.mode === "week") loadDef();
+  const owned = {}; for(const y of cbLeagues()) for(const p of y.mine.players||[]) owned[p] = (owned[p]||0) + 1;
+  const posOpts = RK.mode === "week" ? ["ALL","QB","RB","WR","TE","K","DEF"] : ["ALL","QB","RB","WR","TE"];
+  if(!posOpts.includes(RK.pos)) RK.pos = "ALL";
+  const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
+  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">Rankings</h1><div class="sub">Tiers, 30-day value moves and the case for every spot. Tap a player for the why; drag the handle to make the list yours.</div></section>
+    <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
+    <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
+      ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
+      <button class="chip" data-rkmine="1" aria-pressed="${RK.mine}">My players</button></div>`;
+  const data = rkCompute(), src = data && rkSourceAll();
+  if(!data || !src) return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading FantasyCalc values…</div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:300px"></i></div>`;
+  const by = {}; src.forEach(s=>{ by[s.id] = s; });
+  data.rows.forEach(r=>{ const s = by[r.id]; if(s){ r.age = s.age; r.trend = s.trend; r.dv = s.dv; } });
+  // tiers from the source order of what's on screen
+  const viewSrc = src.filter(s=>RK.pos === "ALL" || s.pos === RK.pos), tiers = tiersFor(viewSrc);
+  // 30-day movers
+  if(RK.mode !== "week"){
+    const pool = viewSrc.slice(0, RK.pos === "ALL" ? 160 : 60).filter(s=>s.trend != null && s.val >= 800).map(s=>({s, p:trendPct(s)}));
+    const up = pool.filter(z=>z.p > .02).sort((a,b)=>b.p - a.p).slice(0,4), dn = pool.filter(z=>z.p < -.02).sort((a,b)=>a.p - b.p).slice(0,4);
+    if(up.length || dn.length) h += `<section class="movers"><div class="mov glass"><div class="lab">▲ Risers · 30 days</div>${up.map(z=>`<button data-rkjump="${esc(z.s.id)}"><span>${esc(z.s.name)} <small>${z.s.pos}</small></span><i class="tr up">+${Math.round(z.p*100)}%</i></button>`).join("") || `<span class="sub">None</span>`}</div>
+      <div class="mov glass"><div class="lab">▼ Fallers · 30 days</div>${dn.map(z=>`<button data-rkjump="${esc(z.s.id)}"><span>${esc(z.s.name)} <small>${z.s.pos}</small></span><i class="tr dn">${Math.round(z.p*100)}%</i></button>`).join("") || `<span class="sub">None</span>`}</div></section>`;
+  }
+  let rows = data.rows;
+  if(RK.pos !== "ALL") rows = rows.filter(r=>r.pos === RK.pos);
+  if(RK.mine) rows = rows.filter(r=>owned[r.id]);
+  const q = RK.q.trim().toLowerCase(); if(q) rows = rows.filter(r=>r.name.toLowerCase().includes(q) || (r.team||"").toLowerCase() === q);
+  if(RK.sort !== "rank" && RK.mode !== "week") rows = rows.filter(r=>r.trend != null && r.val >= 300).sort((a,b)=>RK.sort === "rise" ? trendPct(b) - trendPct(a) : trendPct(a) - trendPct(b));
+  const sorts = RK.mode === "week" ? [] : [["rank","Rank"],["rise","Risers"],["fall","Fallers"]];
+  const canDrag = !q && !RK.mine && RK.sort === "rank";
+  const cap = RK.pos === "ALL" && !RK.mine && !q && RK.sort === "rank" ? 200 : 120, topVal = Math.max(1, ...viewSrc.slice(0,1).map(s=>s.val));
+  const ctx = {view:viewSrc, tiers, owned, fc: RK.mode === "week" ? null : S.fc[`${RK.qb}|12|1`] && S.fc[`${RK.qb}|12|1`].done};
+  h += `<div style="display:flex;gap:8px;align-items:center"><input class="search" id="rkq" type="search" placeholder="Find a player or team" value="${esc(RK.q)}" autocomplete="off" style="flex:1">${data.edited ? `<button class="ghost" data-rkreset="1">Reset</button>` : ""}</div>
+    ${sorts.length ? `<div class="seg sm" role="tablist" style="--n:3;--i:${sorts.findIndex(s=>s[0] === RK.sort)}">${sorts.map(([k,l])=>`<button role="tab" data-rksort="${k}" aria-selected="${RK.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>` : ""}`;
+  let lastTier = null;
+  h += `<section class="rklist glass" id="rklist" data-candrag="${canDrag}">${rows.slice(0, cap).map(r=>{
+    const shown = RK.pos === "ALL" ? r.rank : r.posRank, srcR = RK.pos === "ALL" ? r.srcRank : r.posSrcRank, d = srcR - shown, tr = tiers[r.id], open = RK.open === r.id;
+    const s = SEASON.by && SEASON.by[r.id], f = RK.mode === "week" ? weekInfo(r.id, null) : null;
+    const head = RK.sort === "rank" && tr !== lastTier ? `<div class="rktier">Tier ${tr} · ${esc(tierName(tr))}<small>${viewSrc.filter(z=>tiers[z.id] === tr).length}</small></div>` : ""; lastTier = tr;
+    const meta = [r.pos + (RK.pos === "ALL" ? r.posRank : ""), r.team || "FA", r.age ? Math.floor(r.age) + "y" : null, s && s.g ? fmt(s.ppg) + " ppg" : null, f && f.game ? oppText(f) : null].filter(Boolean).join(" · ");
+    return head + `<div class="rkrow${open ? " open" : ""}" data-id="${esc(r.id)}" id="rk-${esc(r.id)}"><button class="grip" aria-label="Move ${esc(r.name)}. Arrow keys move it up or down." data-grip="${esc(r.id)}"${canDrag ? "" : " disabled"}><svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="9" r="1.6"/><circle cx="10" cy="9" r="1.6"/><circle cx="4" cy="14" r="1.6"/><circle cx="10" cy="14" r="1.6"/></g></svg></button>
+      <span class="rn">${shown}</span><button class="rkmain" data-rkopen="${esc(r.id)}" aria-expanded="${open}">${headshot(r.id,"mini")}<span class="t"><b>${esc(r.name)}${f ? statusTag(f) : ""}${owned[r.id] ? `<span class="own" title="On ${owned[r.id]} of your rosters">×${owned[r.id]}</span>` : ""}</b><small>${esc(meta)}</small><span class="vbar"><i style="width:${Math.max(3, Math.min(100, r.val/topVal*100)).toFixed(1)}%"></i></span></span>
+      <span class="rv"><b>${esc(r.label)}</b><span class="rvx">${trChip(r)}${d ? `<i class="mv ${d>0?"up":"dn"}" title="Moved from the source rank">${d>0?"↑":"↓"}${Math.abs(d)}</i>` : ""}</span></span></button>
+      ${open ? `<div class="rkdet">${s && s.g ? `<div class="spark">${spark(r.id)}<span class="sub"><b style="color:var(--ink)">${fmt(s.ppg)}</b> avg · best ${fmt(Math.max(...Object.values(s.w)))}</span></div>` : ""}
+        <ul class="rwhy">${whyRank(r, ctx).map(([k,v,t])=>`<li class="${t}"><span>${esc(k)}</span><div>${v}</div></li>`).join("")}</ul>
+        <div class="cfoot" style="padding:0"><button class="ghost tint" data-rkcmp="${esc(r.id)}">Compare</button>${owned[r.id] ? `<button class="ghost" data-rkexp="${esc(r.name)}">Your ${owned[r.id]} leagues</button>` : ""}<button class="ghost" data-rkmkt="${esc(r.name)}">Market</button></div></div>` : ""}</div>`; }).join("") || `<div class="empty" style="margin:0">No players match.</div>`}</section>
+    <p class="src">${RK.mode === "week" ? `Source order: Sleeper (Rotowire) week ${S.week} PPR projections. Matchup ranks: PPR points each defense has allowed by position.` : `Source order and 30-day moves: FantasyCalc ${RK.mode === "ros" ? "redraft" : "dynasty"} values, ${RK.qb === 2 ? "Superflex" : "1QB"}, 12 teams, PPR, built from real trades.`} Tiers break where value drops off sharply. Production and usage: Sleeper weekly stats. ↑↓ shows how far you've moved a player. Saved on this device.</p>`;
+  return h;
+}
+document.addEventListener("click", e=>{
+  const el = e.target.closest("[data-rkopen],[data-rksort],[data-rkjump],[data-rkcmp],[data-rkexp],[data-rkmkt]"); if(!el) return; const d = el.dataset;
+  if(d.rkopen){ RK.open = RK.open === d.rkopen ? null : d.rkopen; render(); return; }
+  if(d.rksort){ RK.sort = d.rksort; RK.open = null; render(); return; }
+  if(d.rkjump){ RK.sort = "rank"; RK.q = ""; RK.mine = false; RK.open = d.rkjump; render(); requestAnimationFrame(()=>{ const r = $("rk-"+d.rkjump); if(r) r.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"center"}); }); return; }
+  if(d.rkcmp){ runTool("compare", [{id:d.rkcmp, name:pname(d.rkcmp)}]); return; }
+  if(d.rkexp){ S.ptab = "exposure"; S.query = d.rkexp; S.playerFilter = "all"; go("players"); return; }
+  if(d.rkmkt){ S.mq = d.rkmkt; go("trades", {anchor:"market"}); return; }
+}, true);
+// drag to reorder: measures real row positions, so tier headers and open rows don't throw it off
 let DRAG = null;
 document.addEventListener("pointerdown", e=>{
-  const g = e.target.closest("[data-grip]"); if(!g) return;
-  const list = $("rklist"); if(!list || list.dataset.candrag === "false") return;
-  e.preventDefault();
-  const row = g.closest(".rkrow"), rows = [...list.querySelectorAll(".rkrow")], idx = rows.indexOf(row), h = row.getBoundingClientRect().height;
-  DRAG = {id:g.dataset.grip, row, rows, idx, h, y0:e.clientY, sy0:window.scrollY, to:idx, pid:e.pointerId};
-  S.dragging = true; row.classList.add("dragging"); try{ g.setPointerCapture(e.pointerId); }catch(_){}
+  const g = e.target.closest("[data-grip]"); if(!g || g.disabled) return;
+  let list = $("rklist"); if(!list || list.dataset.candrag === "false") return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const id = g.dataset.grip;
+  if(RK.open){ RK.open = null; render(); list = $("rklist"); }
+  const rows = [...list.querySelectorAll(".rkrow")], row = rows.find(r=>r.dataset.id === id); if(!row) return;
+  const sy = window.scrollY, rects = rows.map(r=>{ const b = r.getBoundingClientRect(); return {top:b.top + sy, h:b.height}; });
+  const idx = rows.indexOf(row);
+  DRAG = {id, row, rows, rects, idx, h:rects[idx].h, y0:e.clientY, sy0:sy, to:idx, pid:e.pointerId, y:e.clientY};
+  S.dragging = true; row.classList.add("dragging"); const gg = row.querySelector("[data-grip]"); try{ gg.setPointerCapture(e.pointerId); }catch(_){}
   haptic();
-});
+}, true);
 document.addEventListener("pointermove", e=>{
   if(!DRAG || e.pointerId !== DRAG.pid) return;
   DRAG.y = e.clientY;
-  const dy = e.clientY - DRAG.y0 + (window.scrollY - DRAG.sy0), to = Math.max(0, Math.min(DRAG.rows.length-1, DRAG.idx + Math.round(dy/DRAG.h)));
+  const dy = e.clientY - DRAG.y0 + (window.scrollY - DRAG.sy0), R = DRAG.rects, i0 = DRAG.idx, c = R[i0].top + R[i0].h/2 + dy;
+  let to = i0; while(to < R.length-1 && c > R[to+1].top + R[to+1].h/2) to++; while(to > 0 && c < R[to-1].top + R[to-1].h/2) to--;
   DRAG.row.style.transform = `translateY(${dy}px) scale(1.02)`;
   if(to !== DRAG.to){ DRAG.to = to; haptic();
-    DRAG.rows.forEach((r,i)=>{ if(r === DRAG.row) return; const shift = DRAG.idx < to ? (i > DRAG.idx && i <= to ? -DRAG.h : 0) : (i >= to && i < DRAG.idx ? DRAG.h : 0); r.style.transform = shift ? `translateY(${shift}px)` : ""; }); }
-  if(!DRAG.scrolling){ DRAG.scrolling = true; const step = ()=>{ if(!DRAG){ return; } const y = DRAG.y, edge = 90, v = y < edge ? -(edge-y)/6 : y > innerHeight - edge - 70 ? (y - (innerHeight - edge - 70))/6 : 0;
+    DRAG.rows.forEach((r,i)=>{ if(r === DRAG.row) return; const shift = i0 < to ? (i > i0 && i <= to ? -DRAG.h : 0) : (i >= to && i < i0 ? DRAG.h : 0); r.style.transform = shift ? `translateY(${shift}px)` : ""; }); }
+  if(!DRAG.scrolling){ DRAG.scrolling = true; const step = ()=>{ if(!DRAG) return; const y = DRAG.y, top = 200, v = y < top ? -(top - y)/6 : y > innerHeight - 160 ? (y - (innerHeight - 160))/6 : 0;
     if(v){ window.scrollBy(0, v); requestAnimationFrame(step); } else DRAG.scrolling = false; }; requestAnimationFrame(step); }
 }, {passive:true});
+
 const endDrag = ()=>{ if(!DRAG) return; const d = DRAG; DRAG = null; S.dragging = false;
   d.rows.forEach(r=>{ r.style.transform = ""; }); d.row.classList.remove("dragging");
   if(d.to !== d.idx) rkMove(d.id, d.to - d.idx);
@@ -191,7 +332,7 @@ function viewTeam(){
     ${reserve.size ? `<div class="rsec">IR</div>${[...reserve].map(p=>rosterRow(r, p, "IR", ov, [])).join("")}` : ""}
     <p class="src" style="padding:0 14px 12px;margin:0">Points: this week's Sleeper projection in this league's scoring. Small number: FantasyCalc dynasty value. Tags come from the trade finder, 30-day value trends, age and your direction.</p></section>`;
   // trades
-  h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trades that fit</h2><span class="sub">${DIR3[x.dir]}</span></div>`;
+  h += `<section id="trades" style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trades that fit</h2><span class="sub">${DIR3[x.dir]}</span></div>`;
   if(!st || st.busy) h += `<div class="skel" aria-hidden="true"><i style="height:150px"></i><i style="height:150px"></i></div>`;
   else if(st.error) h += `<div class="empty">${esc(st.error)}</div>`;
   else h += ov.recs.length ? ov.recs.map(([ev,mode],i)=>recHTML(st.L, ev, mode, i)).join("") : `<div class="empty">No clean trades found in this league right now.</div>`;

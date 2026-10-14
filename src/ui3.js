@@ -33,7 +33,7 @@ function loadDef(){
   CTX.defP = (async()=>{
     if(last < 1){ CTX.def = {weeks:0}; return; }
     const pos = ["QB","RB","WR","TE"].map(p=>"position%5B%5D="+p).join("&");
-    const weeks = await Promise.all(Array.from({length:last}, (_,i)=>getJSON(`/stats/nfl/${S.season}/${i+1}?season_type=regular&${pos}`, {cache:"prefer"}).catch(()=>null)));
+    const weeks = await weekStats();
     const allowed = {}, games = {};
     weeks.forEach((rows, wi)=>{ if(!Array.isArray(rows)) return;
       for(const r of rows){ const opp = r.opponent, p = (r.player && r.player.position) || (S.proj[r.player_id] && S.proj[r.player_id].player || {}).position, v = r.stats && r.stats.pts_ppr;
@@ -287,7 +287,7 @@ async function reveal(){
   const x = cbLg(), loads = CB.a.map(o=>loadLog(o.id)).concat(TOOL.mode === "start" ? [loadDef(), ...CB.a.map(o=>loadWx(weekInfo(o.id, x).team))] : []);
   await Promise.race([Promise.all(loads.filter(Boolean)).catch(()=>{}), sleep(2400)]);
   await sleep(500); ORB.mode = "out"; await sleep(600);
-  S.thinking = false; renderCB(); const l2 = $("orbline"); if(l2) l2.textContent = "Tap a player to swap them out";
+  S.thinking = false; renderCB(); const l2 = $("orbline"); if(l2) l2.textContent = "Tap a player to swap, or spin the ball again";
   const c = document.querySelector(".h2h"); if(c) c.scrollIntoView({behavior:"smooth", block:"start"});
   setTimeout(()=>{ if(!S.thinking) ORB.mode = "in"; }, 900);
 }

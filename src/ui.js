@@ -133,7 +133,7 @@ const ORB = {
     document.addEventListener("pointermove", e=>{ const p = local(e); this.ptr = p && (p.inside || this.drag) ? p : null; const d = this.drag; if(!d) return;
       const dx = e.clientX-d.x, dy = e.clientY-d.y; d.moved = Math.max(d.moved, Math.abs(dx)+Math.abs(dy));
       this.rot = d.r + dx*.012; this.tilt = Math.max(-.95, Math.min(.5, d.t + dy*.006)); this.vel = (e.clientX-d.lx)*.012; d.lx = e.clientX; }, {passive:true});
-    document.addEventListener("pointerup", ()=>{ if(this.drag && this.drag.moved < 6){ this.pulse = .5; this.shock = this.ptr ? {x:this.ptr.x, y:this.ptr.y} : {x:.5, y:.47}; } this.drag = null; });
+    document.addEventListener("pointerup", ()=>{ const d = this.drag; if(d && d.moved < 6){ this.pulse = .5; this.shock = this.ptr ? {x:this.ptr.x, y:this.ptr.y} : {x:.5, y:.47}; } else if(d && d.moved > 40 && Math.abs(this.vel) > .14){ this.boost = 1; setTimeout(()=>{ this.boost = 0; }, 900); window.dispatchEvent(new CustomEvent("orbspin")); } this.drag = null; });
     document.addEventListener("pointercancel", ()=>{ this.drag = null; this.ptr = null; });
   },
   frame(now){
@@ -218,14 +218,18 @@ const ORB = {
 const orbCanvas = size => `<canvas id="orb" role="img" aria-label="The crystal ball. Drag to spin it, tap to send a shockwave." style="width:${size}px;height:${size}px"></canvas>`;
 
 /* ---------- view state ---------- */
-Object.assign(S, {view: "home", sort: store.get("sort", "az"), dirF: "all", fixTab: "fix", ptab: "exposure", teamLid: null, sim: {}, brief: {}, briefPhase: "idle", thinking: false, lastKey: null, counted: false});
+Object.assign(S, {view: "home", sort: store.get("sort", "next"), dirF: "all", fixTab: "fix", ptab: "exposure", teamLid: null, sim: {}, brief: {}, briefPhase: "idle", thinking: false, lastKey: null, counted: false});
 const VIEWS = new Set(["home","fix","ask","waivers","players","team","brief","rankings"]);
 if(!VIEWS.has(S.view) || S.view === "team") S.view = "home";
 function go(view, opts={}){
   if(view === "team") S.teamLid = opts.lid || S.teamLid;
   if(view === "fix" && opts.tab) S.fixTab = opts.tab;
+  if(view !== "team") S.navFrom = null;
   S.view = view;
-  render(); window.scrollTo(0, 0);
+  if(typeof closeMenu === "function") closeMenu();
+  render();
+  if(opts.anchor){ window.scrollTo(0, 0); setTimeout(()=>{ const a = document.getElementById(opts.anchor); if(a) a.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"start"}); }, 120); }
+  else window.scrollTo(0, 0);
 }
 function openCB(){ go("ask"); }
 function closeCB(){ go("home"); }
@@ -308,26 +312,6 @@ function findPlayers(text){
   }
   return out;
 }
-function askFromText(text){
-  const t = (text||"").trim(), low = t.toLowerCase();
-  if(!t){ go("ask"); return; }
-  if(/brief|week ahead|summary|recap/.test(low)){ go("brief"); return; }
-  if(/waiver|pick ?up|free agent|\bfaab\b/.test(low)){ go("waivers"); return; }
-  const names = findPlayers(t);
-  if(!names.length && /\b(out|injur|hurt|bye|inactive|ruled|questionable)\b/.test(low)){ go("fix", {tab: /questionable/.test(low) ? "monitor" : "fix"}); return; }
-  CB.answers = CB.answers || []; CB.qa = ""; CB.qb = "";
-  if(/trade|\bfor\b|give/.test(low)){
-    const lg = names.length ? cbLeagues().find(x=>(x.mine.players||[]).includes(names[0].id)) : null;
-    TOOL.mode = "trade"; CB.mode = "trade";
-    if(lg && names.length >= 2){ cbPrefillTrade({lid: lg.lg.league_id, give:[names[0]], get:names.slice(1, 3)}); return; }
-    if(lg) TR.lid = lg.lg.league_id;
-    go("ask"); return;
-  }
-  TOOL.mode = /compare|better|dynasty|value|long term/.test(low) ? "compare" : "start"; CB.mode = TOOL.mode; CB.league = "all"; CB.b = []; TOOL.sub = "matchup";
-  CB.a = names.slice(0, 2); if(!names.length) CB.qa = t;
-  go("ask");
-  if(CB.a.length === 2) setTimeout(reveal, 300);
-}
 function promptIdeas(){
   if(S._ideas && S._ideasAt === S.loadedAt) return S._ideas;
   const ideas = ["Who's out in my lineups?", "Best waiver adds this week", "Give me my weekly brief"];
@@ -371,6 +355,8 @@ async function ensureSim(lid){
   const st = S.sim[lid] ||= {};
   if(st.busy || st.detail || st.error) return;
   st.busy = true; st.phase = "Loading team values"; render();
+  const pre = S.dir && S.dir.leagues && S.dir.leagues[lid];
+  if(pre){ st.phase = `Testing trades against ${pre.N-1} league mates`; await sleep(30); try{ st.L = pre; st.detail = buildDetail(pre); }catch(e){ st.error = e.message || String(e); } st.busy = false; render(); return; }
   try{
     while(S.bpLoading) await sleep(250);
     if(!S.bp) await loadBlueprints();
@@ -412,7 +398,7 @@ function recHTML(L, ev, mode, i){
       <span class="k out">Send</span><span>${ev.give.map(line).join("<br>")}</span><span class="v">${Math.round(sumV(ev.give)).toLocaleString()}</span></div>
     ${mk}<div class="imp">${imp.map(x=>`<span>${x}</span>`).join("")}</div><div class="sub">${esc(why)} ${esc(b.name)}: ${b.rec}, ${esc(activity)}.</div>
     <details class="pitch"><summary>Message to send ${esc(b.name)}</summary><p>${esc(pitch)}</p></details>
-    <div class="cfoot" style="padding:0">${cbOk?`<button class="ghost tint" data-cbt="${cbData}">Check with the crystal ball</button>`:""}<button class="ghost" data-copy="${esc(pitch)}">Copy message</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`;
+    <div class="cfoot" style="padding:0">${cbOk?`<button class="ghost tint" data-cbt="${cbData}">Check with the crystal ball</button>`:""}<button class="ghost" data-copy="${esc(pitch)}" data-offer="${esc(JSON.stringify({lid:id, league:L.lg.name, partner:b.name, give:ev.give.map(x=>x.name.replace(" (via trade)","")), get:ev.get.map(x=>x.name.replace(" (via trade)","")), cb: cbOk ? {lid:id, give:ev.give.map(x=>({id:x.id, name:x.name.replace(" (via trade)","")})), get:ev.get.map(x=>({id:x.id, name:x.name.replace(" (via trade)","")}))} : null}))}">Copy message</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`;
 }
 
 /* ---------- screens ---------- */
@@ -452,35 +438,34 @@ function viewLoading(){
     <div class="lab">Just scanned</div><div class="log" id="scanLog"></div></section>`;
 }
 function viewHome(){
-  const c = fixCounts(), ideas = promptIdeas(), crit = c.fix;
+  const c = fixCounts(), crit = c.fix, locks = lockMap();
   let h = `<section style="display:flex;flex-direction:column;gap:4px"><div class="sub">${S.displayName ? esc(S.displayName)+" · " : ""}${S.season} · week ${S.week}${S.week !== S.nflWeek ? " (next)" : ""}</div>
     <h1 class="h1">${crit ? `${crit} lineup${crit>1?"s":""} need${crit>1?"":"s"} you` : "Every lineup is set"}</h1></section>
-    ${bulletinHTML()}
-    <section style="display:flex;flex-direction:column;gap:10px"><form class="askbar" id="askform"><span class="miniorb" aria-hidden="true"></span>
-      <input id="askq" placeholder="${esc(ideas[0])}" autocomplete="off" enterkeyhint="go" aria-label="Ask your command center"><button class="go" type="submit" aria-label="Ask">${ICON.arrow}</button></form>
-      <div class="qchips">${ideas.map(q=>`<button class="chip" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div></section>
+    ${nowCardHTML()}
     <section class="tiles">
       <button class="tile glass crit" data-go="fix" data-tab="fix"><b data-count="${c.fix}">${S.counted ? c.fix : 0}</b><span>Must fix</span></button>
-      <button class="tile glass warn" data-go="fix" data-tab="monitor"><b data-count="${c.monitor}">${S.counted ? c.monitor : 0}</b><span>Monitor</span></button>
-      <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Start / sit</span></button></section>
-    ${toolsGridHTML()}
+      <button class="tile glass warn" data-go="fix" data-tab="monitor"><b data-count="${c.monitor}">${S.counted ? c.monitor : 0}</b><span>Game-time</span></button>
+      <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Better lineups</span></button></section>
+    ${planHTML()}
     <button class="brief-entry glass" data-go="brief">${ICON.brief}<span class="t"><b>Week ${S.week} brief</b><small>The story of your week, before kickoff</small></span><span class="cta">${S.brief[S.week] ? "Open" : "Generate"}</span></button>
     ${accountCardHTML()}
     <div class="statusline" id="statusline"></div>`;
-  // my teams
   let list = teamList();
   const counts = {all:list.length, contend:0, rebuild:0, none:0}; list.forEach(x=>counts[x.dir]++);
   if(S.dirF !== "all") list = list.filter(x=>x.dir === S.dirF);
+  if(!["next","az","cs","rs"].includes(S.sort)) S.sort = "next";
+  if(S.sort === "next") list.sort((a,b)=>((locks[a.id]||{k:{ts:9e15}}).k.ts - (locks[b.id]||{k:{ts:9e15}}).k.ts) || (a.alert === "crit" ? 0 : a.alert ? 1 : 2) - (b.alert === "crit" ? 0 : b.alert ? 1 : 2) || a.name.localeCompare(b.name));
   if(S.sort === "az") list.sort((a,b)=>a.name.localeCompare(b.name));
   if(S.sort === "cs") list.sort((a,b)=>(b.cs ?? -1) - (a.cs ?? -1));
   if(S.sort === "rs") list.sort((a,b)=>(b.rs ?? -1) - (a.rs ?? -1));
-  const sorts = [["az","A–Z"],["cs","Contending"],["rs","Rebuilding"]], si = sorts.findIndex(s=>s[0] === S.sort);
+  const sorts = [["next","Next lock"],["az","A–Z"],["cs","Contend"],["rs","Rebuild"]], si = sorts.findIndex(z=>z[0] === S.sort);
   h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">My teams</h2><span class="sub">${S.bpLoading ? "Scoring teams…" : list.length + " shown"}</span></div>
-    <div class="seg" role="tablist" aria-label="Sort teams" style="--n:3;--i:${si}">${sorts.map(([k,l])=>`<button role="tab" data-sort="${k}" aria-selected="${S.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
+    <div class="seg" role="tablist" aria-label="Sort teams" style="--n:4;--i:${si}">${sorts.map(([k,l])=>`<button role="tab" data-sort="${k}" aria-selected="${S.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
     <div class="chips">${[["all","All"],["contend","Contend"],["rebuild","Rebuild"],["none","Undecided"]].map(([k,l])=>`<button class="chip" data-dirf="${k}" aria-pressed="${S.dirF===k}">${l} · ${counts[k]}</button>`).join("")}</div>
     <div class="teamrow-list">${list.map(x=>{
-      const sc = S.sort === "cs" ? x.cs : S.sort === "rs" ? x.rs : null;
-      const right = S.sort === "az" ? `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`
+      const sc = S.sort === "cs" ? x.cs : S.sort === "rs" ? x.rs : null, l = locks[x.id];
+      const right = S.sort === "next" ? (l ? `<span class="lk k-${l.kind}"><b>${esc(kickLabel(l.k))}</b><small>${{fix:"fix",monitor:"check",startsit:"swap"}[l.kind]}</small></span>` : `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`)
+        : S.sort === "az" ? `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`
         : sc == null ? `<span class="sub">…</span>` : `<span class="sbar"><i><b style="width:${sc}%;background:${S.sort==="cs"?"var(--ok)":"var(--violet-2)"}"></b></i><span>${sc}</span></span>`;
       return `<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert==="crit"?"var(--crit)":x.alert==="warn"?"var(--warn)":"transparent"};box-shadow:${x.alert?"0 0 8px currentColor":"none"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.meta)}${S.sort!=="az"?" · "+DIR3[x.dir]:""}</span></span>${right}</button>`;
     }).join("") || `<div class="empty" style="margin:0">No teams in this group.</div>`}</div></section>`;
@@ -523,43 +508,9 @@ function viewFix(){
   });
   return h;
 }
-function viewTeam(){
-  const x = teamList().find(z=>z.id === S.teamLid);
-  if(!x) return `<button class="ghost back" data-go="home">${ICON.back} My teams</button><div class="empty">That league isn't loaded.</div>`;
-  const b = x.b, id = x.id, st = S.sim[id];
-  let h = `<button class="ghost back" data-go="home">${ICON.back} My teams</button>
-    <section style="display:flex;flex-direction:column;gap:4px"><h1 class="h1" style="font-size:34px">${esc(x.name)}</h1><div class="sub">${esc(x.meta)}</div></section>`;
-  if(!b){ h += S.bpLoading ? `<div class="statusline" id="statusline"></div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:60px"></i></div>` : `<div class="empty">${S.bpError ? esc(S.bpError) : "Not enough roster data to score this team."}</div>`; return h + cardHTML(x.r, false); }
-  const me = b.me, N = b.N;
-  h += `<section class="scores"><div class="score-t glass"><span class="lab">Contending</span><span style="display:flex;align-items:baseline;gap:6px"><b>${x.cs}</b><span class="sub">${ord(me.nowRank)} of ${N}</span></span><div class="bar"><i style="width:${x.cs}%;background:linear-gradient(90deg,#4CC27A,#7BE0A2)"></i></div></div>
-    <div class="score-t glass"><span class="lab">Rebuilding</span><span style="display:flex;align-items:baseline;gap:6px"><b>${x.rs}</b><span class="sub">${ord(me.futRank)} of ${N}</span></span><div class="bar"><i style="width:${x.rs}%"></i></div></div></section>
-    <section style="display:flex;flex-direction:column;gap:8px"><div class="lab">Your direction</div>
-      <div class="dirsel" role="radiogroup" aria-label="Team direction">${["contend","none","rebuild"].map(k=>`<button class="${k}" role="radio" data-setdir="${k}" aria-checked="${x.dir===k}">${DIR3[k]}${x.sug===k?"<small>Suggested</small>":""}</button>`).join("")}</div>
-      <div class="sub">${esc(ARCH[me.arch].label)}: ${esc(ARCH[me.arch].desc.toLowerCase())}. ${x.dir === "contend" ? "Recs below buy points now with bench pieces and picks." : x.dir === "rebuild" ? "Recs below sell veterans to contenders for youth and picks." : "Recs below show the best move each way. Pick a lane to focus them."}</div></section>
-    <div class="grades">${["QB","RB","WR","TE"].map(p=>`<span class="gchip" title="${ord(me.posRank[p])} of ${N}">${p}<b class="g-${me.grades[p]}">${me.grades[p]}</b></span>`).join("")}<span class="gchip">Age<b class="g-C">${me.age.toFixed(1)}</b></span></div>
-    <p class="src" style="margin:0">Contending = your best starting lineup's FantasyCalc redraft value as a share of the league's best. Rebuilding = your young players' and picks' FantasyCalc dynasty value as a share of the league's best. Grades rank your starters' value at each position against the other ${N-1} teams.</p>`;
-  // trade recs
-  h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trade recs</h2><span class="sub">Built for this league's scoring</span></div>`;
-  if(!st || st.busy){ if(!st) setTimeout(()=>ensureSim(id), 0);
-    h += `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>${esc((st && st.phase) || "Starting")}…</div><div class="skel" aria-hidden="true"><i style="height:150px"></i><i style="height:150px"></i></div>`; }
-  else if(st.error) h += `<div class="empty">${esc(st.error)}</div>`;
-  else {
-    const L = st.L, t = L.me, recs = recsFor(st.detail, x.dir);
-    h += `<div class="oddsrow"><span><b>${ord(t.stand)}</b> of ${L.N} in standings</span><span><b>${pct(t.odds.po)}</b> playoff odds</span><span><b>${pct(t.odds.title)}</b> title odds</span></div><p class="src" style="margin:0">Odds are simulated: 1,000 runs of the rest of the season from real records, the remaining schedule and every team's Sleeper projections in this league's scoring. Values are FantasyCalc. Recs are ranked by how far they move you in your chosen direction at a fair price, and by how active the other manager is.</p>`;
-    h += recs.length ? recs.map(([ev,mode],i)=>recHTML(L, ev, mode, i)).join("") : `<div class="empty">No clean ${x.dir === "rebuild" ? "sell" : x.dir === "contend" ? "buy" : ""} trades found in this league right now.</div>`;
-  }
-  h += `</section>`;
-  // move off / currency
-  const chips = x.dir === "contend"
-    ? me.pl.filter(p=>!me.nowStarters.has(p.id) && p.v >= 300).sort((a,b)=>b.v-a.v).slice(0,4).map(p=>`${p.name} (${p.pos})`).concat(me.picks.filter(p=>p.round <= 2).slice(0,3).map(pickLabel))
-    : me.pl.filter(p=>isOld(p) && p.r >= 500).sort((a,b)=>b.r-a.r).slice(0,5).map(p=>`${p.name} (${p.pos}, ${p.age ? Math.floor(p.age) : "?"})`);
-  if(chips.length) h += `<section style="display:flex;flex-direction:column;gap:8px"><div class="lab">${x.dir === "contend" ? "Trade chips that don't score for you" : "Move off your roster before they lose value"}</div><div class="pchips">${chips.map(c=>`<span>${esc(c)}</span>`).join("")}</div></section>`;
-  h += `<section style="display:flex;flex-direction:column;gap:8px"><div class="lab">This week</div>${cardHTML(x.r, false)}</section>`;
-  return h;
-}
 function viewAsk(){
   if(!cbLeagues().length) return `<div class="askhead">${orbCanvas(300)}</div><div class="empty">The crystal ball needs at least one in-season league to read.</div>`;
-  return `<div class="askhead">${orbCanvas(Math.min(250, window.innerWidth - 60))}<div class="sub" id="orbline">${S.thinking ? "Reading your leagues…" : "Pick a tool. Drag the ball to spin it."}</div></div><div id="askBody"></div>`;
+  return `<div class="askhead">${orbCanvas(Math.min(250, window.innerWidth - 60))}<div class="sub" id="orbline">${S.thinking ? "Reading your leagues…" : "Pick a tool, then flick the ball to spin it and ask."}</div></div><div id="askBody"></div>`;
 }
 function viewBrief(){
   const B = S.brief[S.week];
@@ -640,6 +591,7 @@ function renderStatus(){
   let s = "";
   if(S.refreshing) s = `<span class="livedot" style="background:var(--cyan)"></span>Refreshing from Sleeper…`;
   else if(S.bpLoading) s = `<span>Scoring every team… ${Math.round((S.bpProgress||0)*100)}%</span><div class="bar"><i style="width:${(S.bpProgress||0)*100}%"></i></div>`;
+  else if(S.dirLoading) s = `<span>${esc(S.dirPhase || "Simulating")}… ${/^(Loading|Simulating)/.test(S.dirPhase||"") ? Math.round((S.dirProgress||0)*100) + "%" : ""}</span><div class="bar"><i style="width:${(S.dirProgress||0)*100}%"></i></div>`;
   else if(S.wvLoading) s = `<span>Reading this season's waiver claims… ${Math.round((S.txProgress||0)*100)}%</span><div class="bar"><i style="width:${(S.txProgress||0)*100}%"></i></div>`;
   else if(S.fromCache && S.loadedAt) s = `<span>Saved data from ${S.loadedAt.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}</span>`;
   el.innerHTML = s;
@@ -655,7 +607,7 @@ function render(){
   if(S.week) $("wklabel").textContent = "WK " + S.week;
   const acs = $("acslot"); if(acs){ const ah = accountChipHTML(); if(acs.innerHTML !== ah) acs.innerHTML = ah; }
   document.querySelectorAll("[data-go]").forEach(b=>{ if(!b.classList.contains("navb") && b.id !== "orbBtn") return;
-    const on = b.dataset.go === v || (b.dataset.go === "home" && ["team","brief"].includes(v)); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+    const on = b.dataset.go === v || (b.dataset.go === "home" && ["team","brief"].includes(v) && S.navFrom !== "trades") || (b.dataset.go === "trades" && (["direction","offers"].includes(v) || (v === "team" && S.navFrom === "trades"))); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   const c = ready ? fixCounts().fix : 0, bd = $("fixBadge"); bd.hidden = !c; bd.textContent = c;
   SPACE.target = v === "connect" || v === "loading" || v === "ask" ? .95 : .7;
   SPACE.warpTarget = v === "loading" ? .22 : 0;
@@ -668,12 +620,13 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;
   if(v === "ask") renderCB();
   renderStatus();
+  if(ready) renderChrome();
   if(fid && $(fid)){ const el = $(fid); el.focus({preventScroll:true}); try{ if(caret != null) el.setSelectionRange(caret, caret); }catch(e){} }
   if(!changed) window.scrollTo(0, sy);
   // count the home tiles up once
@@ -692,7 +645,7 @@ document.addEventListener("click", async e=>{
   const el = e.target.closest("button, a, [data-go]"); if(!el) return;
   const d = el.dataset;
   if(d.go){ if(d.dirf2) S.dirF = d.dirf2; go(d.go, {tab: d.tab}); return; }
-  if(d.team){ go("team", {lid: d.team}); return; }
+  if(d.team){ S.navFrom = d.from || null; go("team", {lid: d.team, anchor: d.anchor}); return; }
   if(d.sort){ S.sort = d.sort; store.set("sort", S.sort); render(); return; }
   if(d.dirf){ S.dirF = d.dirf; render(); return; }
   if(d.fixtab){ S.fixTab = d.fixtab; render(); return; }
@@ -707,7 +660,9 @@ document.addEventListener("click", async e=>{
   if(d.wf){ S.wvFilter = d.wf; render(); return; }
   if(d.cbt){ try{ cbPrefillTrade(JSON.parse(d.cbt)); }catch(_){} return; }
   if(d.copy != null){ const txt = d.copy; try{ await navigator.clipboard.writeText(txt); }catch(_){ const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); }catch(__){} ta.remove(); }
-    el.textContent = "Copied ✓"; setTimeout(()=>{ el.textContent = "Copy message"; }, 1800); return; }
+    const lab = el.dataset.label || el.textContent; el.dataset.label = lab; el.textContent = "Copied ✓"; setTimeout(()=>{ el.textContent = lab; }, 1800);
+    if(d.offer){ try{ addOffer(JSON.parse(d.offer)); showToast("Copied · saved to Offers so you can track the answer"); renderChrome(); }catch(_){} }
+    return; }
   if(d.mode){ CB.mode = d.mode; CB.a = []; CB.b = []; CB.qa = ""; CB.qb = ""; renderCB(); return; }
   if(d.add){ const i = d.add.indexOf(":"), side = d.add.slice(0,i), id = d.add.slice(i+1); (side === "a" ? CB.a : CB.b).push({id, name: id.startsWith("PICK:") ? id.slice(5) : pname(id)}); if(side === "a") CB.qa = ""; else CB.qb = ""; renderCB(); return; }
   if(d.rm){ const i = d.rm.indexOf(":"), side = d.rm.slice(0,i), id = d.rm.slice(i+1); if(side === "a") CB.a = CB.a.filter(o=>o.id !== id); else CB.b = CB.b.filter(o=>o.id !== id); renderCB(); return; }
