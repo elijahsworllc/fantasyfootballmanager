@@ -67,6 +67,17 @@ Replaces the Trades tab. First decides which way each team should go, then finds
 - **Motion:** View Transitions between sections, sliding indicators, shimmer skeletons while a section builds, Crystal Ball sheet rises in. All motion respects reduced-motion.
 - Waivers opens with a stat strip; bid methodology moved into "How bids are set".
 
+## V2 shipped: Space redesign (Oct 14, 2026)
+Same data engine (lineups, Blueprints, Direction sims, trade finder, waivers, Crystal Ball); new interface on top.
+- Look: live space background (nebulae, twinkling stars, random shooting stars, drifting footballs, helmets, trophies, goalposts and jerseys), film grain, frosted-glass surfaces, Barlow Condensed italic display type, cyan-to-violet gradient buttons. One motion language: sections rise and come into focus in sequence.
+- Crystal ball: canvas particle engine (~2,000–2,600 points: glass shell, spiral core, orbit rings, stand, dust). Materializes bottom-up with a scan ring, dissolves into a vortex, thinks while answering. Particles have momentum: the cursor pushes them, swipes fling them, taps send a shockwave, and a spring that stiffens with distance pulls them back.
+- Connect → live scan screen (league counter + names streaming) → Home.
+- Home: ask bar with plain-words parser (player names → Start/sit, "for"/"trade" → Trade check, "better"/"value" → Compare, "out" → Must fix, "waiver", "brief"), Must fix / Monitor / Start-sit tiles, weekly brief, My teams (A–Z, Contending, Rebuilding sorts; Contend / Rebuild / Undecided filters). Scores = win-now and young-asset value relative to the best team in the league (0–100).
+- Must fix: every Out/IR/Doubtful/bye/empty starter grouped by player, soonest kickoff first, the bench swap per league, Open ↗ to the Sleeper team page, done checks + progress. Monitor and Start/sit tabs reuse the lineup cards.
+- Team: scores with league rank, direction switch (Contend / Undecided / Rebuild, suggestion from the Blueprint archetype, saved per league on the device), grades, trade recs from the trade finder filtered by direction (buy for contend, sell for rebuild, best of both when undecided) with market lines, accept odds, pitch text, Crystal Ball check; trade chips / move-off list; this week's lineup card.
+- Weekly brief: generated on demand from the scan (theme, story, projected wins, fixes, coin flips, three items that link to the fix, long-game note on undecided teams).
+- Nav: Home · Must fix (badge) · crystal ball · Waivers · Players (exposure + team reviews).
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
