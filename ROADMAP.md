@@ -106,7 +106,17 @@ Goal: no gap between the Command Center and the actual lineup. Suggested swaps, 
 - **How actions happen:** with the user's own signed-in Sleeper session in their own browser, either by driving Sleeper's web UI or by calling the same endpoints the web app uses. Always shown first, confirmed by the user, one league at a time. Never stores the Sleeper password.
 - **Open questions to settle before building:** Sleeper's terms of service on automation; how often Sleeper's web app changes (maintenance cost); rate limits; whether to ask Sleeper about an official partnership or developer access instead.
 - **Prerequisites:** accounts (so the extension and app share suggestions), hosted suggestions per league, then the extension.
-- **Next stage after that:** batch mode (apply every safe lineup fix across all leagues before Thursday kickoff, with a review screen).
+- **Batch mode (the main reason to build this):** one review screen that applies every lineup fix across all leagues at once. Built for the late-news crunch: NFL inactives drop about 90 minutes before kickoff, and some game-time decisions come minutes before lock, which leaves managers with many leagues scrambling.
+  - **Contingency plans set ahead of time:** for each Questionable starter, "if he's ruled out, start X" per league, defaulting to the Command Center's best healthy bench option. When the status flips to Out, the whole plan is ready to apply in one tap across every affected league.
+  - **Pre-game watch window:** from ~2 hours before each kickoff slot, the alerts job checks Sleeper injury status every few minutes (today it runs every 15) and pushes "Player X is OUT: apply your plan in 6 leagues" with a link straight to the batch screen.
+  - **Safety:** only swaps whose replacement hasn't locked yet; skips any league where you've already changed the lineup; shows a result per league (applied, skipped and why).
+
+## Accounts (in progress, waiting on Supabase project keys)
+- Sign up and sign in with **email or phone number** as the login, plus a password. Phone needs a paid SMS provider (e.g. Twilio, about a cent per text) for verification codes; email works on the free tier.
+- **Stay signed in** checkbox (on by default on your own phone): keeps the session on the device; unchecked signs out when the app is closed.
+- Forgot password, show/hide password, strength hint.
+- Synced per account: Sleeper username, rankings, team directions, done marks, settings. Row-level security so each user only reads and writes their own rows.
+- "Take control of your command center" card on Home after the first scan; the app still works without an account.
 
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
