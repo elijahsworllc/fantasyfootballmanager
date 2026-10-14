@@ -78,6 +78,14 @@ Same data engine (lineups, Blueprints, Direction sims, trade finder, waivers, Cr
 - Weekly brief: generated on demand from the scan (theme, story, projected wins, fixes, coin flips, three items that link to the fix, long-game note on undecided teams).
 - Nav: Home · Must fix (badge) · crystal ball · Waivers · Players (exposure + team reviews).
 
+## Trade market database (plan)
+Goal: trade recs backed by real trades in identical league types, plus market deviation (who is selling above or below value right now), owned by us instead of depending on FantasyCalc.
+- Collect: Sleeper `/v1/league/{id}/transactions/{week}` trades (adds, `draft_picks`, timestamps), snowball-crawled from our leagues → every manager in them → their leagues, under Sleeper's rate limits. Extends `backend/market.mjs`.
+- Store per trade: league fingerprint (dynasty/redraft, SF/1QB, teams, PPR, TEP, starters), both sides' players and picks, each side's record and archetype at the time.
+- Model: per league-type bucket, fit market values so each trade's sides balance (regularized, recency-weighted, outliers dropped), refreshed daily.
+- Signals: market vs consensus value (deviation), 7/30-day trend, volume, cohort shifts (e.g. RBs 30+), what contenders vs rebuilders actually pay.
+- Recs: real trade shapes from the same bucket, filtered to what a partner can supply, scored by fairness at market price + fit with the team's direction + positional need, shown with comps ("19 trades in SF 12-team, last 30 days").
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
