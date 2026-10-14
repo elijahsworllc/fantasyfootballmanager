@@ -111,15 +111,17 @@ Goal: no gap between the Command Center and the actual lineup. Suggested swaps, 
   - **Pre-game watch window:** from ~2 hours before each kickoff slot, the alerts job checks Sleeper injury status every few minutes (today it runs every 15) and pushes "Player X is OUT: apply your plan in 6 leagues" with a link straight to the batch screen.
   - **Safety:** only swaps whose replacement hasn't locked yet; skips any league where you've already changed the lineup; shows a result per league (applied, skipped and why).
 
-## Accounts (in progress, waiting on Supabase project keys)
-- Sign up and sign in with **email or phone number** as the login, plus a password. Phone needs a paid SMS provider (e.g. Twilio, about a cent per text) for verification codes; email works on the free tier.
-- **Stay signed in** checkbox (on by default on your own phone): keeps the session on the device; unchecked signs out when the app is closed.
-- Forgot password, show/hide password, strength hint.
-- Synced per account: Sleeper username, rankings, team directions, done marks, settings. Row-level security so each user only reads and writes their own rows.
-- "Take control of your command center" card on Home after the first scan; the app still works without an account.
+## Accounts shipped (Oct 14, 2026)
+Supabase project `uxqevvuqibqvypwpccjz`, called directly over its REST endpoints (no SDK). The app holds only the publishable key; it works the same without an account.
+- **Login with email or phone** plus password. Phone numbers are normalized (10 digits → +1) and verified by a 6-digit text; that needs an SMS provider (e.g. Twilio, about a cent per text) switched on under Authentication → Sign In / Providers → Phone. Until then the app says phone sign-in isn't on yet.
+- **Stay signed in** checkbox (on by default): the session lives in the device's storage; unchecked, it's kept only until the app is closed. Sessions refresh automatically.
+- Forgot password (email link → "New password" sheet), show/hide password, strength meter, plain-English errors.
+- **Sync:** Sleeper username, rankings, team directions, done checks and settings go to one `user_state` row per user, 1.5 s after any change. Signing in on a new device pulls them down and rescans.
+- Entry points: "Take control of your command center" card on Home (dismissible), "Have an account? Sign in" on Connect, account button in the header, account row in Settings. Account sheet: sync now, sign out, delete account (tap twice).
+- Setup: `backend/supabase.sql` (table, row-level security so each user only sees their own row, `delete_me()` function). Site URL in Authentication → URL Configuration must be the app's address so email links come back to it.
 
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
 3. **Trade alerts** — nightly job flags when a league mate's direction flips (contender becomes a seller) and pushes the best offer.
-4. **Accounts + payments** when opening beyond the control group.
+4. **Payments** when opening beyond the control group (accounts are live).

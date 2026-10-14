@@ -60,7 +60,7 @@ a{color:var(--cyan);text-decoration:none}
 .wm .a{background:linear-gradient(100deg,#fff 0%,#fff 38%,var(--cyan-2) 48%,var(--violet-2) 56%,#fff 66%,#fff 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s ease-in-out infinite}
 .wm .b{background:linear-gradient(100deg,var(--cyan) 0%,var(--violet) 50%,var(--cyan) 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s ease-in-out infinite}
 .top .wm{font-size:16px}
-@media (max-width:340px){.top .wm .b{display:none}}
+@media (max-width:440px){.top .wm{display:flex;flex-direction:column;gap:1px;font-size:15.5px;line-height:.88}.top{gap:8px}}
 @keyframes shine{0%,100%{background-position:100% 0}50%{background-position:0% 0}}
 .ring-spin{transform-origin:16px 16px;animation:spin 9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -543,187 +543,58 @@ table.logs td.mut{color:var(--ink-3)}
 @media (min-width:760px){main{gap:16px}.connect .h1{font-size:54px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-/* ===== V2.1: header with menu, pinned crystal ball, game plan rail ===== */
-.top{flex-direction:column;align-items:stretch;gap:8px;padding-bottom:9px}
-.toprow{display:flex;align-items:center;gap:10px}
-.menubtn{width:40px;height:40px;border-radius:14px;border:0;flex:none;display:grid;place-items:center;background:var(--glass-flat);box-shadow:inset 0 0 0 1px var(--hair-2);color:var(--ink);padding:0;position:relative;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:background .25s}
-.menubtn[aria-expanded="true"]{background:rgba(160,140,255,.22);box-shadow:inset 0 0 0 1px rgba(160,140,255,.5)}
-.menubtn .mb{width:18px;height:14px;position:relative;display:block}
-.menubtn .mb i{position:absolute;left:0;height:2px;border-radius:2px;background:currentColor;transition:transform .38s var(--ease),opacity .2s,width .38s var(--ease)}
-.menubtn .mb i:nth-child(1){top:0;width:18px}.menubtn .mb i:nth-child(2){top:6px;width:11px}.menubtn .mb i:nth-child(3){top:12px;width:15px}
-.menubtn[aria-expanded="true"] .mb i:nth-child(1){transform:translateY(6px) rotate(45deg);width:18px}
-.menubtn[aria-expanded="true"] .mb i:nth-child(2){opacity:0;transform:translateX(-6px)}
-.menubtn[aria-expanded="true"] .mb i:nth-child(3){transform:translateY(-6px) rotate(-45deg);width:18px}
-.menubtn .mdot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--crit);box-shadow:0 0 8px var(--crit)}
-.askwrap{position:relative}
-.askbar.pin{height:50px;border-radius:17px;padding:0 5px 0 6px;gap:8px;position:relative}
-.askbar.pin input{height:44px;font-size:15px}
-.askbar.pin .go{width:40px;height:40px;border-radius:13px}
-button.miniorb{border:0;padding:0;cursor:grab;touch-action:none;width:36px;height:36px;position:relative;z-index:1}
-.miniorb.sm{width:18px;height:18px;animation:none}
-.rail{display:flex;align-items:center;gap:5px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:1px 16px;max-height:40px;transition:max-height .35s var(--ease),opacity .25s,margin .35s var(--ease)}
-.rail::-webkit-scrollbar{display:none}
-.top.tuck .rail{max-height:0;opacity:0;margin-top:-9px;pointer-events:none}
-.rstep{flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px 0 5px;border-radius:999px;border:0;background:rgba(170,190,255,.06);box-shadow:inset 0 0 0 1px var(--hair-2);color:var(--ink-2);font-size:13px;font-weight:650;white-space:nowrap;transition:background .25s,color .25s}
-.rstep .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-size:11.5px;background:rgba(170,190,255,.1);color:var(--ink-2)}
-.rstep.on{background:linear-gradient(135deg,rgba(95,214,230,.2),rgba(123,92,255,.24));box-shadow:inset 0 0 0 1px rgba(160,140,255,.5);color:var(--ink)}
-.rstep.on .n{background:var(--grad);color:#0A0F1A}
-.rstep.hot{box-shadow:inset 0 0 0 1px rgba(242,100,104,.6);color:var(--ink)}
-.rstep.hot .n{background:var(--crit);color:#fff}
-.rstep .b,.ct{font-style:normal;font-family:var(--mono);font-size:11px;font-weight:600;min-width:19px;height:19px;padding:0 6px;border-radius:10px;display:inline-grid;place-items:center;background:var(--sunk);color:var(--ink-2);flex:none}
-.rstep .b.t-crit,.ct.crit{background:var(--crit);color:#fff;box-shadow:0 0 8px rgba(242,100,104,.5)}
-.rstep .b.t-warn,.ct.warn{background:#E9A93A;color:#1A1205}
-.rstep .b.t-up,.ct.up{background:#5FD6E6;color:#06202A}
-.rsep{flex:none;color:var(--ink-3);font-size:12px}
-/* ask dropdown */
-.askdrop{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;border-radius:18px;padding:6px;background:rgba(12,16,34,.96);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:0 22px 50px rgba(0,0,0,.6),inset 0 0 0 1px var(--hair-2);display:flex;flex-direction:column;gap:1px;max-height:min(62vh,460px);overflow:auto;animation:dropin .22s var(--ease)}
-@keyframes dropin{from{opacity:0;transform:translateY(-6px) scale(.985)}to{opacity:1;transform:none}}
-.askdrop .lab{padding:8px 10px 3px}
-.drow{display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;color:var(--ink);text-align:left;padding:9px 10px;border-radius:12px}
-.drow svg{flex:none;color:var(--cyan-2)}
-.drow .t{flex:1;min-width:0}
-.drow b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.drow small{display:block;font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.drow.sel{background:rgba(160,140,255,.15)}
-@media (hover:hover){.drow:hover{background:rgba(170,190,255,.08)}}
-.drow kbd{font-family:var(--mono);font-size:11px;color:var(--ink-2);border:1px solid var(--hair-3);border-radius:6px;padding:1px 6px;flex:none}
-.dchips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 8px 8px}
-.dchips small{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-right:2px}
-.dchips span{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(95,214,230,.13);color:var(--cyan-2)}
-.dchips span.lg{background:rgba(160,140,255,.17);color:var(--violet-2)}
-.dhint{font-size:12px;color:var(--ink-3);padding:8px 10px 4px;line-height:1.4}
-/* menu */
-.menu{position:fixed;inset:0;z-index:40}
-.menu .scrim{position:absolute;inset:0;background:rgba(3,5,12,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;transition:opacity .26s}
-.menu.open .scrim{opacity:1}
-.mpanel{position:absolute;left:max(12px,calc(50% - 348px));top:calc(env(safe-area-inset-top,0px) + 58px);width:min(calc(100vw - 24px),392px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 74px);overflow:auto;overscroll-behavior:contain;border-radius:24px;padding:12px;background:rgba(12,16,34,.97);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);box-shadow:0 28px 70px rgba(0,0,0,.6),inset 0 0 0 1px var(--hair-2);display:flex;flex-direction:column;gap:14px;transform-origin:22px -10px;transform:scale(.92) translateY(-6px);opacity:0;transition:transform .36s var(--ease),opacity .2s}
-.menu.open .mpanel{transform:none;opacity:1}
-.mgroup{display:flex;flex-direction:column;gap:2px}
-.mgroup > .lab{padding:0 8px 5px}
-.mitem{display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;color:var(--ink);text-align:left;padding:9px 8px;border-radius:14px;font-size:14.5px;font-weight:600}
-.mitem svg{flex:none;color:var(--cyan-2)}
-.mitem .t{flex:1;min-width:0}
-.mitem small{display:block;font-size:12px;font-weight:500;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mitem.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;font-family:var(--mono);font-size:12px;background:rgba(170,190,255,.1);box-shadow:inset 0 0 0 1px var(--hair-2);color:var(--ink-2)}
-@media (hover:hover){.mitem:hover,.mtile:hover{background:rgba(170,190,255,.08)}}
-.mitem:focus-visible,.mtile:focus-visible,.rstep:focus-visible,.pstep:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
-.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.mtile{display:flex;align-items:center;gap:9px;border:0;border-radius:14px;padding:11px 10px;background:rgba(170,190,255,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--ink);font-size:13.5px;font-weight:600;text-align:left}
-.mtile svg{flex:none;color:var(--violet-2)}
-.mteams{display:flex;flex-direction:column;gap:1px;margin-top:6px}
-.mgroup .search{height:42px;font-size:14px}
-.mfoot{display:flex;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--hair)}
-/* toast */
-.toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;max-width:calc(100% - 32px);padding:10px 16px 10px 12px;border-radius:999px;background:rgba(22,28,54,.96);box-shadow:0 14px 34px rgba(0,0,0,.5),inset 0 0 0 1px rgba(160,140,255,.4);font-size:13.5px;font-weight:600;display:flex;gap:9px;align-items:center;pointer-events:none}
-.toast span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* home: what can't wait, then the plan */
-.nowcard{border-radius:20px;padding:12px 12px 12px 14px;display:flex;align-items:center;gap:10px}
-.nowcard .t{flex:1;min-width:0}
-.nowcard b{display:block;font-size:14.5px}
-.nowcard small{display:block;font-size:12.5px;color:var(--ink-2)}
-.nowcard.hot{border-color:rgba(242,100,104,.5);background:linear-gradient(160deg,rgba(242,100,104,.18),rgba(20,20,44,.5))}
-.cd.hot,.nowcard .cd{font-family:var(--mono);font-size:12px;padding:4px 9px;border-radius:999px;background:rgba(10,15,26,.5);color:var(--gold);white-space:nowrap}
-.plan{border-radius:22px;padding:4px}
-.pstep{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:var(--ink);text-align:left;padding:11px 10px;border-radius:18px;position:relative}
-.pstep + .pstep::before{content:"";position:absolute;left:24px;top:-6px;height:12px;width:2px;border-radius:1px;background:var(--hair-3)}
-.pstep .n{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--mono);font-size:13px;background:rgba(170,190,255,.08);box-shadow:inset 0 0 0 1px var(--hair-2);color:var(--ink-2)}
-.pstep .t{flex:1;min-width:0}
-.pstep b{display:flex;align-items:center;gap:8px;font-size:15px;flex-wrap:wrap}
-.pstep small{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.35}
-.pstep.hot{background:linear-gradient(100deg,rgba(242,100,104,.16),transparent 70%)}
-.pstep.hot .n{background:var(--crit);color:#fff;box-shadow:0 0 14px rgba(242,100,104,.55)}
-.pstep .do{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(242,100,104,.2);color:#FF9A9D}
-.chev{color:var(--ink-3);font-size:20px;line-height:1;flex:none}
-@media (hover:hover){.pstep:hover{background:rgba(170,190,255,.06)}}
-/* condensed Thursday / early-game bulletin */
-.bulletin{gap:8px;padding:12px 14px}
-.bulletin .bh b{font-size:17px}
-.bulletin .bh .ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;background:rgba(233,169,58,.22);color:var(--gold)}
-.bulletin .cd{animation:tick 2s ease-in-out infinite}
-@keyframes tick{0%,100%{box-shadow:0 0 0 0 rgba(233,199,122,0)}50%{box-shadow:0 0 0 3px rgba(233,199,122,.18)}}
-.bsum{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--ink-2)}
-.bsum .pill{margin:0}
-.brow{padding-top:7px}
-.brow .t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brow .openbtn{padding:6px 10px}
-.bmore summary{list-style:none;cursor:pointer;font-size:13px;font-weight:650;color:var(--gold);padding:4px 0 0;display:flex;align-items:center;gap:6px}
-.bmore summary::-webkit-details-marker{display:none}
-.bmore summary::after{content:"›";transform:rotate(90deg);transition:transform .25s var(--ease);font-size:16px}
-.bmore[open] summary::after{transform:rotate(-90deg)}
-.bmore[open] summary .more{display:none}
-.bmore:not([open]) summary .less{display:none}
-.bmore .brow:first-of-type{margin-top:6px}
-/* hub + next step */
-.hub3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.hub3 .ttile svg{color:var(--violet-2)}
-.hub3 .ttile b{display:flex;align-items:center;gap:6px}
-.nextstep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 4px 0;border-top:1px solid var(--hair)}
-.dtag.d-none{background:rgba(233,169,58,.16);color:#F2CF7E}
-/* offers */
-.offer{border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
-.offer.old{border-color:rgba(233,169,58,.45)}
-.offer .oh{display:flex;align-items:center;gap:10px}
-.offer .oh .t{flex:1;min-width:0}
-.offer .oh b{display:block;font-size:15px}
-.offer .oh small{display:block;font-size:12.5px;color:var(--ink-2)}
-.offer .gs{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px;background:var(--sunk);border-radius:14px;padding:10px 12px}
-.offer .gs .k{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding-top:1px}
-.offer .gs .in{color:var(--ok)} .offer .gs .out{color:var(--warn)}
-.seg.sm button{height:32px;font-size:12.5px}
-/* rankings */
-.rkrow{height:auto;min-height:64px;flex-wrap:wrap;padding:4px 10px 4px 4px;gap:6px 8px}
-.rkrow .grip:disabled{opacity:.25;cursor:default}
-.rkrow .rn{min-width:24px}
-.rkmain{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--ink);text-align:left;padding:6px 0;border-radius:12px}
-.rkmain .t{flex:1;min-width:0}
-.rkmain .t b{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rkmain .t small{display:block;font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rkmain .own{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:600;padding:0 5px;border-radius:6px;background:rgba(95,214,230,.14);color:var(--cyan-2);flex:none}
-.rkmain .rv{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
-.rkmain .rv b{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink)}
-.rkmain .rvx{display:flex;gap:4px;align-items:center}
-.vbar{display:block;height:3px;border-radius:2px;background:rgba(170,190,255,.10);margin-top:5px;overflow:hidden;max-width:200px}
-.vbar i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#5FD6E6,#A08CFF)}
-.tr,.mv{font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:999px;white-space:nowrap}
-.tr.up{background:rgba(76,194,122,.16);color:#7BE0A2}.tr.dn{background:rgba(242,100,104,.16);color:#FF9A9D}.tr.flat{color:var(--ink-3)}
-.mv{background:rgba(160,140,255,.14);color:var(--violet-2)}
-.rkrow.open{background:rgba(160,140,255,.06)}
-.rkdet{flex-basis:100%;margin:0 0 8px 36px;padding:12px;border-radius:16px;background:var(--sunk);display:flex;flex-direction:column;gap:10px;animation:dropin .25s var(--ease)}
-.rktier{display:flex;align-items:center;gap:10px;padding:14px 14px 6px;font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:14px;color:var(--violet-2)}
-.rktier small{font-family:var(--mono);font-style:normal;font-weight:500;letter-spacing:0;color:var(--ink-3);font-size:11px}
-.rktier::after{content:"";flex:1;height:1px;background:var(--hair-2)}
-.rklist > .rktier:first-child{padding-top:8px}
-.rwhy{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.rwhy li{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:13px;line-height:1.4}
-.rwhy li > span{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding-top:2px}
-.rwhy li.g b{color:#7BE0A2} .rwhy li.r b{color:#FF9A9D}
-.rwhy li.g > span{color:#7BE0A2} .rwhy li.r > span{color:#FF9A9D}
-.spark{display:flex;align-items:center;gap:12px}
-.spark svg{flex:1;max-width:220px;height:40px}
-.movers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mov{border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
-.mov .lab{margin-bottom:3px}
-.mov button{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;border:0;background:none;color:var(--ink);font-size:13px;font-weight:600;padding:4px 0;text-align:left;min-width:0}
-.mov button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.mov button small{color:var(--ink-3);font-weight:500;font-size:11px}
-#trades{scroll-margin-top:190px}
-.rkrow{scroll-margin-top:200px}
-@media (max-width:370px){.hub3{grid-template-columns:1fr 1fr}.rwhy li{grid-template-columns:1fr;gap:2px}}
-.lk{display:flex;flex-direction:column;align-items:flex-end;flex:none;gap:1px}
-.lk b{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink)}
-.lk small{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
-.lk.k-fix small{color:var(--crit)} .lk.k-monitor small{color:var(--warn)} .lk.k-startsit small{color:var(--cyan)}
-.trow .chev{margin-left:2px}
-
-@media (max-width:420px){.top .wm{display:none}.rsep{display:none}.rstep{padding:0 10px 0 4px;font-size:12.5px;gap:6px}.rstep .n{width:22px;height:22px;font-size:11px}}
-.bulletin .bh small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.card .oddsrow{padding:0 15px 8px}
-.card .oddsrow b{font-size:16px}
-section.dirsum{border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--glass);border:1px solid var(--hair-2);box-shadow:var(--shadow);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
-section.dirsum p{font-size:13.5px}
-section.dirsum p b{color:var(--ink)}
-section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
+/* ---------- accounts ---------- */
+#acslot:empty{display:none}
+.acchip{height:36px;min-width:36px;border:0;border-radius:999px;padding:0 13px;font:600 13px/1 "IBM Plex Sans",sans-serif;color:var(--ink);background:var(--glass-flat);box-shadow:inset 0 0 0 1px var(--hair-2);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);white-space:nowrap}
+.acchip.on{padding:0;width:36px;background:var(--grad);color:#0A0F1A;font:900 16px/1 "Barlow Condensed",sans-serif;box-shadow:0 0 0 2px rgba(5,7,15,.9),0 0 0 3.5px rgba(160,140,255,.55),0 6px 18px rgba(123,92,255,.35)}
+#sheet{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center}
+#sheet[hidden]{display:none}
+.sheet-bg{position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 100%,rgba(60,40,140,.35),rgba(3,5,12,.78));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fadeIn .3s ease both}
+.sheet-card{position:relative;width:100%;max-width:520px;max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:26px 20px calc(22px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;
+  background:linear-gradient(170deg,rgba(44,54,96,.92),rgba(12,16,34,.96));border:1px solid var(--hair-2);border-bottom:0;box-shadow:0 -20px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08);animation:sheetUp .5s var(--ease) both}
+.sheet-card::before{content:"";position:absolute;top:9px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(200,210,255,.25)}
+@media (min-width:640px){#sheet{align-items:center}.sheet-card{border-radius:28px;border-bottom:1px solid var(--hair-2)}}
+#sheet.closing .sheet-bg{animation:fadeOut .26s ease both}#sheet.closing .sheet-card{animation:sheetDown .26s ease both}
+@keyframes sheetUp{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes sheetDown{to{transform:translateY(60px);opacity:0}}
+@keyframes fadeIn{from{opacity:0}}@keyframes fadeOut{to{opacity:0}}
+.sheet-x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(170,190,255,.08);color:var(--ink-2);font-size:14px}
+.achead{display:flex;gap:12px;align-items:center;padding-right:36px}.achead svg{flex:none}
+.acin{width:100%;height:50px;border-radius:15px;border:0;padding:0 16px;font:500 16px "IBM Plex Sans",sans-serif;color:var(--ink);background:var(--sunk);box-shadow:inset 0 0 0 1px var(--hair-2);outline:none;transition:box-shadow .3s}
+.acin:focus{box-shadow:inset 0 0 0 1.5px rgba(160,140,255,.7),0 0 0 4px rgba(123,92,255,.16)}
+.acin::placeholder{color:var(--ink-3)}
+.pwbox{position:relative}.pwbox .acin{padding-right:52px}
+.eye{position:absolute;right:6px;top:6px;width:38px;height:38px;border-radius:12px;border:0;background:none;color:var(--ink-3);display:grid;place-items:center}.eye.on{color:var(--cyan-2)}
+.pwm{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-2);min-height:16px}
+.pwm .bars{display:flex;gap:4px}.pwm .bars i{width:26px;height:4px;border-radius:4px;background:rgba(170,190,255,.14);transition:background .3s}
+.pwm .bars i.on.l1{background:var(--crit)}.pwm .bars i.on.l2{background:var(--warn)}.pwm .bars i.on.l3{background:var(--ok)}
+.remember{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink);cursor:pointer;user-select:none;padding:4px 0}
+.remember input{position:absolute;opacity:0;width:1px;height:1px}
+.remember .box{width:22px;height:22px;flex:none;border-radius:7px;background:var(--sunk);box-shadow:inset 0 0 0 1.5px var(--hair-2);display:grid;place-items:center;transition:background .25s,box-shadow .25s}
+.remember input:checked + .box{background:var(--grad);box-shadow:0 0 12px rgba(123,92,255,.45)}
+.remember input:checked + .box::after{content:"";width:10px;height:5px;border:2.4px solid #0A0F1A;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.remember input:focus-visible + .box{outline:2px solid var(--cyan);outline-offset:2px}
+.cbtn.wide{width:100%;justify-content:center;padding:0 18px;height:52px;margin-top:4px}.cbtn.wide .arr{position:absolute;right:6px}
+.cbtn[disabled]{opacity:.6}
+.aclink{background:none;border:0;color:var(--cyan-2);font-weight:600;font-size:14px;padding:8px;align-self:center}
+.acmsg{border-radius:14px;padding:11px 14px;font-size:13.5px;line-height:1.45}
+.acmsg.err{background:var(--crit-bg);color:#FFC2C4;box-shadow:inset 0 0 0 1px rgba(242,100,104,.3)}
+.acmsg.info{background:var(--up-bg);color:var(--cyan-2);box-shadow:inset 0 0 0 1px rgba(95,214,230,.28)}
+.acperks{margin:0;padding-left:18px;color:var(--ink-2);font-size:14px;line-height:1.6}
+.acrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.acrow .ghost{flex:1;justify-content:center;height:42px}
+.ghost.danger{color:#FF9DA0}
+.takecontrol{position:relative;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:14px;overflow:hidden;
+  background:radial-gradient(120% 140% at 0% 0%,rgba(123,92,255,.32),transparent 55%),radial-gradient(100% 120% at 100% 100%,rgba(95,214,230,.18),transparent 60%),var(--glass)}
+.takecontrol .tc-t{display:flex;flex-direction:column;gap:5px;padding-right:30px}
+.takecontrol .tc-t b{font:900 italic 22px/1.05 "Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.01em}
+.takecontrol .tc-t span{color:var(--ink-2);font-size:14px;line-height:1.45}
+.takecontrol .cbtn{height:44px}.takecontrol .acrow .ghost{flex:none;height:44px;padding:0 18px}
+.tc-x{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(170,190,255,.08);color:var(--ink-3);font-size:12px}
+.acsign{background:none;border:0;color:var(--ink-2);font-size:14px;padding:6px;align-self:center}.acsign b{color:var(--cyan-2)}
+#toast{position:fixed;left:50%;bottom:calc(98px + env(safe-area-inset-bottom));z-index:90;transform:translateX(-50%);max-width:calc(100% - 32px);padding:12px 18px;border-radius:16px;font-size:14px;font-weight:600;color:var(--ink);
+  background:linear-gradient(160deg,rgba(54,64,110,.95),rgba(20,24,48,.95));box-shadow:0 12px 34px rgba(0,0,0,.5),inset 0 0 0 1px rgba(160,140,255,.35);animation:toastIn .45s var(--ease) both}
+#toast.out{animation:toastOut .3s ease both}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}}@keyframes toastOut{to{opacity:0;transform:translate(-50%,10px)}}
 </style>
 </head>
 <body>
@@ -731,33 +602,24 @@ section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="lgO" cx="40%" cy="38%" r="65%"><stop offset="0" stop-color="#E9E3FF"/><stop offset=".35" stop-color="#A08CFF"/><stop offset=".75" stop-color="#4B3FA0"/><stop offset="1" stop-color="#15103A"/></radialGradient><linearGradient id="lgR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5FD6E6"/><stop offset="1" stop-color="#A08CFF"/></linearGradient></defs></svg>
 <div class="grain" id="grain" aria-hidden="true"></div>
 <header class="top" id="top" hidden>
-  <div class="toprow">
-    <button class="menubtn" id="menuBtn" aria-label="Menu: every tool and team" aria-expanded="false" aria-controls="menu"><span class="mb" aria-hidden="true"><i></i><i></i><i></i></span><span class="mdot" id="menuDot" hidden></span></button>
-    <button class="mark" id="markBtn" aria-label="Command Center home">
+  <button class="mark" id="markBtn" aria-label="Command Center home">
     <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g class="ring-spin"><ellipse cx="16" cy="16" rx="15" ry="5.5" fill="none" stroke="url(#lgR)" stroke-width="1.4" stroke-dasharray="3 2.2" transform="rotate(-24 16 16)"/></g><circle cx="16" cy="16" r="9.5" fill="url(#lgO)"/><path d="M11.2 18.8L20.8 13.2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M13.6 15.9l1 1.7M15.7 14.7l1 1.7M17.8 13.5l1 1.7" stroke="#fff" stroke-width="1.1" stroke-linecap="round"/><circle cx="12.8" cy="11.8" r="1.6" fill="#fff" opacity=".85"/></svg>
     <span class="wm"><span class="a">Command</span> <span class="b">Center</span></span>
   </button>
-    <div class="wk" id="wkctl"><button id="wkprev" aria-label="Previous week">‹</button><span id="wklabel">WK –</span><button id="wknext" aria-label="Next week">›</button></div>
-    <button class="iconbtn" id="refresh" aria-label="Refresh from Sleeper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
-  </div>
-  <div class="askwrap">
-    <form class="askbar pin" id="askform" role="search"><button type="button" class="miniorb" id="miniOrb" aria-label="Spin the crystal ball to ask"></button>
-      <input id="askq" placeholder="Ask anything: start, trade, rank, waivers…" autocomplete="off" enterkeyhint="go" aria-label="Ask the crystal ball" aria-controls="askdrop" aria-autocomplete="list"><button class="go" type="submit" aria-label="Ask"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6" opacity=".55"/></svg></button></form>
-    <div class="askdrop" id="askdrop" role="listbox" aria-label="What the crystal ball heard" hidden></div>
-  </div>
-  <nav class="rail" id="rail" aria-label="Your game plan"></nav>
+  <div class="wk" id="wkctl"><button id="wkprev" aria-label="Previous week">‹</button><span id="wklabel">WK –</span><button id="wknext" aria-label="Next week">›</button></div>
+  <span id="acslot"></span>
+  <button class="iconbtn" id="refresh" aria-label="Refresh from Sleeper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
 </header>
-<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu" hidden><div class="scrim"></div><div class="mpanel" id="mpanel"></div></div>
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <main id="main"></main>
 <div id="flash" aria-hidden="true"></div>
+<div id="sheet" hidden></div>
+<div id="toast" role="status" hidden></div>
 <nav class="dock" id="dock" aria-label="Sections" hidden>
   <button class="navb" data-go="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></button>
-  <button class="navb" data-go="fix"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><path d="M4.5 19.5C4.5 11 11 4.5 19.5 4.5c0 8.5-6.5 15-15 15z"/><path d="M8.5 15.5l7-7"/><path d="M10 12.6l1.4 1.4M11.9 10.7l1.4 1.4M13.8 8.8l1.4 1.4"/></svg><span>Lineups</span><i class="bdg" id="fixBadge" hidden></i></button>
+  <button class="navb" data-go="fix"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke="currentColor" stroke-width="1.8"><path d="M4.5 19.5C4.5 11 11 4.5 19.5 4.5c0 8.5-6.5 15-15 15z"/><path d="M8.5 15.5l7-7"/><path d="M10 12.6l1.4 1.4M11.9 10.7l1.4 1.4M13.8 8.8l1.4 1.4"/></svg><span>Must fix</span><i class="bdg" id="fixBadge" hidden></i></button>
   <div class="orbslot"><button class="orbbtn" id="orbBtn" data-go="ask" aria-label="Ask the crystal ball"></button></div>
-  
-  <button class="navb" data-go="trades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h12l-3-3"/><path d="M19 16H7l3 3"/></svg><span>Trades</span></button>
   <button class="navb" data-go="rankings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h3M4 12h3M4 18h3"/><path d="M10 6h10M10 12h7M10 18h4"/></svg><span>Rankings</span></button>
+  <button class="navb" data-go="waivers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg><span>Waivers</span></button>
 </nav>
 <script>
 "use strict";
@@ -1039,7 +901,7 @@ function fcValues(key){
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
-      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency};
+      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0};
     }
     return {players, picks};
   });
@@ -1900,9 +1762,9 @@ function renderDirList(){
   let list = f === "limbo" ? limbo : f ? all.filter(L=>L.me.dir===f) : all;
   list = list.slice().sort((a,b)=>(LIMBO.has(b.me.dir)-LIMBO.has(a.me.dir)) || (LIMBO.has(a.me.dir) ? b.me.odds.bub-a.me.odds.bub : 0) || DIR_ORDER.indexOf(a.me.dir)-DIR_ORDER.indexOf(b.me.dir) || b.me.odds.po-a.me.odds.po);
   const avgBub = all.length ? all.reduce((s,L)=>s+L.me.odds.bub,0)/all.length : 0;
-  let h = `<section class="summary dirsum"><h3>Where every team stands</h3>
+  let h = `<section class="summary"><h3>Direction</h3>
     <p><b>${limbo.length} of ${all.length}</b> teams are in limbo: 20–60% playoff odds without a real title shot. Those come first, sorted by the chance you finish one spot outside the playoffs (average ${pct(avgBub)} across your teams).</p>
-    <div class="chips"><button class="chip" data-dlf="" aria-pressed="${!f}">All · ${all.length}</button><button class="chip" data-dlf="limbo" aria-pressed="${f==="limbo"}">Limbo · ${limbo.length}</button>${DIR_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-dlf="${k}" aria-pressed="${f===k}">${DIR[k].label} · ${counts[k]}</button>`).join("")}</div>
+    <div class="chips"><button class="chip" data-dirf="" aria-pressed="${!f}">All · ${all.length}</button><button class="chip" data-dirf="limbo" aria-pressed="${f==="limbo"}">Limbo · ${limbo.length}</button>${DIR_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-dirf="${k}" aria-pressed="${f===k}">${DIR[k].label} · ${counts[k]}</button>`).join("")}</div>
     <p>Each season is simulated 1,000 times from your real record, the remaining schedule and every team's projected lineup in that league's scoring. Playoff spots stand in for payout spots.</p></section>`;
   h += list.map(L=>{ const t = L.me, d = DIR[t.dir], id = L.lg.league_id;
     return `<article class="card s-${d.sev}"><div class="chead"><div class="t"><div class="lname">${esc(L.lg.name)}</div>
@@ -1910,8 +1772,20 @@ function renderDirList(){
       <div class="score"><span class="pill p-${d.sev}">${d.label}</span></div></div>
       <div class="oddsrow"><span><b class="num">${pct(t.odds.po)}</b> playoffs</span><span><b class="num">${pct(t.odds.bub)}</b> bubble</span><span><b class="num">${pct(t.odds.title)}</b> title</span></div>
       <div class="bpline">${esc(headline(L, t))}</div>
-      <div class="cfoot"><button class="ghost go" data-dir="${id}">Direction + trades →</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`; }).join("") || `<div class="empty">No teams in this group.</div>`;
-  return h;
+      <div class="cfoot"><button class="ghost go" data-dir="${id}">Diagnose + find trades →</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`; }).join("") || `<div class="empty">No teams in this group.</div>`;
+  // market search
+  const q = (S.mq||"").trim().toLowerCase();
+  h += `<section class="summary"><h3>Trade market</h3><p>Real trades from all your leagues this season. Search a player to see what he actually cost.</p>
+    <input class="search" id="mq" type="search" placeholder="Search a player (e.g. Jeanty)" value="${esc(S.mq||"")}" autocomplete="off">`;
+  if(q.length >= 3){
+    const ids = Object.keys(S.proj).filter(id=>pname(id).toLowerCase().includes(q)).slice(0,5);
+    const rows = ids.flatMap(id=>marketFor(id).map(r=>({...r, pid:id})));
+    h += rows.length ? `<div class="plist">${rows.slice(0,25).map(r=>`<div class="prow"><div class="ptop"><span class="nm">${esc(pname(r.pid))}</span><span class="pos">${new Date(r.ts).toLocaleDateString([], {month:"short", day:"numeric"})}</span></div>
+      <div class="pstat">${esc(r.name)} · bought by ${esc(r.buyer)}${r.mine?" · your trade":""}</div>
+      <div class="pstat">Cost: ${esc(r.paid.join(", ")||"nothing listed")}${r.got.length?` · buyer also got ${esc(r.got.join(", "))}`:""}</div></div>`).join("")}</div>`
+      : `<div class="empty">No trades for that player in your leagues this season.</div>`;
+  }
+  return h + `</section>`;
 }
 function renderDirDetail(L){
   const t = L.me, d = DIR[t.dir], id = L.lg.league_id, N = L.N;
@@ -2183,7 +2057,6 @@ function renderSettings(){
   return `<details class="settings"><summary>Settings</summary>
     <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
     <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
-    <div class="srow"><span>Shake your phone to ask the crystal ball</span><button class="ghost${typeof SHAKE !== "undefined" && SHAKE.on ? " on" : ""}" id="shakeT" aria-pressed="${typeof SHAKE !== "undefined" && SHAKE.on}">${typeof SHAKE !== "undefined" && SHAKE.on ? "On" : "Off"}</button></div>
     <div class="srow"><span>Signed in as <b>${esc(S.displayName||S.username)}</b></span><button class="ghost" id="switch">Switch user</button></div>
     <p class="note">Projections come from Sleeper (Rotowire) and are rescored with each league's settings. Questionable players count at 85% and Doubtful at 20% when comparing options. Sleeper doesn't share whether you've set an auto-sub, so Questionable starters stay flagged until you swap them.</p></details>`;
 }
@@ -2322,7 +2195,7 @@ const ORB = {
     document.addEventListener("pointermove", e=>{ const p = local(e); this.ptr = p && (p.inside || this.drag) ? p : null; const d = this.drag; if(!d) return;
       const dx = e.clientX-d.x, dy = e.clientY-d.y; d.moved = Math.max(d.moved, Math.abs(dx)+Math.abs(dy));
       this.rot = d.r + dx*.012; this.tilt = Math.max(-.95, Math.min(.5, d.t + dy*.006)); this.vel = (e.clientX-d.lx)*.012; d.lx = e.clientX; }, {passive:true});
-    document.addEventListener("pointerup", ()=>{ const d = this.drag; if(d && d.moved < 6){ this.pulse = .5; this.shock = this.ptr ? {x:this.ptr.x, y:this.ptr.y} : {x:.5, y:.47}; } else if(d && d.moved > 40 && Math.abs(this.vel) > .14){ this.boost = 1; setTimeout(()=>{ this.boost = 0; }, 900); window.dispatchEvent(new CustomEvent("orbspin")); } this.drag = null; });
+    document.addEventListener("pointerup", ()=>{ if(this.drag && this.drag.moved < 6){ this.pulse = .5; this.shock = this.ptr ? {x:this.ptr.x, y:this.ptr.y} : {x:.5, y:.47}; } this.drag = null; });
     document.addEventListener("pointercancel", ()=>{ this.drag = null; this.ptr = null; });
   },
   frame(now){
@@ -2407,18 +2280,14 @@ const ORB = {
 const orbCanvas = size => `<canvas id="orb" role="img" aria-label="The crystal ball. Drag to spin it, tap to send a shockwave." style="width:${size}px;height:${size}px"></canvas>`;
 
 /* ---------- view state ---------- */
-Object.assign(S, {view: "home", sort: store.get("sort", "next"), dirF: "all", fixTab: "fix", ptab: "exposure", teamLid: null, sim: {}, brief: {}, briefPhase: "idle", thinking: false, lastKey: null, counted: false});
+Object.assign(S, {view: "home", sort: store.get("sort", "az"), dirF: "all", fixTab: "fix", ptab: "exposure", teamLid: null, sim: {}, brief: {}, briefPhase: "idle", thinking: false, lastKey: null, counted: false});
 const VIEWS = new Set(["home","fix","ask","waivers","players","team","brief","rankings"]);
 if(!VIEWS.has(S.view) || S.view === "team") S.view = "home";
 function go(view, opts={}){
   if(view === "team") S.teamLid = opts.lid || S.teamLid;
   if(view === "fix" && opts.tab) S.fixTab = opts.tab;
-  if(view !== "team") S.navFrom = null;
   S.view = view;
-  if(typeof closeMenu === "function") closeMenu();
-  render();
-  if(opts.anchor){ window.scrollTo(0, 0); setTimeout(()=>{ const a = document.getElementById(opts.anchor); if(a) a.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"start"}); }, 120); }
-  else window.scrollTo(0, 0);
+  render(); window.scrollTo(0, 0);
 }
 function openCB(){ go("ask"); }
 function closeCB(){ go("home"); }
@@ -2501,6 +2370,26 @@ function findPlayers(text){
   }
   return out;
 }
+function askFromText(text){
+  const t = (text||"").trim(), low = t.toLowerCase();
+  if(!t){ go("ask"); return; }
+  if(/brief|week ahead|summary|recap/.test(low)){ go("brief"); return; }
+  if(/waiver|pick ?up|free agent|\bfaab\b/.test(low)){ go("waivers"); return; }
+  const names = findPlayers(t);
+  if(!names.length && /\b(out|injur|hurt|bye|inactive|ruled|questionable)\b/.test(low)){ go("fix", {tab: /questionable/.test(low) ? "monitor" : "fix"}); return; }
+  CB.answers = CB.answers || []; CB.qa = ""; CB.qb = "";
+  if(/trade|\bfor\b|give/.test(low)){
+    const lg = names.length ? cbLeagues().find(x=>(x.mine.players||[]).includes(names[0].id)) : null;
+    TOOL.mode = "trade"; CB.mode = "trade";
+    if(lg && names.length >= 2){ cbPrefillTrade({lid: lg.lg.league_id, give:[names[0]], get:names.slice(1, 3)}); return; }
+    if(lg) TR.lid = lg.lg.league_id;
+    go("ask"); return;
+  }
+  TOOL.mode = /compare|better|dynasty|value|long term/.test(low) ? "compare" : "start"; CB.mode = TOOL.mode; CB.league = "all"; CB.b = []; TOOL.sub = "matchup";
+  CB.a = names.slice(0, 2); if(!names.length) CB.qa = t;
+  go("ask");
+  if(CB.a.length === 2) setTimeout(reveal, 300);
+}
 function promptIdeas(){
   if(S._ideas && S._ideasAt === S.loadedAt) return S._ideas;
   const ideas = ["Who's out in my lineups?", "Best waiver adds this week", "Give me my weekly brief"];
@@ -2544,8 +2433,6 @@ async function ensureSim(lid){
   const st = S.sim[lid] ||= {};
   if(st.busy || st.detail || st.error) return;
   st.busy = true; st.phase = "Loading team values"; render();
-  const pre = S.dir && S.dir.leagues && S.dir.leagues[lid];
-  if(pre){ st.phase = `Testing trades against ${pre.N-1} league mates`; await sleep(30); try{ st.L = pre; st.detail = buildDetail(pre); }catch(e){ st.error = e.message || String(e); } st.busy = false; render(); return; }
   try{
     while(S.bpLoading) await sleep(250);
     if(!S.bp) await loadBlueprints();
@@ -2587,7 +2474,7 @@ function recHTML(L, ev, mode, i){
       <span class="k out">Send</span><span>${ev.give.map(line).join("<br>")}</span><span class="v">${Math.round(sumV(ev.give)).toLocaleString()}</span></div>
     ${mk}<div class="imp">${imp.map(x=>`<span>${x}</span>`).join("")}</div><div class="sub">${esc(why)} ${esc(b.name)}: ${b.rec}, ${esc(activity)}.</div>
     <details class="pitch"><summary>Message to send ${esc(b.name)}</summary><p>${esc(pitch)}</p></details>
-    <div class="cfoot" style="padding:0">${cbOk?`<button class="ghost tint" data-cbt="${cbData}">Check with the crystal ball</button>`:""}<button class="ghost" data-copy="${esc(pitch)}" data-offer="${esc(JSON.stringify({lid:id, league:L.lg.name, partner:b.name, give:ev.give.map(x=>x.name.replace(" (via trade)","")), get:ev.get.map(x=>x.name.replace(" (via trade)","")), cb: cbOk ? {lid:id, give:ev.give.map(x=>({id:x.id, name:x.name.replace(" (via trade)","")})), get:ev.get.map(x=>({id:x.id, name:x.name.replace(" (via trade)","")}))} : null}))}">Copy message</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`;
+    <div class="cfoot" style="padding:0">${cbOk?`<button class="ghost tint" data-cbt="${cbData}">Check with the crystal ball</button>`:""}<button class="ghost" data-copy="${esc(pitch)}">Copy message</button><a class="ghost" href="${leagueLink(id)}" target="_blank" rel="noopener">Sleeper ↗</a></div></article>`;
 }
 
 /* ---------- screens ---------- */
@@ -2611,7 +2498,7 @@ function viewConnect(){
       <div class="unamebox"><span class="at" aria-hidden="true">@</span><input id="uname" value="${esc(S.username)}" placeholder="your username" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" required><button class="cbtn" id="connectBtn" type="submit"${S.username ? "" : " disabled"}>Connect<span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
       <div class="trust"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>No password. Read-only. Your data stays on your phone.</div>
       ${S.error ? `<div class="err">${esc(S.error)}</div>` : ""}
-    </form>
+    </form>${accountsOn() && !ACC.session ? `<button class="acsign" data-acopen="signin">Have an account? <b>Sign in</b></button>` : ""}
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px"><div class="lab">What you get</div><div class="feat">
       <div class="glass"><span class="badge red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5C4.5 11 11 4.5 19.5 4.5c0 8.5-6.5 15-15 15z" stroke="#FFB4B6" stroke-width="1.7"/><path d="M8.5 15.5l7-7" stroke="#fff" stroke-width="1.5"/><path d="M10 12.6l1.4 1.4M11.9 10.7l1.4 1.4M13.8 8.8l1.4 1.4" stroke="#fff" stroke-width="1.2"/><circle cx="19" cy="17.5" r="3" fill="#F26468" stroke="#141C26" stroke-width="1.4"/></svg></span>Every OUT starter, with a one-tap fix</div>
       <div class="glass"><span class="badge cy"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5" stroke="#8FEAF5" stroke-width="1.6"/><path d="M6.8 7l2.6 2.6M9.4 7L6.8 9.6" stroke="#fff" stroke-width="1.6"/><circle cx="16.2" cy="16.2" r="2" stroke="#fff" stroke-width="1.6"/><path d="M9.5 11.5c0 4 2 5 4.2 4.8" stroke="#B9A6FF" stroke-width="1.6" stroke-dasharray="1.6 1.8"/></svg></span>Trade recs built for each team</div>
@@ -2627,33 +2514,35 @@ function viewLoading(){
     <div class="lab">Just scanned</div><div class="log" id="scanLog"></div></section>`;
 }
 function viewHome(){
-  const c = fixCounts(), crit = c.fix, locks = lockMap();
+  const c = fixCounts(), ideas = promptIdeas(), crit = c.fix;
   let h = `<section style="display:flex;flex-direction:column;gap:4px"><div class="sub">${S.displayName ? esc(S.displayName)+" · " : ""}${S.season} · week ${S.week}${S.week !== S.nflWeek ? " (next)" : ""}</div>
     <h1 class="h1">${crit ? `${crit} lineup${crit>1?"s":""} need${crit>1?"":"s"} you` : "Every lineup is set"}</h1></section>
-    ${nowCardHTML()}
+    ${bulletinHTML()}
+    <section style="display:flex;flex-direction:column;gap:10px"><form class="askbar" id="askform"><span class="miniorb" aria-hidden="true"></span>
+      <input id="askq" placeholder="${esc(ideas[0])}" autocomplete="off" enterkeyhint="go" aria-label="Ask your command center"><button class="go" type="submit" aria-label="Ask">${ICON.arrow}</button></form>
+      <div class="qchips">${ideas.map(q=>`<button class="chip" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div></section>
     <section class="tiles">
       <button class="tile glass crit" data-go="fix" data-tab="fix"><b data-count="${c.fix}">${S.counted ? c.fix : 0}</b><span>Must fix</span></button>
-      <button class="tile glass warn" data-go="fix" data-tab="monitor"><b data-count="${c.monitor}">${S.counted ? c.monitor : 0}</b><span>Game-time</span></button>
-      <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Better lineups</span></button></section>
-    ${planHTML()}
+      <button class="tile glass warn" data-go="fix" data-tab="monitor"><b data-count="${c.monitor}">${S.counted ? c.monitor : 0}</b><span>Monitor</span></button>
+      <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Start / sit</span></button></section>
+    ${toolsGridHTML()}
     <button class="brief-entry glass" data-go="brief">${ICON.brief}<span class="t"><b>Week ${S.week} brief</b><small>The story of your week, before kickoff</small></span><span class="cta">${S.brief[S.week] ? "Open" : "Generate"}</span></button>
+    ${accountCardHTML()}
     <div class="statusline" id="statusline"></div>`;
+  // my teams
   let list = teamList();
   const counts = {all:list.length, contend:0, rebuild:0, none:0}; list.forEach(x=>counts[x.dir]++);
   if(S.dirF !== "all") list = list.filter(x=>x.dir === S.dirF);
-  if(!["next","az","cs","rs"].includes(S.sort)) S.sort = "next";
-  if(S.sort === "next") list.sort((a,b)=>((locks[a.id]||{k:{ts:9e15}}).k.ts - (locks[b.id]||{k:{ts:9e15}}).k.ts) || (a.alert === "crit" ? 0 : a.alert ? 1 : 2) - (b.alert === "crit" ? 0 : b.alert ? 1 : 2) || a.name.localeCompare(b.name));
   if(S.sort === "az") list.sort((a,b)=>a.name.localeCompare(b.name));
   if(S.sort === "cs") list.sort((a,b)=>(b.cs ?? -1) - (a.cs ?? -1));
   if(S.sort === "rs") list.sort((a,b)=>(b.rs ?? -1) - (a.rs ?? -1));
-  const sorts = [["next","Next lock"],["az","A–Z"],["cs","Contend"],["rs","Rebuild"]], si = sorts.findIndex(z=>z[0] === S.sort);
+  const sorts = [["az","A–Z"],["cs","Contending"],["rs","Rebuilding"]], si = sorts.findIndex(s=>s[0] === S.sort);
   h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">My teams</h2><span class="sub">${S.bpLoading ? "Scoring teams…" : list.length + " shown"}</span></div>
-    <div class="seg" role="tablist" aria-label="Sort teams" style="--n:4;--i:${si}">${sorts.map(([k,l])=>`<button role="tab" data-sort="${k}" aria-selected="${S.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
+    <div class="seg" role="tablist" aria-label="Sort teams" style="--n:3;--i:${si}">${sorts.map(([k,l])=>`<button role="tab" data-sort="${k}" aria-selected="${S.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
     <div class="chips">${[["all","All"],["contend","Contend"],["rebuild","Rebuild"],["none","Undecided"]].map(([k,l])=>`<button class="chip" data-dirf="${k}" aria-pressed="${S.dirF===k}">${l} · ${counts[k]}</button>`).join("")}</div>
     <div class="teamrow-list">${list.map(x=>{
-      const sc = S.sort === "cs" ? x.cs : S.sort === "rs" ? x.rs : null, l = locks[x.id];
-      const right = S.sort === "next" ? (l ? `<span class="lk k-${l.kind}"><b>${esc(kickLabel(l.k))}</b><small>${{fix:"fix",monitor:"check",startsit:"swap"}[l.kind]}</small></span>` : `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`)
-        : S.sort === "az" ? `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`
+      const sc = S.sort === "cs" ? x.cs : S.sort === "rs" ? x.rs : null;
+      const right = S.sort === "az" ? `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`
         : sc == null ? `<span class="sub">…</span>` : `<span class="sbar"><i><b style="width:${sc}%;background:${S.sort==="cs"?"var(--ok)":"var(--violet-2)"}"></b></i><span>${sc}</span></span>`;
       return `<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert==="crit"?"var(--crit)":x.alert==="warn"?"var(--warn)":"transparent"};box-shadow:${x.alert?"0 0 8px currentColor":"none"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.meta)}${S.sort!=="az"?" · "+DIR3[x.dir]:""}</span></span>${right}</button>`;
     }).join("") || `<div class="empty" style="margin:0">No teams in this group.</div>`}</div></section>`;
@@ -2696,9 +2585,43 @@ function viewFix(){
   });
   return h;
 }
+function viewTeam(){
+  const x = teamList().find(z=>z.id === S.teamLid);
+  if(!x) return `<button class="ghost back" data-go="home">${ICON.back} My teams</button><div class="empty">That league isn't loaded.</div>`;
+  const b = x.b, id = x.id, st = S.sim[id];
+  let h = `<button class="ghost back" data-go="home">${ICON.back} My teams</button>
+    <section style="display:flex;flex-direction:column;gap:4px"><h1 class="h1" style="font-size:34px">${esc(x.name)}</h1><div class="sub">${esc(x.meta)}</div></section>`;
+  if(!b){ h += S.bpLoading ? `<div class="statusline" id="statusline"></div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:60px"></i></div>` : `<div class="empty">${S.bpError ? esc(S.bpError) : "Not enough roster data to score this team."}</div>`; return h + cardHTML(x.r, false); }
+  const me = b.me, N = b.N;
+  h += `<section class="scores"><div class="score-t glass"><span class="lab">Contending</span><span style="display:flex;align-items:baseline;gap:6px"><b>${x.cs}</b><span class="sub">${ord(me.nowRank)} of ${N}</span></span><div class="bar"><i style="width:${x.cs}%;background:linear-gradient(90deg,#4CC27A,#7BE0A2)"></i></div></div>
+    <div class="score-t glass"><span class="lab">Rebuilding</span><span style="display:flex;align-items:baseline;gap:6px"><b>${x.rs}</b><span class="sub">${ord(me.futRank)} of ${N}</span></span><div class="bar"><i style="width:${x.rs}%"></i></div></div></section>
+    <section style="display:flex;flex-direction:column;gap:8px"><div class="lab">Your direction</div>
+      <div class="dirsel" role="radiogroup" aria-label="Team direction">${["contend","none","rebuild"].map(k=>`<button class="${k}" role="radio" data-setdir="${k}" aria-checked="${x.dir===k}">${DIR3[k]}${x.sug===k?"<small>Suggested</small>":""}</button>`).join("")}</div>
+      <div class="sub">${esc(ARCH[me.arch].label)}: ${esc(ARCH[me.arch].desc.toLowerCase())}. ${x.dir === "contend" ? "Recs below buy points now with bench pieces and picks." : x.dir === "rebuild" ? "Recs below sell veterans to contenders for youth and picks." : "Recs below show the best move each way. Pick a lane to focus them."}</div></section>
+    <div class="grades">${["QB","RB","WR","TE"].map(p=>`<span class="gchip" title="${ord(me.posRank[p])} of ${N}">${p}<b class="g-${me.grades[p]}">${me.grades[p]}</b></span>`).join("")}<span class="gchip">Age<b class="g-C">${me.age.toFixed(1)}</b></span></div>
+    <p class="src" style="margin:0">Contending = your best starting lineup's FantasyCalc redraft value as a share of the league's best. Rebuilding = your young players' and picks' FantasyCalc dynasty value as a share of the league's best. Grades rank your starters' value at each position against the other ${N-1} teams.</p>`;
+  // trade recs
+  h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trade recs</h2><span class="sub">Built for this league's scoring</span></div>`;
+  if(!st || st.busy){ if(!st) setTimeout(()=>ensureSim(id), 0);
+    h += `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>${esc((st && st.phase) || "Starting")}…</div><div class="skel" aria-hidden="true"><i style="height:150px"></i><i style="height:150px"></i></div>`; }
+  else if(st.error) h += `<div class="empty">${esc(st.error)}</div>`;
+  else {
+    const L = st.L, t = L.me, recs = recsFor(st.detail, x.dir);
+    h += `<div class="oddsrow"><span><b>${ord(t.stand)}</b> of ${L.N} in standings</span><span><b>${pct(t.odds.po)}</b> playoff odds</span><span><b>${pct(t.odds.title)}</b> title odds</span></div><p class="src" style="margin:0">Odds are simulated: 1,000 runs of the rest of the season from real records, the remaining schedule and every team's Sleeper projections in this league's scoring. Values are FantasyCalc. Recs are ranked by how far they move you in your chosen direction at a fair price, and by how active the other manager is.</p>`;
+    h += recs.length ? recs.map(([ev,mode],i)=>recHTML(L, ev, mode, i)).join("") : `<div class="empty">No clean ${x.dir === "rebuild" ? "sell" : x.dir === "contend" ? "buy" : ""} trades found in this league right now.</div>`;
+  }
+  h += `</section>`;
+  // move off / currency
+  const chips = x.dir === "contend"
+    ? me.pl.filter(p=>!me.nowStarters.has(p.id) && p.v >= 300).sort((a,b)=>b.v-a.v).slice(0,4).map(p=>`${p.name} (${p.pos})`).concat(me.picks.filter(p=>p.round <= 2).slice(0,3).map(pickLabel))
+    : me.pl.filter(p=>isOld(p) && p.r >= 500).sort((a,b)=>b.r-a.r).slice(0,5).map(p=>`${p.name} (${p.pos}, ${p.age ? Math.floor(p.age) : "?"})`);
+  if(chips.length) h += `<section style="display:flex;flex-direction:column;gap:8px"><div class="lab">${x.dir === "contend" ? "Trade chips that don't score for you" : "Move off your roster before they lose value"}</div><div class="pchips">${chips.map(c=>`<span>${esc(c)}</span>`).join("")}</div></section>`;
+  h += `<section style="display:flex;flex-direction:column;gap:8px"><div class="lab">This week</div>${cardHTML(x.r, false)}</section>`;
+  return h;
+}
 function viewAsk(){
   if(!cbLeagues().length) return `<div class="askhead">${orbCanvas(300)}</div><div class="empty">The crystal ball needs at least one in-season league to read.</div>`;
-  return `<div class="askhead">${orbCanvas(Math.min(250, window.innerWidth - 60))}<div class="sub" id="orbline">${S.thinking ? "Reading your leagues…" : "Pick a tool, then flick the ball to spin it and ask."}</div></div><div id="askBody"></div>`;
+  return `<div class="askhead">${orbCanvas(Math.min(250, window.innerWidth - 60))}<div class="sub" id="orbline">${S.thinking ? "Reading your leagues…" : "Pick a tool. Drag the ball to spin it."}</div></div><div id="askBody"></div>`;
 }
 function viewBrief(){
   const B = S.brief[S.week];
@@ -2779,7 +2702,6 @@ function renderStatus(){
   let s = "";
   if(S.refreshing) s = `<span class="livedot" style="background:var(--cyan)"></span>Refreshing from Sleeper…`;
   else if(S.bpLoading) s = `<span>Scoring every team… ${Math.round((S.bpProgress||0)*100)}%</span><div class="bar"><i style="width:${(S.bpProgress||0)*100}%"></i></div>`;
-  else if(S.dirLoading) s = `<span>${esc(S.dirPhase || "Simulating")}… ${/^(Loading|Simulating)/.test(S.dirPhase||"") ? Math.round((S.dirProgress||0)*100) + "%" : ""}</span><div class="bar"><i style="width:${(S.dirProgress||0)*100}%"></i></div>`;
   else if(S.wvLoading) s = `<span>Reading this season's waiver claims… ${Math.round((S.txProgress||0)*100)}%</span><div class="bar"><i style="width:${(S.txProgress||0)*100}%"></i></div>`;
   else if(S.fromCache && S.loadedAt) s = `<span>Saved data from ${S.loadedAt.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}</span>`;
   el.innerHTML = s;
@@ -2793,8 +2715,9 @@ function render(){
   $("top").hidden = !ready; $("dock").hidden = !ready;
   $("refresh").classList.toggle("spin", !!(S.loading || S.refreshing));
   if(S.week) $("wklabel").textContent = "WK " + S.week;
+  const acs = $("acslot"); if(acs){ const ah = accountChipHTML(); if(acs.innerHTML !== ah) acs.innerHTML = ah; }
   document.querySelectorAll("[data-go]").forEach(b=>{ if(!b.classList.contains("navb") && b.id !== "orbBtn") return;
-    const on = b.dataset.go === v || (b.dataset.go === "home" && ["team","brief"].includes(v) && S.navFrom !== "trades") || (b.dataset.go === "trades" && (["direction","offers"].includes(v) || (v === "team" && S.navFrom === "trades"))); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+    const on = b.dataset.go === v || (b.dataset.go === "home" && ["team","brief"].includes(v)); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   const c = ready ? fixCounts().fix : 0, bd = $("fixBadge"); bd.hidden = !c; bd.textContent = c;
   SPACE.target = v === "connect" || v === "loading" || v === "ask" ? .95 : .7;
   SPACE.warpTarget = v === "loading" ? .22 : 0;
@@ -2807,13 +2730,12 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;
   if(v === "ask") renderCB();
   renderStatus();
-  if(ready) renderChrome();
   if(fid && $(fid)){ const el = $(fid); el.focus({preventScroll:true}); try{ if(caret != null) el.setSelectionRange(caret, caret); }catch(e){} }
   if(!changed) window.scrollTo(0, sy);
   // count the home tiles up once
@@ -2832,7 +2754,7 @@ document.addEventListener("click", async e=>{
   const el = e.target.closest("button, a, [data-go]"); if(!el) return;
   const d = el.dataset;
   if(d.go){ if(d.dirf2) S.dirF = d.dirf2; go(d.go, {tab: d.tab}); return; }
-  if(d.team){ S.navFrom = d.from || null; go("team", {lid: d.team, anchor: d.anchor}); return; }
+  if(d.team){ go("team", {lid: d.team}); return; }
   if(d.sort){ S.sort = d.sort; store.set("sort", S.sort); render(); return; }
   if(d.dirf){ S.dirF = d.dirf; render(); return; }
   if(d.fixtab){ S.fixTab = d.fixtab; render(); return; }
@@ -2847,9 +2769,7 @@ document.addEventListener("click", async e=>{
   if(d.wf){ S.wvFilter = d.wf; render(); return; }
   if(d.cbt){ try{ cbPrefillTrade(JSON.parse(d.cbt)); }catch(_){} return; }
   if(d.copy != null){ const txt = d.copy; try{ await navigator.clipboard.writeText(txt); }catch(_){ const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); }catch(__){} ta.remove(); }
-    const lab = el.dataset.label || el.textContent; el.dataset.label = lab; el.textContent = "Copied ✓"; setTimeout(()=>{ el.textContent = lab; }, 1800);
-    if(d.offer){ try{ addOffer(JSON.parse(d.offer)); showToast("Copied · saved to Offers so you can track the answer"); renderChrome(); }catch(_){} }
-    return; }
+    el.textContent = "Copied ✓"; setTimeout(()=>{ el.textContent = "Copy message"; }, 1800); return; }
   if(d.mode){ CB.mode = d.mode; CB.a = []; CB.b = []; CB.qa = ""; CB.qb = ""; renderCB(); return; }
   if(d.add){ const i = d.add.indexOf(":"), side = d.add.slice(0,i), id = d.add.slice(i+1); (side === "a" ? CB.a : CB.b).push({id, name: id.startsWith("PICK:") ? id.slice(5) : pname(id)}); if(side === "a") CB.qa = ""; else CB.qb = ""; renderCB(); return; }
   if(d.rm){ const i = d.rm.indexOf(":"), side = d.rm.slice(0,i), id = d.rm.slice(i+1); if(side === "a") CB.a = CB.a.filter(o=>o.id !== id); else CB.b = CB.b.filter(o=>o.id !== id); renderCB(); return; }
@@ -2977,15 +2897,10 @@ function bulletinHTML(){
   const games = window.map(g=>esc(g.short)).join(" · ");
   const order = {crit:0, warn:1, up:2};
   rows.sort((a,b)=>order[a.sev]-order[b.sev] || a.r.league.name.localeCompare(b.r.league.name));
-  const n = {crit:0, warn:0, up:0}; rows.forEach(x=>n[x.sev]++);
-  const head = `<div class="bh"><span class="ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/></svg></span><span class="t"><b>${esc(title)}</b><small>${games} · ${esc(kickLabel(first))}${first.intl ? " · " + esc(first.city || "") : ""} · ${startCount} starter${startCount===1?"":"s"}</small></span><span class="cd" title="${esc(untilText(first.ts))}">${esc(untilText(first.ts).replace("locks in ",""))}</span></div>`;
+  const head = `<div class="bh"><span class="t"><b>${esc(title)}</b><small>${games} · ${esc(kickLabel(first))}${first.intl ? " · " + esc(first.city || "") : ""} · you start ${startCount} player${startCount===1?"":"s"} here in ${starters.size} league${starters.size===1?"":"s"}</small></span><span class="cd">${esc(untilText(first.ts))}</span></div>`;
   if(!rows.length) return `<section class="bulletin calm">${head}<div class="sub">Every lineup with a player in this game is set. Nothing to do before kickoff.</div></section>`;
-  const row = x => `<div class="brow"><span class="pill p-${x.sev}">${{crit:"Fix",warn:"Check",up:"Boost"}[x.sev]}</span><span class="t"><b>${esc(x.r.league.name)}</b><span>${esc(x.what)} · ${esc(x.how)}</span></span><a class="openbtn" href="${leagueLink(x.id)}" target="_blank" rel="noopener">Open ${ICON.ext}</a></div>`;
-  const lead = rows.filter(x=>x.sev === "crit").slice(0, 2), shown = lead.length ? lead : rows.slice(0, 1), rest = rows.filter(x=>!shown.includes(x));
-  return `<section class="bulletin">${head}
-    <div class="bsum">${n.crit ? `<span class="pill p-crit">${n.crit} fix</span>` : ""}${n.warn ? `<span class="pill p-warn">${n.warn} check</span>` : ""}${n.up ? `<span class="pill p-up">${n.up} boost${n.up>1?"s":""}</span>` : ""}<span>Locks before Sunday: do these first.</span></div>
-    ${shown.map(row).join("")}
-    ${rest.length ? `<details class="bmore"><summary><span class="more">Show ${rest.length} more</span><span class="less">Show less</span></summary>${rest.map(row).join("")}</details>` : ""}</section>`;
+  return `<section class="bulletin">${head}${rows.slice(0, 8).map(x=>`<div class="brow"><span class="pill p-${x.sev}">${{crit:"Fix",warn:"Check",up:"Boost"}[x.sev]}</span><span class="t"><b>${esc(x.r.league.name)}</b><span>${esc(x.what)} · ${esc(x.how)}</span></span><a class="openbtn" href="${leagueLink(x.id)}" target="_blank" rel="noopener">Open ${ICON.ext}</a></div>`).join("")}
+    ${rows.length > 8 ? `<button class="ghost tint" data-go="fix" data-tab="fix">See all ${rows.length}</button>` : ""}</section>`;
 }
 
 /* ---------- touch feedback: press in, spring back with a glow ring, and a light haptic tick ---------- */
@@ -3075,7 +2990,7 @@ function loadDef(){
   CTX.defP = (async()=>{
     if(last < 1){ CTX.def = {weeks:0}; return; }
     const pos = ["QB","RB","WR","TE"].map(p=>"position%5B%5D="+p).join("&");
-    const weeks = await weekStats();
+    const weeks = await Promise.all(Array.from({length:last}, (_,i)=>getJSON(`/stats/nfl/${S.season}/${i+1}?season_type=regular&${pos}`, {cache:"prefer"}).catch(()=>null)));
     const allowed = {}, games = {};
     weeks.forEach((rows, wi)=>{ if(!Array.isArray(rows)) return;
       for(const r of rows){ const opp = r.opponent, p = (r.player && r.player.position) || (S.proj[r.player_id] && S.proj[r.player_id].player || {}).position, v = r.stats && r.stats.pts_ppr;
@@ -3329,7 +3244,7 @@ async function reveal(){
   const x = cbLg(), loads = CB.a.map(o=>loadLog(o.id)).concat(TOOL.mode === "start" ? [loadDef(), ...CB.a.map(o=>loadWx(weekInfo(o.id, x).team))] : []);
   await Promise.race([Promise.all(loads.filter(Boolean)).catch(()=>{}), sleep(2400)]);
   await sleep(500); ORB.mode = "out"; await sleep(600);
-  S.thinking = false; renderCB(); const l2 = $("orbline"); if(l2) l2.textContent = "Tap a player to swap, or spin the ball again";
+  S.thinking = false; renderCB(); const l2 = $("orbline"); if(l2) l2.textContent = "Tap a player to swap them out";
   const c = document.querySelector(".h2h"); if(c) c.scrollIntoView({behavior:"smooth", block:"start"});
   setTimeout(()=>{ if(!S.thinking) ORB.mode = "in"; }, 900);
 }
@@ -3408,6 +3323,32 @@ function rkCompute(){
   const rows = order.map((id,i)=>{ const s = by[id]; const pr = (posCount[s.pos] = (posCount[s.pos]||0) + 1); myRank[id] = {overall:i+1, pos:pr, posLabel:s.pos + pr}; return {...s, rank:i+1, posRank:pr, posSrcRank:posSrc[id]}; });
   return {rows, edited: !!store.get(rkKey(), null)};
 }
+function viewRankings(){
+  const data = rkCompute();
+  const owned = {}; for(const y of cbLeagues()) for(const p of y.mine.players||[]) owned[p] = (owned[p]||0) + 1;
+  const posOpts = RK.mode === "week" ? ["ALL","QB","RB","WR","TE","K","DEF"] : ["ALL","QB","RB","WR","TE"];
+  if(!posOpts.includes(RK.pos)) RK.pos = "ALL";
+  const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
+  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">My rankings</h1><div class="sub">Start from the source, then drag players to set your own order. Your ranks show up in Start/Sit and Compare.</div></section>
+    <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
+    <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
+      ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
+      <button class="chip" data-rkmine="1" aria-pressed="${RK.mine}">My players</button></div>`;
+  if(!data) return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading FantasyCalc values…</div>`;
+  let rows = data.rows;
+  if(RK.pos !== "ALL") rows = rows.filter(r=>r.pos === RK.pos);
+  if(RK.mine) rows = rows.filter(r=>owned[r.id]);
+  const q = RK.q.trim().toLowerCase(); if(q) rows = rows.filter(r=>r.name.toLowerCase().includes(q));
+  const cap = RK.pos === "ALL" && !RK.mine && !q ? 200 : 120;
+  h += `<div style="display:flex;gap:8px;align-items:center"><input class="search" id="rkq" type="search" placeholder="Find a player" value="${esc(RK.q)}" autocomplete="off" style="flex:1">${data.edited ? `<button class="ghost" data-rkreset="1">Reset</button>` : ""}</div>
+    <section class="rklist glass" id="rklist" data-canDrag="${!q && !RK.mine}">${rows.slice(0, cap).map(r=>{
+      const shown = RK.pos === "ALL" ? r.rank : r.posRank, srcR = RK.pos === "ALL" ? r.srcRank : r.posSrcRank, d = srcR - shown;
+      return `<div class="rkrow" data-id="${esc(r.id)}"><button class="grip" aria-label="Move ${esc(r.name)}. Arrow keys move it up or down." data-grip="${esc(r.id)}"><svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="9" r="1.6"/><circle cx="10" cy="9" r="1.6"/><circle cx="4" cy="14" r="1.6"/><circle cx="10" cy="14" r="1.6"/></g></svg></button>
+        <span class="rn">${shown}</span>${headshot(r.id,"mini")}<span class="t"><b>${esc(r.name)}</b><small>${r.pos}${RK.pos==="ALL"?r.posRank:""} · ${esc(r.team||"FA")}${owned[r.id]?` · <span style="color:var(--cyan-2)">yours ×${owned[r.id]}</span>`:""}</small></span>
+        <span class="rv">${d ? `<i class="${d>0?"up":"dn"}">${d>0?"▲":"▼"}${Math.abs(d)}</i>` : ""}<small>${esc(r.label)}</small></span></div>`; }).join("")}</section>
+    <p class="src">${RK.mode === "week" ? `Source order: Sleeper (Rotowire) week ${S.week} PPR projections.` : `Source order: FantasyCalc ${RK.mode === "ros" ? "redraft (rest of season)" : "dynasty"} values, ${RK.qb === 2 ? "Superflex" : "1QB"}, 12 teams, PPR, built from real trades.`} ▲▼ shows how far you've moved a player from the source. ${RK.mode === "week" ? "Weekly ranks start fresh each week." : ""} Saved on this device.</p>`;
+  return h;
+}
 function rkMove(id, delta){
   const src = rkSource(); if(!src) return;
   let order = rkOrder(src);
@@ -3418,194 +3359,27 @@ function rkMove(id, delta){
   else { const slots = order.map((i,k)=>visible.includes(i) ? k : -1).filter(k=>k >= 0); slots.forEach((k,n)=>{ order[k] = moved[n]; }); }   // reorder inside the position, keep everyone else's overall slot
   store.set(rkKey(), order);
 }
-/* ---------- My Rankings: tiers, 30-day movers, production, and the case for each spot ---------- */
-RK.sort = "rank"; RK.open = null;
-const SEASON = {p:null, by:null, last:0};
-function weekStats(){
-  if(S._ws && S._wsFor === S.season + ":" + S.nflWeek) return S._ws;
-  const last = Math.max(0, (S.nflWeek || 1) - 1), pos = ["QB","RB","WR","TE"].map(p=>"position%5B%5D="+p).join("&");
-  S._wsFor = S.season + ":" + S.nflWeek;
-  S._ws = Promise.all(Array.from({length:last}, (_,i)=>getJSON(`/stats/nfl/${S.season}/${i+1}?season_type=regular&${pos}`, {cache:"prefer"}).catch(()=>null)));
-  return S._ws;
-}
-function loadSeason(){
-  if(SEASON.p) return SEASON.p;
-  SEASON.p = weekStats().then(weeks=>{
-    const by = {}, tt = {};
-    weeks.forEach((rows, wi)=>{ if(!Array.isArray(rows)) return; const w = wi + 1;
-      for(const r of rows){ const s = r.stats || {}, tm = r.team || (r.player && r.player.team); if(tm && s.rec_tgt) tt[tm+"|"+w] = (tt[tm+"|"+w] || 0) + s.rec_tgt; }
-      for(const r of rows){ const s = r.stats || {}; if(!(s.gp > 0) && !s.pts_ppr) continue; const tm = r.team || (r.player && r.player.team);
-        const e = by[r.player_id] ||= {w:{}, g:0, pts:0, tgt:0, tt:0, snp:[], car:0};
-        e.w[w] = s.pts_ppr || 0; e.g++; e.pts += s.pts_ppr || 0; e.car += s.rush_att || 0;
-        if(s.rec_tgt != null && tm && tt[tm+"|"+w]){ e.tgt += s.rec_tgt; e.tt += tt[tm+"|"+w]; }
-        if(s.off_snp && s.tm_off_snp) e.snp.push(s.off_snp / s.tm_off_snp); } });
-    const last = weeks.length, mean = a => a.reduce((x,y)=>x+y, 0) / a.length;
-    for(const id in by){ const e = by[id], ws = Object.keys(e.w).map(Number).sort((a,b)=>a-b);
-      e.ppg = e.pts / e.g; e.l3 = mean(ws.slice(-3).map(w=>e.w[w])); e.ts = e.tt ? e.tgt / e.tt : null; e.snap = e.snp.length ? mean(e.snp) : null; e.cpg = e.car / e.g; }
-    const posOf = id => (S.proj[id] && S.proj[id].player || {}).position, minG = Math.max(1, Math.floor(last/2));
-    for(const P of ["QB","RB","WR","TE"]) Object.keys(by).filter(id=>posOf(id) === P && by[id].g >= minG).sort((a,b)=>by[b].ppg - by[a].ppg).forEach((id,i)=>{ by[id].prk = i + 1; });
-    SEASON.by = by; SEASON.last = last;
-    if(S.view === "rankings") render();
-  }).catch(()=>{ SEASON.by = {}; SEASON.last = 0; });
-  return SEASON.p;
-}
-const TIER_NAMES = {dyn:["Elite","Cornerstones","Difference makers","Strong starters","Starters","Flex & upside","Depth","Dart throws"],
-  ros:["League winners","Every-week studs","Strong starters","Starters","Flex plays","Matchup plays","Depth","Bench"],
-  week:["Locked in","Strong starts","Solid starts","Flex plays","Matchup dependent","Deep plays","Bench"]};
-function tiersFor(src){
-  const out = {}; let tier = 1, size = 0, start = 0;
-  const gaps = []; for(let i=1;i<Math.min(src.length, 80);i++) gaps.push(RK.mode === "week" ? src[i-1].val - src[i].val : (src[i-1].val - src[i].val)/Math.max(src[i-1].val, 1));
-  const med = gaps.length ? gaps.slice().sort((a,b)=>a-b)[gaps.length>>1] : 0, cut = Math.max(RK.mode === "week" ? .9 : .045, med*3.2);
-  src.forEach((s,i)=>{ if(i){ const g = RK.mode === "week" ? src[i-1].val - s.val : (src[i-1].val - s.val)/Math.max(src[i-1].val, 1);
-      if((g >= cut && size >= 2) || size >= (tier <= 2 ? 8 : 14)){ tier++; size = 0; start = i; } }
-    out[s.id] = tier; size++; });
-  return out;
-}
-const tierName = t => (TIER_NAMES[RK.mode] || TIER_NAMES.dyn)[t-1] || `Tier ${t}`;
-const trendPct = r => r.trend && (r.dv || r.val) ? r.trend / Math.max(1, (r.dv || r.val) - r.trend) : 0;
-function trChip(r){ if(RK.mode === "week" || r.trend == null) return ""; const p = trendPct(r);
-  return Math.abs(p) < .015 ? `<i class="tr flat">—</i>` : `<i class="tr ${p > 0 ? "up" : "dn"}" title="30-day value change">${p > 0 ? "▲" : "▼"}${Math.abs(Math.round(p*100))}%</i>`; }
-function ageNote(pos, age){
-  if(!age) return null; const a = Math.floor(age);
-  const W = {RB:[[23,"ascending"],[26,"prime"],[27,"end of prime"],[99,"decline years"]], WR:[[24,"ascending"],[28,"prime"],[30,"late prime"],[99,"decline years"]],
-    TE:[[25,"developing"],[29,"prime"],[31,"late prime"],[99,"decline years"]], QB:[[25,"developing"],[33,"prime"],[36,"late prime"],[99,"twilight"]]}[pos];
-  if(!W) return null; const st = W.find(([m])=>a <= m)[1], peak = {RB:"23–26", WR:"25–28", TE:"26–29", QB:"26–33"}[pos];
-  return {st, text:`Age ${age.toFixed(1)}: ${st} (${pos}s usually peak ${peak})`, tone: /ascending|developing|prime$/.test(st) && st !== "end of prime" ? "g" : /decline|twilight/.test(st) ? "r" : ""};
-}
-function spark(id){
-  const s = SEASON.by && SEASON.by[id]; if(!s || !SEASON.last) return "";
-  const W = 180, H = 40, n = SEASON.last, max = Math.max(10, ...Object.values(s.w)), X = w => 4 + (w-1)/Math.max(1, n-1)*(W-8), Y = v => H - 4 - v/max*(H-10);
-  const pts = Object.keys(s.w).map(Number).sort((a,b)=>a-b);
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PPR points by week"><line x1="4" x2="${W-4}" y1="${Y(s.ppg).toFixed(1)}" y2="${Y(s.ppg).toFixed(1)}" stroke="rgba(170,190,255,.3)" stroke-dasharray="3 3"/>
-    <polyline fill="none" stroke="#8FEAF5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts.map(w=>`${X(w).toFixed(1)},${Y(s.w[w]).toFixed(1)}`).join(" ")}"/>
-    ${pts.map(w=>`<circle cx="${X(w).toFixed(1)}" cy="${Y(s.w[w]).toFixed(1)}" r="2.2" fill="${s.w[w] >= s.ppg ? "#8FEAF5" : "#6F7C8A"}"/>`).join("")}</svg>`;
-}
-function whyRank(r, ctx){
-  const out = [], s = SEASON.by && SEASON.by[r.id], fcv = ctx.fc && ctx.fc.players[r.id] || {};
-  // tier and the cliff below it
-  const mates = ctx.view.filter(z=>ctx.tiers[z.id] === ctx.tiers[r.id]), next = ctx.view.find(z=>ctx.tiers[z.id] === ctx.tiers[r.id] + 1);
-  const lastMate = mates[mates.length-1];
-  if(RK.mode === "week"){
-    out.push(["Tier", `<b>${esc(tierName(ctx.tiers[r.id]))}</b> · ${mates.length} players between ${fmt(lastMate.val)} and ${fmt(mates[0].val)} projected${next ? ` · next tier starts at ${fmt(next.val)}` : ""}`, ""]);
-  } else {
-    const spread = mates.length > 1 ? (mates[0].val - lastMate.val)/mates[0].val : 0, cliff = next ? (lastMate.val - next.val)/lastMate.val : null;
-    out.push(["Tier", `<b>${esc(tierName(ctx.tiers[r.id]))}</b> · ${mates.length} player${mates.length>1?"s":""} within ${Math.round(spread*100)}% of each other${cliff != null ? ` · <b>${Math.round(cliff*100)}%</b> value drop to the next tier` : ""}`, ""]);
-    out.push(["Value", `<b>${r.val.toLocaleString()}</b> FantasyCalc ${RK.mode === "ros" ? "redraft" : "dynasty"} value · market rank #${r.srcRank}${r.pos !== "PICK" ? ` (${r.pos}${r.posSrcRank})` : ""}`, ""]);
-  }
-  const d = (RK.pos === "ALL" ? r.srcRank - r.rank : r.posSrcRank - r.posRank);
-  if(d) out.push(["Your call", `You have him <b>${Math.abs(d)} spot${Math.abs(d)>1?"s":""} ${d > 0 ? "higher" : "lower"}</b> than the source`, d > 0 ? "g" : "r"]);
-  const an = ageNote(r.pos, r.age || fcv.age); if(an && RK.mode !== "week") out.push(["Age", esc(an.text) + (fcv.yoe != null ? ` · year ${fcv.yoe + 1} in the NFL` : ""), an.tone]);
-  if(s && s.g){
-    const l3 = s.l3 - s.ppg, l3p = s.ppg ? l3/s.ppg : 0;
-    out.push(["Production", `<b>${fmt(s.ppg)}</b> PPR/g${s.prk ? ` · <b>${r.pos}${s.prk}</b> in scoring` : ""} · ${s.g} games${Math.abs(l3p) >= .1 ? ` · last 3: <b>${fmt(s.l3)}</b> (${l3 > 0 ? "up" : "down"} ${Math.abs(Math.round(l3p*100))}%)` : ""}`, s.prk && s.prk <= ({QB:6,RB:12,WR:12,TE:5}[r.pos]||12) ? "g" : ""]);
-    const u = []; if(s.ts != null && r.pos !== "QB") u.push(`${Math.round(s.ts*100)}% target share`); if(r.pos === "RB" && s.cpg) u.push(`${fmt(s.cpg)} carries/g`); if(s.snap != null) u.push(`${Math.round(s.snap*100)}% of snaps`);
-    if(u.length) out.push(["Usage", u.join(" · "), ""]);
-  } else if(SEASON.by) out.push(["Production", "No games this season", "r"]);
-  if(RK.mode === "week"){
-    const f = weekInfo(r.id, null);
-    if(f){ const dr = defRank(f); out.push(["Matchup", `${esc(oppText(f) || "—")}${dr ? ` · ${esc(dr.opp)} allows the <b>${ord(dr.rank)}-most</b> PPR to ${f.pos}s (${fmt(dr.per)}/g)` : ""}${f.team && kickoff(f.team) ? ` · ${esc(kickLabel(kickoff(f.team)))}` : ""}`, ""]);
-      if(f.status) out.push(["Status", esc(f.status), "r"]); }
-  } else if(r.trend != null){
-    const p = trendPct(r);
-    out.push(["Market", Math.abs(p) < .015 ? "Value steady over 30 days" : `${p > 0 ? "Up" : "Down"} <b>${Math.abs(Math.round(p*100))}%</b> in 30 days (${((r.dv||r.val) - r.trend).toLocaleString()} → ${(r.dv||r.val).toLocaleString()} dynasty): ${p > 0 ? "buyers are paying up" : "the market is selling"}${fcv.sd ? ` · price swings about ±${Math.round(fcv.sd)}%` : ""}`, p >= .015 ? "g" : p <= -.015 ? "r" : ""]);
-  }
-  if(ctx.owned[r.id]) out.push(["Your teams", `On <b>${ctx.owned[r.id]}</b> of your rosters`, ""]);
-  return out;
-}
-function rkSourceAll(){
-  const src = rkSource(); if(!src) return null;
-  const key = `${RK.qb}|12|1`, fc = RK.mode === "week" ? null : S.fc[key] && S.fc[key].done;
-  if(fc) src.forEach(s=>{ const v = fc.players[s.id]; if(v){ s.age = v.age; s.trend = v.trend; s.dv = v.v; } });
-  else if(RK.mode === "week"){ const k2 = `${RK.qb}|12|1`, f2 = S.fc[k2] && S.fc[k2].done; if(!f2) fcValues(k2).then(v=>{ S.fc[k2].done = v; }).catch(()=>{}); else src.forEach(s=>{ const v = f2.players[s.id]; if(v) s.age = v.age; }); }
-  return src;
-}
-function viewRankings(){
-  if(!SEASON.p) loadSeason();
-  if(RK.mode === "week") loadDef();
-  const owned = {}; for(const y of cbLeagues()) for(const p of y.mine.players||[]) owned[p] = (owned[p]||0) + 1;
-  const posOpts = RK.mode === "week" ? ["ALL","QB","RB","WR","TE","K","DEF"] : ["ALL","QB","RB","WR","TE"];
-  if(!posOpts.includes(RK.pos)) RK.pos = "ALL";
-  const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">Rankings</h1><div class="sub">Tiers, 30-day value moves and the case for every spot. Tap a player for the why; drag the handle to make the list yours.</div></section>
-    <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
-      ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
-      <button class="chip" data-rkmine="1" aria-pressed="${RK.mine}">My players</button></div>`;
-  const data = rkCompute(), src = data && rkSourceAll();
-  if(!data || !src) return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading FantasyCalc values…</div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:300px"></i></div>`;
-  const by = {}; src.forEach(s=>{ by[s.id] = s; });
-  data.rows.forEach(r=>{ const s = by[r.id]; if(s){ r.age = s.age; r.trend = s.trend; r.dv = s.dv; } });
-  // tiers from the source order of what's on screen
-  const viewSrc = src.filter(s=>RK.pos === "ALL" || s.pos === RK.pos), tiers = tiersFor(viewSrc);
-  // 30-day movers
-  if(RK.mode !== "week"){
-    const pool = viewSrc.slice(0, RK.pos === "ALL" ? 160 : 60).filter(s=>s.trend != null && s.val >= 800).map(s=>({s, p:trendPct(s)}));
-    const up = pool.filter(z=>z.p > .02).sort((a,b)=>b.p - a.p).slice(0,4), dn = pool.filter(z=>z.p < -.02).sort((a,b)=>a.p - b.p).slice(0,4);
-    if(up.length || dn.length) h += `<section class="movers"><div class="mov glass"><div class="lab">▲ Risers · 30 days</div>${up.map(z=>`<button data-rkjump="${esc(z.s.id)}"><span>${esc(z.s.name)} <small>${z.s.pos}</small></span><i class="tr up">+${Math.round(z.p*100)}%</i></button>`).join("") || `<span class="sub">None</span>`}</div>
-      <div class="mov glass"><div class="lab">▼ Fallers · 30 days</div>${dn.map(z=>`<button data-rkjump="${esc(z.s.id)}"><span>${esc(z.s.name)} <small>${z.s.pos}</small></span><i class="tr dn">${Math.round(z.p*100)}%</i></button>`).join("") || `<span class="sub">None</span>`}</div></section>`;
-  }
-  let rows = data.rows;
-  if(RK.pos !== "ALL") rows = rows.filter(r=>r.pos === RK.pos);
-  if(RK.mine) rows = rows.filter(r=>owned[r.id]);
-  const q = RK.q.trim().toLowerCase(); if(q) rows = rows.filter(r=>r.name.toLowerCase().includes(q) || (r.team||"").toLowerCase() === q);
-  if(RK.sort !== "rank" && RK.mode !== "week") rows = rows.filter(r=>r.trend != null && r.val >= 300).sort((a,b)=>RK.sort === "rise" ? trendPct(b) - trendPct(a) : trendPct(a) - trendPct(b));
-  const sorts = RK.mode === "week" ? [] : [["rank","Rank"],["rise","Risers"],["fall","Fallers"]];
-  const canDrag = !q && !RK.mine && RK.sort === "rank";
-  const cap = RK.pos === "ALL" && !RK.mine && !q && RK.sort === "rank" ? 200 : 120, topVal = Math.max(1, ...viewSrc.slice(0,1).map(s=>s.val));
-  const ctx = {view:viewSrc, tiers, owned, fc: RK.mode === "week" ? null : S.fc[`${RK.qb}|12|1`] && S.fc[`${RK.qb}|12|1`].done};
-  h += `<div style="display:flex;gap:8px;align-items:center"><input class="search" id="rkq" type="search" placeholder="Find a player or team" value="${esc(RK.q)}" autocomplete="off" style="flex:1">${data.edited ? `<button class="ghost" data-rkreset="1">Reset</button>` : ""}</div>
-    ${sorts.length ? `<div class="seg sm" role="tablist" style="--n:3;--i:${sorts.findIndex(s=>s[0] === RK.sort)}">${sorts.map(([k,l])=>`<button role="tab" data-rksort="${k}" aria-selected="${RK.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>` : ""}`;
-  let lastTier = null;
-  h += `<section class="rklist glass" id="rklist" data-candrag="${canDrag}">${rows.slice(0, cap).map(r=>{
-    const shown = RK.pos === "ALL" ? r.rank : r.posRank, srcR = RK.pos === "ALL" ? r.srcRank : r.posSrcRank, d = srcR - shown, tr = tiers[r.id], open = RK.open === r.id;
-    const s = SEASON.by && SEASON.by[r.id], f = RK.mode === "week" ? weekInfo(r.id, null) : null;
-    const head = RK.sort === "rank" && tr !== lastTier ? `<div class="rktier">Tier ${tr} · ${esc(tierName(tr))}<small>${viewSrc.filter(z=>tiers[z.id] === tr).length}</small></div>` : ""; lastTier = tr;
-    const meta = [r.pos + (RK.pos === "ALL" ? r.posRank : ""), r.team || "FA", r.age ? Math.floor(r.age) + "y" : null, s && s.g ? fmt(s.ppg) + " ppg" : null, f && f.game ? oppText(f) : null].filter(Boolean).join(" · ");
-    return head + `<div class="rkrow${open ? " open" : ""}" data-id="${esc(r.id)}" id="rk-${esc(r.id)}"><button class="grip" aria-label="Move ${esc(r.name)}. Arrow keys move it up or down." data-grip="${esc(r.id)}"${canDrag ? "" : " disabled"}><svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="9" r="1.6"/><circle cx="10" cy="9" r="1.6"/><circle cx="4" cy="14" r="1.6"/><circle cx="10" cy="14" r="1.6"/></g></svg></button>
-      <span class="rn">${shown}</span><button class="rkmain" data-rkopen="${esc(r.id)}" aria-expanded="${open}">${headshot(r.id,"mini")}<span class="t"><b>${esc(r.name)}${f ? statusTag(f) : ""}${owned[r.id] ? `<span class="own" title="On ${owned[r.id]} of your rosters">×${owned[r.id]}</span>` : ""}</b><small>${esc(meta)}</small><span class="vbar"><i style="width:${Math.max(3, Math.min(100, r.val/topVal*100)).toFixed(1)}%"></i></span></span>
-      <span class="rv"><b>${esc(r.label)}</b><span class="rvx">${trChip(r)}${d ? `<i class="mv ${d>0?"up":"dn"}" title="Moved from the source rank">${d>0?"↑":"↓"}${Math.abs(d)}</i>` : ""}</span></span></button>
-      ${open ? `<div class="rkdet">${s && s.g ? `<div class="spark">${spark(r.id)}<span class="sub"><b style="color:var(--ink)">${fmt(s.ppg)}</b> avg · best ${fmt(Math.max(...Object.values(s.w)))}</span></div>` : ""}
-        <ul class="rwhy">${whyRank(r, ctx).map(([k,v,t])=>`<li class="${t}"><span>${esc(k)}</span><div>${v}</div></li>`).join("")}</ul>
-        <div class="cfoot" style="padding:0"><button class="ghost tint" data-rkcmp="${esc(r.id)}">Compare</button>${owned[r.id] ? `<button class="ghost" data-rkexp="${esc(r.name)}">Your ${owned[r.id]} leagues</button>` : ""}<button class="ghost" data-rkmkt="${esc(r.name)}">Market</button></div></div>` : ""}</div>`; }).join("") || `<div class="empty" style="margin:0">No players match.</div>`}</section>
-    <p class="src">${RK.mode === "week" ? `Source order: Sleeper (Rotowire) week ${S.week} PPR projections. Matchup ranks: PPR points each defense has allowed by position.` : `Source order and 30-day moves: FantasyCalc ${RK.mode === "ros" ? "redraft" : "dynasty"} values, ${RK.qb === 2 ? "Superflex" : "1QB"}, 12 teams, PPR, built from real trades.`} Tiers break where value drops off sharply. Production and usage: Sleeper weekly stats. ↑↓ shows how far you've moved a player. Saved on this device.</p>`;
-  return h;
-}
-document.addEventListener("click", e=>{
-  const el = e.target.closest("[data-rkopen],[data-rksort],[data-rkjump],[data-rkcmp],[data-rkexp],[data-rkmkt]"); if(!el) return; const d = el.dataset;
-  if(d.rkopen){ RK.open = RK.open === d.rkopen ? null : d.rkopen; render(); return; }
-  if(d.rksort){ RK.sort = d.rksort; RK.open = null; render(); return; }
-  if(d.rkjump){ RK.sort = "rank"; RK.q = ""; RK.mine = false; RK.open = d.rkjump; render(); requestAnimationFrame(()=>{ const r = $("rk-"+d.rkjump); if(r) r.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"center"}); }); return; }
-  if(d.rkcmp){ runTool("compare", [{id:d.rkcmp, name:pname(d.rkcmp)}]); return; }
-  if(d.rkexp){ S.ptab = "exposure"; S.query = d.rkexp; S.playerFilter = "all"; go("players"); return; }
-  if(d.rkmkt){ S.mq = d.rkmkt; go("trades", {anchor:"market"}); return; }
-}, true);
-// drag to reorder: measures real row positions, so tier headers and open rows don't throw it off
+// drag to reorder (touch and mouse), with auto-scroll near the edges
 let DRAG = null;
 document.addEventListener("pointerdown", e=>{
-  const g = e.target.closest("[data-grip]"); if(!g || g.disabled) return;
-  let list = $("rklist"); if(!list || list.dataset.candrag === "false") return;
-  e.preventDefault(); e.stopImmediatePropagation();
-  const id = g.dataset.grip;
-  if(RK.open){ RK.open = null; render(); list = $("rklist"); }
-  const rows = [...list.querySelectorAll(".rkrow")], row = rows.find(r=>r.dataset.id === id); if(!row) return;
-  const sy = window.scrollY, rects = rows.map(r=>{ const b = r.getBoundingClientRect(); return {top:b.top + sy, h:b.height}; });
-  const idx = rows.indexOf(row);
-  DRAG = {id, row, rows, rects, idx, h:rects[idx].h, y0:e.clientY, sy0:sy, to:idx, pid:e.pointerId, y:e.clientY};
-  S.dragging = true; row.classList.add("dragging"); const gg = row.querySelector("[data-grip]"); try{ gg.setPointerCapture(e.pointerId); }catch(_){}
+  const g = e.target.closest("[data-grip]"); if(!g) return;
+  const list = $("rklist"); if(!list || list.dataset.candrag === "false") return;
+  e.preventDefault();
+  const row = g.closest(".rkrow"), rows = [...list.querySelectorAll(".rkrow")], idx = rows.indexOf(row), h = row.getBoundingClientRect().height;
+  DRAG = {id:g.dataset.grip, row, rows, idx, h, y0:e.clientY, sy0:window.scrollY, to:idx, pid:e.pointerId};
+  S.dragging = true; row.classList.add("dragging"); try{ g.setPointerCapture(e.pointerId); }catch(_){}
   haptic();
-}, true);
+});
 document.addEventListener("pointermove", e=>{
   if(!DRAG || e.pointerId !== DRAG.pid) return;
   DRAG.y = e.clientY;
-  const dy = e.clientY - DRAG.y0 + (window.scrollY - DRAG.sy0), R = DRAG.rects, i0 = DRAG.idx, c = R[i0].top + R[i0].h/2 + dy;
-  let to = i0; while(to < R.length-1 && c > R[to+1].top + R[to+1].h/2) to++; while(to > 0 && c < R[to-1].top + R[to-1].h/2) to--;
+  const dy = e.clientY - DRAG.y0 + (window.scrollY - DRAG.sy0), to = Math.max(0, Math.min(DRAG.rows.length-1, DRAG.idx + Math.round(dy/DRAG.h)));
   DRAG.row.style.transform = `translateY(${dy}px) scale(1.02)`;
   if(to !== DRAG.to){ DRAG.to = to; haptic();
-    DRAG.rows.forEach((r,i)=>{ if(r === DRAG.row) return; const shift = i0 < to ? (i > i0 && i <= to ? -DRAG.h : 0) : (i >= to && i < i0 ? DRAG.h : 0); r.style.transform = shift ? `translateY(${shift}px)` : ""; }); }
-  if(!DRAG.scrolling){ DRAG.scrolling = true; const step = ()=>{ if(!DRAG) return; const y = DRAG.y, top = 200, v = y < top ? -(top - y)/6 : y > innerHeight - 160 ? (y - (innerHeight - 160))/6 : 0;
+    DRAG.rows.forEach((r,i)=>{ if(r === DRAG.row) return; const shift = DRAG.idx < to ? (i > DRAG.idx && i <= to ? -DRAG.h : 0) : (i >= to && i < DRAG.idx ? DRAG.h : 0); r.style.transform = shift ? `translateY(${shift}px)` : ""; }); }
+  if(!DRAG.scrolling){ DRAG.scrolling = true; const step = ()=>{ if(!DRAG){ return; } const y = DRAG.y, edge = 90, v = y < edge ? -(edge-y)/6 : y > innerHeight - edge - 70 ? (y - (innerHeight - edge - 70))/6 : 0;
     if(v){ window.scrollBy(0, v); requestAnimationFrame(step); } else DRAG.scrolling = false; }; requestAnimationFrame(step); }
 }, {passive:true});
-
 const endDrag = ()=>{ if(!DRAG) return; const d = DRAG; DRAG = null; S.dragging = false;
   d.rows.forEach(r=>{ r.style.transform = ""; }); d.row.classList.remove("dragging");
   if(d.to !== d.idx) rkMove(d.id, d.to - d.idx);
@@ -3703,7 +3477,7 @@ function viewTeam(){
     ${reserve.size ? `<div class="rsec">IR</div>${[...reserve].map(p=>rosterRow(r, p, "IR", ov, [])).join("")}` : ""}
     <p class="src" style="padding:0 14px 12px;margin:0">Points: this week's Sleeper projection in this league's scoring. Small number: FantasyCalc dynasty value. Tags come from the trade finder, 30-day value trends, age and your direction.</p></section>`;
   // trades
-  h += `<section id="trades" style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trades that fit</h2><span class="sub">${DIR3[x.dir]}</span></div>`;
+  h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trades that fit</h2><span class="sub">${DIR3[x.dir]}</span></div>`;
   if(!st || st.busy) h += `<div class="skel" aria-hidden="true"><i style="height:150px"></i><i style="height:150px"></i></div>`;
   else if(st.error) h += `<div class="empty">${esc(st.error)}</div>`;
   else h += ov.recs.length ? ov.recs.map(([ev,mode],i)=>recHTML(st.L, ev, mode, i)).join("") : `<div class="empty">No clean trades found in this league right now.</div>`;
@@ -3730,513 +3504,269 @@ document.addEventListener("click", e=>{ const el = e.target.closest("[data-opent
 
 
 /* =====================================================================
-   V2.1 · one flow: pinned crystal ball, game plan rail, top-left menu,
-   Diagnose / Trades / Offers screens, smarter asks, spin & shake
+   Accounts: "take control of your command center"
+   Supabase auth (email or phone + password) and one private row of saved settings per user,
+   spoken to directly over its REST endpoints. Hidden until the project key is set.
    ===================================================================== */
-VIEWS.add("direction"); VIEWS.add("trades"); VIEWS.add("offers");
+const SB_URL = "https://uxqevvuqibqvypwpccjz.supabase.co";
+const SB_KEY = window.CC_SB_KEY ?? "sb_publishable_wclXgOusrUUgopfTF_K-NQ_enryoOh8";   // publishable (client-safe) key
+const ACC = {session:null, sheet:null, msg:null, msgKind:"", busy:false, remember: store.get("auth:remember", true), show:false, pendingPhone:null, delArm:false, syncedAt:null};
+const accountsOn = () => !!SB_KEY;
+const SYNC_KEY = /^(username|threshold|hideDone|sort|dir:|done:|rk:)/;
 
-const NI = {
-  home:`<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>`,
-  diagnose:`<path d="M3 12h4l2.2-5.5 4.2 11 2.4-5.5H21"/>`,
-  trades:`<path d="M5 8h12l-3-3"/><path d="M19 16H7l3 3"/>`,
-  offers:`<path d="M21 3L3 10.4l7.2 2.6L13 20.5z"/><path d="M10.2 13L21 3"/>`,
-  lineups:`<rect x="5" y="4.5" width="14" height="16.5" rx="2.5"/><path d="M9 4.5h6v3H9z"/><path d="M9 14l2.2 2.2L15.5 12"/>`,
-  waivers:`<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>`,
-  rankings:`<path d="M4 6h3M4 12h3M4 18h3"/><path d="M10 6h10M10 12h7M10 18h4"/>`,
-  brief:`<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h5"/>`,
-  start:`<path d="M7 5v14M17 5v14"/><path d="M3 12h4M17 12h4"/><path d="M10 9l2 3-2 3M14 9l-2 3 2 3"/>`,
-  compare:`<path d="M4 18l5-6 4 3 7-9"/><path d="M4 13l5-2 4 1 7-5" opacity=".55"/>`,
-  exposure:`<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.4 3.2-5.3 6-5.3s5.2 1.9 6 5.3"/><path d="M16 5a3 3 0 0 1 0 6M18 14.8c1.8.7 2.9 2.4 3.2 5"/>`,
-  reviews:`<rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/>`,
-  market:`<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/><path d="M11 8v6M9 9.5h3a1.2 1.2 0 0 1 0 2.4h-2a1.2 1.2 0 0 0 0 2.4h3"/>`,
-  monitor:`<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>`,
-  swaps:`<path d="M7 17V7M4 10l3-3 3 3"/><path d="M17 7v10M14 14l3 3 3-3"/>`,
-  team:`<path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/>`,
-  orb:`<circle cx="12" cy="10.5" r="6.5"/><path d="M7.5 20.5h9l-1.6-3.2H9.1z"/>`,
-  refresh:`<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>`,
-  user:`<circle cx="12" cy="8" r="3.6"/><path d="M5 20c1-3.8 3.8-5.8 7-5.8s6 2 7 5.8"/>`
-};
-const svgI = (k, s=20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NI[k]||""}</svg>`;
+/* ---------- session storage: "stay signed in" keeps it in localStorage, otherwise only for this visit ---------- */
+function authLoad(){ for(const s of [localStorage, sessionStorage]){ try{ const v = s.getItem("cc:auth"); if(v) return JSON.parse(v); }catch(_){} } return null; }
+function authSave(sess){
+  try{ localStorage.removeItem("cc:auth"); sessionStorage.removeItem("cc:auth"); }catch(_){}
+  if(!sess) return;
+  try{ (ACC.remember ? localStorage : sessionStorage).setItem("cc:auth", JSON.stringify(sess)); }catch(_){}
+}
+function setSession(j){
+  if(!j || !j.access_token){ ACC.session = null; authSave(null); return; }
+  ACC.session = {access_token:j.access_token, refresh_token:j.refresh_token, expires_at: j.expires_at || Math.floor(Date.now()/1000) + (j.expires_in || 3600), user: j.user || (ACC.session && ACC.session.user)};
+  authSave(ACC.session);
+}
+const accName = () => { const u = ACC.session && ACC.session.user; return u ? (u.email || (u.phone ? "+" + String(u.phone).replace(/^\+/,"") : "your account")) : ""; };
 
-/* ---------- what locks next ---------- */
-function lockMap(){
-  if(S._lockAt === S.loadedAt && S._lockKick === !!(S.kick[S.week] && S.kick[S.week].ok) && S._lockDone === JSON.stringify(doneList())) return S._locks;
-  const m = {};
-  const put = (lid, k, kind) => { if(!k || k.ts <= Date.now()) return; const e = m[lid]; if(!e || k.ts < e.k.ts) m[lid] = {k, kind}; };
-  for(const g of outGroups()) for(const x of g.rows) if(!isDone(x.r.league.league_id)) put(x.r.league.league_id, x.dl, "fix");
-  for(const r of S.results){ if(r.sev === "off" || isDone(r.league.league_id)) continue;
-    if(r.issues.some(x=>x.sev === "warn")) put(r.league.league_id, resDeadline(r, "monitor"), "monitor");
-    if(r.moves && r.gain > 0) put(r.league.league_id, resDeadline(r, "startsit"), "startsit"); }
-  S._locks = m; S._lockAt = S.loadedAt; S._lockKick = !!(S.kick[S.week] && S.kick[S.week].ok); S._lockDone = JSON.stringify(doneList());
+/* ---------- REST ---------- */
+async function sb(path, {method="GET", body, auth=true, headers={}} = {}){
+  if(auth && ACC.session && ACC.session.expires_at - 60 < Date.now()/1000) await sbRefresh();
+  const h = {apikey: SB_KEY, "Content-Type":"application/json", ...headers};
+  if(auth && ACC.session) h.Authorization = "Bearer " + ACC.session.access_token;   // publishable keys are not JWTs: only send a user token
+  const r = await fetch(SB_URL + path, {method, headers:h, body: body == null ? undefined : JSON.stringify(body)});
+  const text = await r.text(); let j = null; try{ j = text ? JSON.parse(text) : null; }catch(_){}
+  if(!r.ok){ const m = j && (j.error_description || j.msg || j.message || j.error) || ("Error " + r.status); const e = new Error(m); e.status = r.status; e.code = j && (j.error_code || j.code); throw e; }
+  return j;
+}
+async function sbRefresh(){
+  if(!ACC.session || !ACC.session.refresh_token) return;
+  try{ const j = await fetch(SB_URL + "/auth/v1/token?grant_type=refresh_token", {method:"POST", headers:{apikey:SB_KEY, "Content-Type":"application/json"}, body: JSON.stringify({refresh_token: ACC.session.refresh_token})}).then(r=>r.ok ? r.json() : Promise.reject(r.status));
+    setSession(j); }
+  catch(e){ if(e === 400 || e === 401){ setSession(null); } }
+}
+function friendly(e){
+  const m = String(e && e.message || e || "");
+  if(/invalid login credentials/i.test(m)) return "That login and password don't match.";
+  if(/already registered|already exists/i.test(m)) return "There's already an account with that. Sign in instead.";
+  if(/phone.*(provider|disabled|not.*enabled)|sms|unsupported phone/i.test(m)) return "Phone sign-in isn't switched on yet. Use your email for now.";
+  if(/email not confirmed/i.test(m)) return "Confirm your email first: open the link we sent you.";
+  if(/rate limit|too many/i.test(m)) return "Too many tries. Wait a minute and try again.";
+  if(/password.*(short|least|weak)/i.test(m)) return "That password is too short. Use at least 8 characters.";
+  if(/failed to fetch|network/i.test(m)) return "Couldn't reach the account service. Check your connection.";
+  if(/token.*(expired|invalid)|otp/i.test(m)) return "That code didn't work. Check it, or send a new one.";
   return m;
 }
-function doneList(){ return S.results.filter(r=>isDone(r.league.league_id)).map(r=>r.league.league_id); }
-function nextLock(){
-  const all = Object.values(lockMap()).sort((a,b)=>a.k.ts - b.k.ts);
-  if(!all.length) return null;
-  const first = all[0], same = all.filter(e=>e.k.ts - first.k.ts < 3.6e6);
-  return {k:first.k, n:same.length, fix:same.filter(e=>e.kind === "fix").length, total:all.length};
+function loginId(raw){
+  const v = (raw||"").trim();
+  if(v.includes("@")) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? {email: v.toLowerCase()} : null;
+  const d = v.replace(/[^\d+]/g, ""), digits = d.replace(/\D/g, "");
+  if(digits.length < 10) return null;
+  return {phone: d.startsWith("+") ? "+" + digits : digits.length === 10 ? "+1" + digits : "+" + digits};
 }
-const hoursTo = ts => (ts - Date.now())/3.6e6;
+function pwScore(p){ let s = 0; if(p.length >= 8) s++; if(p.length >= 12) s++; if(/[a-z]/.test(p) && /[A-Z]/.test(p)) s++; if(/\d/.test(p)) s++; if(/[^A-Za-z0-9]/.test(p)) s++; return s; }
 
-/* ---------- offers you've sent, tracked on this device ---------- */
-const OFFERS = { all(){ return store.get("offers", []); }, save(a){ store.set("offers", a.slice(0, 120)); } };
-function addOffer(o){
-  const a = OFFERS.all(), key = o.lid + "|" + o.give.join("+") + ">" + o.get.join("+"), ex = a.find(z=>z.key === key);
-  if(ex){ ex.ts = Date.now(); ex.status = "sent"; } else a.unshift({...o, key, ts: Date.now(), status: "sent"});
-  OFFERS.save(a);
+/* ---------- sync: your saved settings follow you ---------- */
+function localSyncData(){ const out = {}; try{ for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(!k || !k.startsWith("cc:")) continue; const kk = k.slice(3); if(SYNC_KEY.test(kk)) out[kk] = JSON.parse(localStorage.getItem(k)); } }catch(_){} return out; }
+let pushTimer = null;
+function schedulePush(){ clearTimeout(pushTimer); pushTimer = setTimeout(pushState, 1500); }
+async function pushState(){
+  if(!ACC.session) return;
+  try{ await sb("/rest/v1/user_state", {method:"POST", headers:{Prefer:"resolution=merge-duplicates,return=minimal"}, body:{user_id: ACC.session.user.id, data: localSyncData(), updated_at: new Date().toISOString()}});
+    ACC.syncedAt = new Date(); if(ACC.sheet === "account") renderSheet(); }
+  catch(e){ if(e.status === 401) setSession(null); }
 }
-function offerStats(){
-  const a = OFFERS.all(), waiting = a.filter(o=>o.status === "sent"), nudge = waiting.filter(o=>Date.now() - o.ts > 2*864e5);
-  const done = a.filter(o=>["accepted","declined"].includes(o.status)), acc = a.filter(o=>o.status === "accepted").length;
-  return {all:a, waiting:waiting.length, nudge:nudge.length, countered:a.filter(o=>o.status === "countered").length, acc, rate: done.length ? acc/done.length : null};
+async function pullState(){
+  if(!ACC.session) return;
+  const rows = await sb("/rest/v1/user_state?select=data,updated_at&user_id=eq." + ACC.session.user.id);
+  const row = rows && rows[0], before = S.username;
+  if(row && row.data) for(const [k,v] of Object.entries(row.data)) if(SYNC_KEY.test(k)) try{ localStorage.setItem("cc:" + k, JSON.stringify(v)); }catch(_){}
+  S.username = store.get("username", S.username); S.threshold = store.get("threshold", S.threshold); S.hideDone = store.get("hideDone", S.hideDone); S.sort = store.get("sort", S.sort);
+  RK.mode = store.get("rk:mode", RK.mode); RK.qb = store.get("rk:qb", RK.qb);
+  await pushState();
+  if(S.username && (S.username !== before || !S.results.length) && !S.loading){ S.userId = null; S.lastKey = null; loadAll(null); }
+  else render();
+}
+const _set = store.set.bind(store);
+store.set = (k, v) => { _set(k, v); if(ACC.session && SYNC_KEY.test(k)) schedulePush(); };
+
+/* ---------- actions ---------- */
+async function accSubmit(kind){
+  if(ACC.busy) return;
+  const idEl = $("acId"), pwEl = $("acPw"), rm = $("acRemember");
+  if(rm){ ACC.remember = rm.checked; _set("auth:remember", ACC.remember); }
+  ACC.msg = null; ACC.busy = true; renderSheet();
+  try{
+    if(kind === "create" || kind === "signin"){
+      const who = loginId(idEl.value), pw = pwEl.value;
+      if(!who) throw new Error("Enter an email address or a phone number with area code.");
+      if(kind === "create" && pw.length < 8) throw new Error("Use at least 8 characters for your password.");
+      if(kind === "create"){
+        const j = await sb("/auth/v1/signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), {method:"POST", auth:false, body:{...who, password:pw}});
+        if(j && j.access_token){ setSession(j); await accSignedIn("Account created. Your command center now follows you."); return; }
+        if(who.phone){ ACC.pendingPhone = who.phone; ACC.sheet = "verify"; ACC.msg = `We texted a 6-digit code to ${who.phone}.`; ACC.msgKind = "info"; }
+        else { ACC.sheet = "signin"; ACC.msg = `Almost there: open the link we sent to ${who.email} to confirm, then sign in.`; ACC.msgKind = "info"; }
+      } else {
+        const j = await sb("/auth/v1/token?grant_type=password", {method:"POST", auth:false, body:{...who, password:pw}});
+        setSession(j); await accSignedIn("Signed in. Your command center is synced."); return;
+      }
+    } else if(kind === "verify"){
+      const j = await sb("/auth/v1/verify", {method:"POST", auth:false, body:{type:"sms", phone: ACC.pendingPhone, token: $("acCode").value.trim()}});
+      setSession(j); await accSignedIn("Phone verified. Your command center now follows you."); return;
+    } else if(kind === "reset"){
+      const who = loginId(idEl.value); if(!who || !who.email) throw new Error("Enter the email on your account.");
+      await sb("/auth/v1/recover?redirect_to=" + encodeURIComponent(location.origin + location.pathname), {method:"POST", auth:false, body:{email: who.email}});
+      ACC.msg = `If there's an account for ${who.email}, a reset link is on its way.`; ACC.msgKind = "info";
+    } else if(kind === "newpw"){
+      const pw = pwEl.value; if(pw.length < 8) throw new Error("Use at least 8 characters.");
+      await sb("/auth/v1/user", {method:"PUT", body:{password: pw}});
+      ACC.sheet = null; toast("Password updated.");
+    }
+  }catch(e){ ACC.msg = friendly(e); ACC.msgKind = "err"; }
+  ACC.busy = false; renderSheet();
+}
+async function accSignedIn(msg){
+  ACC.busy = false; ACC.sheet = null; ACC.msg = null; renderSheet();
+  try{ const u = await sb("/auth/v1/user"); if(u) ACC.session.user = u, authSave(ACC.session); }catch(_){}
+  toast(msg);
+  try{ await pullState(); }catch(_){ render(); }
+}
+async function accSignOut(){
+  try{ await sb("/auth/v1/logout", {method:"POST"}); }catch(_){}
+  setSession(null); ACC.sheet = null; renderSheet(); render(); toast("Signed out. Everything stays on this device.");
+}
+async function accDelete(){
+  if(!ACC.delArm){ ACC.delArm = true; renderSheet(); setTimeout(()=>{ ACC.delArm = false; renderSheet(); }, 5000); return; }
+  ACC.busy = true; renderSheet();
+  try{ await sb("/rest/v1/rpc/delete_me", {method:"POST", body:{}}); setSession(null); ACC.sheet = null; toast("Account deleted. Your data on this device is untouched."); }
+  catch(e){ ACC.msg = friendly(e); ACC.msgKind = "err"; }
+  ACC.busy = false; ACC.delArm = false; renderSheet(); render();
 }
 
-/* ---------- the game plan: one ordered path through the app ---------- */
-const STEPS = [
-  {go:"direction", n:1, label:"Diagnose", icon:"diagnose"},
-  {go:"trades",    n:2, label:"Trades",   icon:"trades"},
-  {go:"offers",    n:3, label:"Offers",   icon:"offers"},
-  {go:"fix",       n:4, label:"Lineups",  icon:"lineups"},
-  {go:"waivers",   n:5, label:"Waivers",  icon:"waivers"}
-];
-function stepInfo(k){
-  if(k === "direction"){
-    if(S.dir){ const L = Object.values(S.dir.leagues), limbo = L.filter(z=>LIMBO.has(z.me.dir)).length;
-      return {badge: limbo || null, tone:"warn", title:"Diagnose your teams", line: limbo ? `${limbo} team${limbo>1?"s are":" is"} in limbo: one spot out of the money is the worst finish` : `All ${L.length} teams have a clear lane`}; }
-    const tl = teamList().filter(x=>x.b), und = tl.filter(x=>x.dir === "none").length;
-    return {badge: und || null, tone:"warn", title:"Diagnose your teams", line: tl.length ? (und ? `${und} team${und>1?"s have":" has"} no direction yet. Simulate the season to pick a lane` : "Every team has a lane. Re-check playoff odds any time") : "Scoring your teams…"};
+/* ---------- the sheet ---------- */
+const EYE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+function openAccount(mode){ if(!accountsOn()) return; ACC.sheet = mode || (ACC.session ? "account" : "create"); ACC.msg = null; renderSheet(); setTimeout(()=>{ const f = $("acId") || $("acCode") || $("acPw"); if(f) f.focus(); }, 380); }
+function closeAccount(){ ACC.sheet = null; renderSheet(); }
+function renderSheet(){
+  const el = $("sheet"); if(!el) return;
+  if(!ACC.sheet){ if(!el.hidden){ el.classList.add("closing"); setTimeout(()=>{ el.hidden = true; el.classList.remove("closing"); el.innerHTML = ""; }, 260); } return; }
+  const ae = document.activeElement, fid = ae && el.contains(ae) ? ae.id : null, caret = fid && ae.selectionStart != null ? ae.selectionStart : null;
+  const keep = {id: $("acId") ? $("acId").value : "", pw: $("acPw") ? $("acPw").value : "", code: $("acCode") ? $("acCode").value : ""};
+  const m = ACC.sheet, busy = ACC.busy;
+  const msg = ACC.msg ? `<div class="acmsg ${ACC.msgKind}" role="${ACC.msgKind === "err" ? "alert" : "status"}">${esc(ACC.msg)}</div>` : "";
+  let h = `<div class="sheet-bg" data-acclose="1"></div><section class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="acTitle"><button class="sheet-x" data-acclose="1" aria-label="Close">✕</button>`;
+  if(m === "account"){
+    h += `<div class="achead">${LOGO}<div><h2 id="acTitle" class="h2" style="font-size:22px">Your command center</h2><div class="sub">Signed in as <b style="color:var(--ink)">${esc(accName())}</b></div></div></div>
+      <ul class="acperks"><li>Rankings, team directions, done checks and settings sync to this account.</li><li>${ACC.syncedAt ? `Last synced ${ACC.syncedAt.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}.` : "Syncs a moment after every change."}</li></ul>
+      ${msg}<button class="cbtn wide" data-acsync="1" ${busy?"disabled":""}>Sync now</button>
+      <div class="acrow"><button class="ghost" data-acout="1">Sign out</button><button class="ghost danger" data-acdel="1" ${busy?"disabled":""}>${ACC.delArm ? "Tap again to delete for good" : "Delete account"}</button></div>`;
+  } else if(m === "verify"){
+    h += `<h2 id="acTitle" class="h1" style="font-size:30px">Enter your code</h2>${msg}
+      <label class="lab" for="acCode">6-digit code</label><input class="acin" id="acCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="${esc(keep.code)}">
+      <button class="cbtn wide" data-acgo="verify" ${busy?"disabled":""}>${busy ? "Checking…" : "Verify"}</button>`;
+  } else if(m === "reset"){
+    h += `<h2 id="acTitle" class="h1" style="font-size:30px">Reset password</h2><p class="sub" style="margin:0">We'll email you a link to set a new one.</p>${msg}
+      <label class="lab" for="acId">Email</label><input class="acin" id="acId" type="email" autocomplete="username" inputmode="email" value="${esc(keep.id)}">
+      <button class="cbtn wide" data-acgo="reset" ${busy?"disabled":""}>${busy ? "Sending…" : "Send reset link"}</button>
+      <button class="aclink" data-acmode="signin">Back to sign in</button>`;
+  } else if(m === "newpw"){
+    h += `<h2 id="acTitle" class="h1" style="font-size:30px">New password</h2>${msg}
+      <label class="lab" for="acPw">Password</label><div class="pwbox"><input class="acin" id="acPw" type="password" autocomplete="new-password" value="${esc(keep.pw)}"><button class="eye" data-aceye="1" aria-label="Show password">${EYE}</button></div>
+      <div class="pwm" id="pwm"></div>
+      <button class="cbtn wide" data-acgo="newpw" ${busy?"disabled":""}>${busy ? "Saving…" : "Save password"}</button>`;
+  } else {
+    const create = m === "create";
+    h += `<div class="achead">${LOGO}<div><h2 id="acTitle" class="h2" style="font-size:20px">${create ? "Take control of your command center" : "Welcome back"}</h2><div class="sub">${create ? "Free. Your rankings, team directions and settings on every device." : "Sign in to pick up where you left off."}</div></div></div>
+      <div class="seg" role="tablist" style="--n:2;--i:${create?0:1}"><button role="tab" data-acmode="create" aria-selected="${create}">Create account</button><button role="tab" data-acmode="signin" aria-selected="${!create}">Sign in</button><i aria-hidden="true"></i></div>
+      ${msg}
+      <label class="lab" for="acId">Email or phone</label><input class="acin" id="acId" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="you@email.com or (555) 123-4567" value="${esc(keep.id)}">
+      <label class="lab" for="acPw">Password</label><div class="pwbox"><input class="acin" id="acPw" type="password" autocomplete="${create ? "new-password" : "current-password"}" placeholder="${create ? "At least 8 characters" : ""}" value="${esc(keep.pw)}"><button class="eye" data-aceye="1" aria-label="Show password">${EYE}</button></div>
+      ${create ? `<div class="pwm" id="pwm"></div>` : ""}
+      <label class="remember"><input type="checkbox" id="acRemember" ${ACC.remember ? "checked" : ""}><span class="box" aria-hidden="true"></span><span>Stay signed in on this device</span></label>
+      <button class="cbtn wide" data-acgo="${m}" ${busy?"disabled":""}>${busy ? (create ? "Creating…" : "Signing in…") : (create ? "Create account" : "Sign in")}<span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg></span></button>
+      ${create ? `<p class="note" style="margin:0;text-align:center">We use your email or phone only to sign you in.</p>` : `<button class="aclink" data-acmode="reset">Forgot password?</button>`}`;
   }
-  if(k === "trades") return {title:"Get trade advice", line:"Recs built for each team, plus trade check, compare and real market prices"};
-  if(k === "offers"){ const o = offerStats();
-    return {badge: o.waiting || null, tone: o.nudge ? "warn" : "up", title:"Track your offers", line: o.all.length ? `${o.waiting} waiting on an answer${o.nudge ? ` · ${o.nudge} need${o.nudge>1?"":"s"} a nudge` : ""}${o.countered ? ` · ${o.countered} countered` : ""}` : "Copy any trade rec and it's tracked here until they answer"}; }
-  if(k === "fix"){ const c = fixCounts(), nl = nextLock(), urgent = !!(nl && hoursTo(nl.k.ts) < 48 && (c.fix || nl.fix));
-    const line = c.fix + c.monitor + c.startsit ? `${c.fix} must fix · ${c.monitor} game-time · ${c.startsit} better lineups${nl ? ` · first lock ${kickLabel(nl.k)}` : ""}` : "Every lineup is set";
-    return {badge: c.fix || null, tone:"crit", title:"Set your lineups", line, urgent}; }
-  if(k === "waivers"){ const d = ET(Date.now()), dow = d.getDay(), soon = dow === 2 || (dow === 3 && d.getHours() < 12);
-    return {title:"Work the waiver wire", line: soon ? "Most claims process tonight. Set bids before bed" : "Fill holes, stash value, and bid what your leagues actually pay", urgent:false, badge: soon ? "!" : null, tone:"warn"}; }
-  return {title:k, line:""};
+  h += `</section>`;
+  const opening = el.hidden; el.hidden = false; el.innerHTML = h; if(opening){ el.classList.remove("closing"); }
+  pwMeter();
+  if(fid && $(fid)){ const f = $(fid); f.focus({preventScroll:true}); try{ if(caret != null) f.setSelectionRange(caret, caret); }catch(_){} }
 }
-function renderChrome(){
-  const rail = $("rail"), v = currentView();
-  if(rail){
-    const html = STEPS.map((s,i)=>{ const st = stepInfo(s.go), on = v === s.go || (v === "team" && s.go === "trades" && S.navFrom === "trades");
-      return `${i ? `<span class="rsep" aria-hidden="true">›</span>` : ""}<button class="rstep${on ? " on" : ""}${st.urgent ? " hot" : ""}" data-go="${s.go}"${on ? ` aria-current="page"` : ""}><span class="n">${s.n}</span>${s.label}${st.badge ? `<i class="b t-${st.tone}">${st.badge}</i>` : ""}</button>`; }).join("");
-    if(rail.dataset.h !== html){ rail.dataset.h = html; rail.innerHTML = html; }
-    const on = rail.querySelector(".on") || rail.querySelector(".hot"); if(on && rail.dataset.v !== v){ rail.dataset.v = v; try{ rail.scrollTo({left: Math.max(0, on.offsetLeft - (rail.clientWidth - on.offsetWidth)/2), behavior: reduceMotion() ? "auto" : "smooth"}); }catch(_){} }
-  }
-  const dot = $("menuDot"); if(dot) dot.hidden = !(S.results.length && fixCounts().fix);
-  if(MENU.open) renderMenu();
+function pwMeter(){
+  const m = $("pwm"), p = $("acPw"); if(!m || !p) return;
+  const s = pwScore(p.value), lv = !p.value ? 0 : s < 3 ? 1 : s < 4 ? 2 : 3;
+  m.innerHTML = `<span class="bars">${[1,2,3].map(i=>`<i class="${i<=lv?"on l"+lv:""}"></i>`).join("")}</span><span>${!p.value ? "Use 8+ characters. Mixing in numbers and symbols makes it stronger." : ["","Weak","Okay","Strong"][lv]}</span>`;
 }
+let toastT = null;
+function toast(text){ const t = $("toast"); if(!t) return; t.textContent = text; t.hidden = false; t.classList.remove("out"); clearTimeout(toastT); toastT = setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>{ t.hidden = true; }, 300); }, 3200); }
 
-/* ---------- top-left menu ---------- */
-const MENU = {open:false, q:""};
-function menuItem(icon, label, sub, attrs, count, tone){
-  return `<button class="mitem" ${attrs}>${svgI(icon)}<span class="t">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ""}</span>${count != null && count !== "" ? `<span class="ct${tone ? " "+tone : ""}">${count}</span>` : ""}</button>`;
+/* ---------- entry points in the app ---------- */
+function accountCardHTML(){
+  if(!accountsOn() || ACC.session || store.get("acct:dismissed", false)) return "";
+  return `<section class="takecontrol glass"><button class="tc-x" data-acdismiss="1" aria-label="Not now">✕</button>
+    <div class="tc-t"><b>Take control of your command center</b><span>Create a free account and your rankings, team directions and settings follow you to every device.</span></div>
+    <div class="acrow"><button class="cbtn" data-acopen="create">Create account<span class="arr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg></span></button><button class="ghost" data-acopen="signin">Sign in</button></div></section>`;
 }
-function renderMenu(){
-  const p = $("mpanel"); if(!p) return;
-  const c = fixCounts(), o = offerStats(), nl = nextLock();
-  const q = MENU.q.trim().toLowerCase();
-  let teams = teamList();
-  const locks = lockMap();
-  teams = q ? teams.filter(x=>x.name.toLowerCase().includes(q)) : teams.filter(x=>locks[x.id]).sort((a,b)=>locks[a.id].k.ts - locks[b.id].k.ts).concat(teams.filter(x=>!locks[x.id]));
-  const ae = document.activeElement, keep = ae && ae.id === "mq2" ? ae.selectionStart : null;
-  p.innerHTML = `
-    <div class="mgroup"><div class="lab">Right now${nl ? ` · first lock ${esc(kickLabel(nl.k))}` : ""}</div>
-      ${menuItem("lineups","Must fix","Starters who can't play",`data-go="fix" data-tab="fix"`, c.fix, c.fix ? "crit" : "")}
-      ${menuItem("monitor","Game-time calls","Questionable starters",`data-go="fix" data-tab="monitor"`, c.monitor, c.monitor ? "warn" : "")}
-      ${menuItem("swaps","Better lineups","Bench points to move in",`data-go="fix" data-tab="startsit"`, c.startsit, "")}
-      ${menuItem("brief",`Week ${S.week} brief`,"The story of your week","data-go=\"brief\"")}
-    </div>
-    <div class="mgroup"><div class="lab">Your game plan</div>
-      ${STEPS.map(s=>{ const st = stepInfo(s.go); return `<button class="mitem step" data-go="${s.go}"><span class="n">${s.n}</span><span class="t">${esc(st.title)}<small>${esc(st.line)}</small></span>${st.badge ? `<span class="ct ${st.tone}">${st.badge}</span>` : ""}</button>`; }).join("")}
-    </div>
-    <div class="mgroup"><div class="lab">Tools</div><div class="mgrid">
-      <button class="mtile" data-opentool="start">${svgI("start",18)}Start / Sit</button>
-      <button class="mtile" data-opentool="trade">${svgI("trades",18)}Trade check</button>
-      <button class="mtile" data-opentool="compare">${svgI("compare",18)}Compare</button>
-      <button class="mtile" data-go="rankings">${svgI("rankings",18)}Rankings</button>
-      <button class="mtile" data-nav="trades:market">${svgI("market",18)}Trade market</button>
-      <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
-      <button class="mtile" data-nav="players:reviews">${svgI("reviews",18)}Team reviews</button>
-      <button class="mtile" data-go="offers">${svgI("offers",18)}Offers${o.waiting ? ` <span class="ct up">${o.waiting}</span>` : ""}</button>
-    </div></div>
-    <div class="mgroup"><div class="lab">Jump to a team</div>
-      <input class="search" id="mq2" type="search" placeholder="Search ${teamList().length} leagues" value="${esc(MENU.q)}" autocomplete="off">
-      <div class="mteams">${teams.slice(0, q ? 12 : 6).map(x=>{ const l = locks[x.id];
-        return `<button class="mitem" data-team="${x.id}">${svgI("team",18)}<span class="t">${esc(x.name)}<small>${esc(x.rec)} · ${DIR3[x.dir]}${l ? ` · ${{fix:"fix",monitor:"check",startsit:"swap"}[l.kind]} by ${esc(kickLabel(l.k))}` : ""}</small></span>${l ? `<span class="ct ${l.kind === "fix" ? "crit" : l.kind === "monitor" ? "warn" : "up"}">${l.kind === "fix" ? "Fix" : l.kind === "monitor" ? "Check" : "Swap"}</span>` : ""}</button>`; }).join("") || `<div class="sub" style="padding:6px 8px">No league matches.</div>`}</div>
-    </div>
-    <div class="mfoot"><button class="ghost" id="mRefresh">${svgI("refresh",16)}Refresh</button><button class="ghost" id="mSwitch">${svgI("user",16)}Switch user</button></div>`;
-  if(keep != null){ const el = $("mq2"); el.focus({preventScroll:true}); try{ el.setSelectionRange(keep, keep); }catch(_){} }
+function accountChipHTML(){
+  if(!accountsOn()) return "";
+  return ACC.session ? `<button class="acchip on" data-acopen="account" aria-label="Your account">${esc((accName()[0]||"•").toUpperCase())}</button>` : `<button class="acchip" data-acopen="signin">Sign in</button>`;
 }
-function openMenu(){
-  const m = $("menu"); if(!m || MENU.open) return;
-  MENU.open = true; MENU.q = ""; renderMenu(); m.hidden = false; $("menuBtn").setAttribute("aria-expanded","true");
-  requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add("open")));
-  document.body.style.overflow = "hidden";
-  setTimeout(()=>{ const f = m.querySelector(".mitem"); if(f) f.focus({preventScroll:true}); }, 60);
-}
-function closeMenu(){
-  const m = $("menu"); if(!m || !MENU.open) return;
-  MENU.open = false; m.classList.remove("open"); $("menuBtn").setAttribute("aria-expanded","false"); document.body.style.overflow = "";
-  setTimeout(()=>{ if(!MENU.open) m.hidden = true; }, reduceMotion() ? 0 : 260);
-}
-
-/* ---------- toast ---------- */
-function showToast(text){
-  const t = $("toast"); if(!t) return;
-  t.innerHTML = `<span class="miniorb sm" aria-hidden="true"></span><span>${esc(text)}</span>`; t.hidden = false;
-  t.getAnimations().forEach(a=>a.cancel());
-  if(!reduceMotion()) t.animate([{opacity:0, transform:"translate(-50%,10px)"},{opacity:1, transform:"translate(-50%,0)"}], {duration:260, easing:"cubic-bezier(.22,1,.36,1)"});
-  clearTimeout(S._toastT); S._toastT = setTimeout(()=>{ t.hidden = true; }, 2600);
-}
-
-/* ---------- Diagnose: every team simulated, limbo first ---------- */
-function viewDirection(){
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><div class="lab">Step 1 of 5</div><h1 class="h1">Diagnose</h1><div class="sub">Every team simulated through the rest of the season. Teams stuck in the middle come first: that's where a move matters most.</div></section><div class="statusline" id="statusline"></div>`;
-  if(!S.dir){
-    if(!S.dirLoading && !S.dirError) setTimeout(loadDirection, 0);
-    if(S.dirError) return h + `<div class="err">${esc(S.dirError)}</div>`;
-    return h + `<div class="skel" aria-hidden="true"><i style="height:120px"></i><i style="height:150px"></i><i style="height:150px"></i></div>`;
-  }
-  return h + renderDirList() + `<div class="nextstep"><span class="sub">Next: find the deals that move each team in its lane.</span><button class="ghost go" data-go="trades">Step 2 · Trades →</button></div>`;
-}
-
-/* ---------- Trades hub: finder per team, check, compare, market ---------- */
-function viewTrades(){
-  const tl = teamList(), o = offerStats();
-  const L = S.dir && S.dir.leagues;
-  const pri = x => { const z = L && L[x.id] && L[x.id].me; if(z) return LIMBO.has(z.dir) ? 0 : x.dir === "none" ? 1 : 2; return x.dir === "none" ? 1 : 2; };
-  const list = tl.filter(x=>x.b).sort((a,b)=>pri(a) - pri(b) || a.name.localeCompare(b.name));
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><div class="lab">Step 2 of 5</div><h1 class="h1">Trades</h1><div class="sub">Pick a team for recs built around its direction, check any offer, or see what a player actually cost.</div></section>
-    <section class="hub3">
-      <button class="ttile glass" data-opentool="trade">${svgI("trades",24)}<b>Trade check</b><small>Build any offer and grade it</small></button>
-      <button class="ttile glass" data-opentool="compare">${svgI("compare",24)}<b>Compare</b><small>Two players, long term</small></button>
-      <button class="ttile glass" data-go="offers">${svgI("offers",24)}<b>Offers${o.waiting ? ` <span class="ct up">${o.waiting}</span>` : ""}</b><small>${o.all.length ? `${o.waiting} waiting` : "Track what you send"}</small></button>
-    </section>
-    <section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Trade finder</h2><span class="sub">${L ? "Limbo teams first" : "Undecided teams first"}</span></div>
-      <div class="teamrow-list">${list.map(x=>{ const z = L && L[x.id] && L[x.id].me;
-        const tag = z ? `<span class="dtag d-${DIR[z.dir].mode === "buy" ? "contend" : "rebuild"}">${DIR[z.dir].short}</span>` : `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`;
-        return `<button class="trow" data-team="${x.id}" data-anchor="trades" data-from="trades"><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.rec)}${z ? ` · ${pct(z.odds.po)} playoff odds` : ""} · ${x.dir === "none" ? "no direction set" : DIR3[x.dir].toLowerCase()}</span></span>${tag}<span class="chev" aria-hidden="true">›</span></button>`; }).join("") || `<div class="empty" style="margin:0">${S.bpLoading ? "Scoring your teams…" : "No dynasty teams with enough data yet."}</div>`}</div>
-      ${!L ? `<button class="ghost tint" data-go="direction" style="align-self:flex-start">${svgI("diagnose",16)} Simulate every season to sort by playoff odds</button>` : ""}</section>`;
-  h += marketHTML();
-  h += `<div class="nextstep"><span class="sub">Sent an offer? Track the answer.</span><button class="ghost go" data-go="offers">Step 3 · Offers →</button></div>`;
-  return h;
-}
-function marketHTML(){
-  const q = (S.mq||"").trim().toLowerCase();
-  let h = `<section id="market" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:190px"><div class="sec"><h2 class="h2">Trade market</h2><span class="sub">Real trades in your leagues</span></div>
-    <input class="search" id="mq" type="search" placeholder="What did a player cost? (e.g. ${esc((nameIndex().filter(p=>p.mine).sort((a,b)=>b.pts-a.pts)[0]||{full:"jeanty"}).full.split(" ").slice(-1)[0])})" value="${esc(S.mq||"")}" autocomplete="off">`;
-  if(q.length >= 3){
-    if(!S.tx){ if(!S.txP) loadTx().then(()=>render()).catch(()=>{}); return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Reading this season's trades…</div></section>`; }
-    const ids = Object.keys(S.proj).filter(id=>pname(id).toLowerCase().includes(q)).slice(0, 6);
-    const rows = ids.flatMap(id=>marketFor(id).map(r=>({...r, pid:id})));
-    h += rows.length ? `<div class="plist">${rows.slice(0, 25).map(r=>`<div class="prow"><div class="ptop"><span class="nm">${esc(pname(r.pid))}</span><span class="pos">${new Date(r.ts).toLocaleDateString([], {month:"short", day:"numeric"})}</span></div>
-      <div class="pstat">${esc(r.name)} · bought by ${esc(r.buyer)}${r.mine ? " · your trade" : ""}</div>
-      <div class="pstat">Cost: ${esc(r.paid.join(", ") || "nothing listed")}${r.got.length ? ` · buyer also got ${esc(r.got.join(", "))}` : ""}</div></div>`).join("")}</div>`
-      : `<div class="empty">No trades for that player in your leagues this season.</div>`;
-  }
-  return h + `</section>`;
-}
-
-/* ---------- Offers: what you sent and what came back ---------- */
-const OF_STATUS = [["sent","Waiting"],["countered","Countered"],["accepted","Accepted"],["declined","Declined"]];
-function viewOffers(){
-  const o = offerStats();
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><div class="lab">Step 3 of 5</div><h1 class="h1">Offers</h1><div class="sub">Every trade message you copy is saved here. Mark the answer when it comes back so you know who to nudge.</div></section>`;
-  if(!o.all.length) return h + `<div class="empty">No offers yet. Open a team's trade recs and tap <b>Copy message</b>: the offer lands here.<div style="margin-top:12px"><button class="ghost go" data-go="trades">Find trades →</button></div></div>`;
-  h += `<section class="stats"><div><b>${o.waiting}</b><span>waiting on an answer</span></div><div><b style="color:var(--warn)">${o.nudge}</b><span>need a nudge (2+ days)</span></div><div><b style="color:var(--ok)">${o.rate == null ? "—" : pct(o.rate)}</b><span>accepted, of answered</span></div></section>`;
-  for(const [st, label] of OF_STATUS){
-    const list = o.all.filter(x=>x.status === st); if(!list.length) continue;
-    h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">${label}</h2><span class="sub">${list.length}</span></div>${list.map(x=>{
-      const old = st === "sent" && Date.now() - x.ts > 2*864e5;
-      const nudge = `Hey ${x.partner}, circling back on ${x.give.join(" + ")} for ${x.get.join(" + ")}. Still open to it, and happy to hear a counter.`;
-      return `<article class="offer glass${old ? " old" : ""}"><div class="oh"><span class="t"><b>${esc(x.partner)}</b><small>${esc(x.league)} · ${st === "sent" ? "sent" : "updated"} ${esc(ago(x.ts))}</small></span>${old ? `<span class="pill p-warn">Nudge</span>` : ""}</div>
-        <div class="gs"><span class="k in">Get</span><span>${x.get.map(esc).join("<br>")}</span><span class="k out">Send</span><span>${x.give.map(esc).join("<br>")}</span></div>
-        <div class="seg sm" role="radiogroup" aria-label="Answer" style="--n:4;--i:${OF_STATUS.findIndex(s=>s[0] === st)}">${OF_STATUS.map(([k,l])=>`<button role="radio" aria-checked="${k === st}" data-ofs="${esc(x.key)}|${k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
-        <div class="cfoot" style="padding:0">${old ? `<button class="ghost tint" data-copy="${esc(nudge)}" data-label="Copy nudge">Copy nudge</button>` : ""}${x.cb ? `<button class="ghost" data-cbt="${esc(JSON.stringify(x.cb))}">Re-check</button>` : ""}<a class="ghost" href="${leagueLink(x.lid)}" target="_blank" rel="noopener">Sleeper ${ICON.ext}</a><button class="ghost" data-ofrm="${esc(x.key)}" aria-label="Remove this offer">Remove</button></div></article>`; }).join("")}</section>`;
-  }
-  h += `<div class="nextstep"><span class="sub">Offers out. Now make sure every lineup can play.</span><button class="ghost go" data-go="fix">Step 4 · Lineups →</button></div>`;
-  return h;
-}
-
-/* ---------- Home: what can't wait, then the plan ---------- */
-function nowCardHTML(){
-  const b = bulletinHTML(); if(b) return b;
-  const nl = nextLock(), c = fixCounts(); if(!nl || !(c.fix + c.monitor)) return "";
-  const hot = hoursTo(nl.k.ts) < 24;
-  return `<section class="nowcard glass${hot ? " hot" : ""}"><span class="t"><span class="lab">Next lock · ${esc(kickLabel(nl.k))}</span><b>${nl.n} lineup${nl.n>1?"s":""} to handle before ${esc(kickLabel(nl.k).split(" ")[0])} kickoff</b><small>${nl.fix ? `${nl.fix} with a starter who can't play` : "Game-time calls and better lineups"}</small></span>
-    <span class="cd${hot ? " hot" : ""}">${esc(untilText(nl.k.ts))}</span><button class="ghost go" data-go="fix" data-tab="${nl.fix ? "fix" : "monitor"}">Fix</button></section>`;
-}
-function planHTML(){
-  return `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Your game plan</h2><span class="sub">Red can't wait</span></div>
-    <div class="plan glass">${STEPS.map(s=>{ const st = stepInfo(s.go);
-      return `<button class="pstep${st.urgent ? " hot" : ""}" data-go="${s.go}"><span class="n">${s.n}</span><span class="t"><b>${esc(st.title)}${st.urgent ? `<span class="do">Do first</span>` : ""}</b><small>${esc(st.line)}</small></span>${st.badge ? `<span class="ct ${st.tone}">${st.badge}</span>` : ""}<span class="chev" aria-hidden="true">›</span></button>`; }).join("")}</div></section>`;
-}
-
-/* ---------- the pinned ask bar: live read of what you typed ---------- */
-const STOPW = new Set([...STOP, "sell","buy","trade","trades","waiver","waivers","rank","ranks","rankings","tier","tiers","start","sit","bench","flex","play","compare","value","worth","cost","market","brief","offer","offers","league","team","teams","rebuild","contend","contending","rebuilding","direction","week","rest","season","top","best","adds","add","pickup","pickups","stash","faab","injured","injury","questionable","lineup","lineups","fix","out","bye","risers","fallers","trending","dynasty","redraft","should","would","could","can","get","give","send","from","have","has","him","his","them","they","their","about","which","next","last","now","today","tonight","much","many","does","did","where","when","why","how","keep","hold","drop","cut","claim","bid","yes","no","not","any","some","more","less","good","bad","great","buy-low","sell-high"]);
-const ENGLISH = new Set(["chase","love","best","will","young","hunt","cook","hall","bell","white","brown","hill","rice","price","ward","reed","stone","mack","hunter","worthy","dart","nix","london","mills","banks","fields","sweat","person","major","law","golden","house","wise","moss","lamb","green","black","gray","king","knight","sanders","carter","rush","long","strong","may","high","low","love","walker","jones","smith","johnson","williams","thomas","taylor","jackson","harris","davis","allen","moore","wilson","adams","collins","henry","jacobs","hurts","waddle","pitts","penix","bowers"]);
-const NICK = {cmc:"christian mccaffrey", arsb:"amon-ra st brown", jsn:"jaxon smith-njigba", btj:"brian thomas", mhj:"marvin harrison", "amon-ra":"amon-ra st brown", jt:"jonathan taylor", kw:"kyren williams", "ceedee":"ceedee lamb", "jj":"justin jefferson", "jefferson":"justin jefferson", "bijan":"bijan robinson", "puka":"puka nacua", "saquon":"saquon barkley", "lamar":"lamar jackson", "mahomes":"patrick mahomes", "tyreek":"tyreek hill"};
-const NFLN = {cardinals:"ARI",falcons:"ATL",ravens:"BAL",bills:"BUF",panthers:"CAR",bears:"CHI",bengals:"CIN",browns:"CLE",cowboys:"DAL",broncos:"DEN",lions:"DET",packers:"GB",texans:"HOU",colts:"IND",jaguars:"JAX",jags:"JAX",chiefs:"KC",raiders:"LV",chargers:"LAC",rams:"LAR",dolphins:"MIA",vikings:"MIN",patriots:"NE",pats:"NE",saints:"NO",giants:"NYG",jets:"NYJ",eagles:"PHI",steelers:"PIT","49ers":"SF",niners:"SF",seahawks:"SEA",buccaneers:"TB",bucs:"TB",titans:"TEN",commanders:"WAS"};
-const NFL_ABBR = new Set(Object.values(NFLN).concat(["WAS"]));
-const POSW = [[/\bquarterbacks?\b|\bqbs?\b/,"QB"],[/\brunning ?backs?\b|\brbs?\b/,"RB"],[/\bwide ?receivers?\b|\breceivers?\b|\bwrs?\b/,"WR"],[/\btight ?ends?\b|\btes?\b/,"TE"],[/\bkickers?\b/,"K"],[/\bdefen[cs]es?\b|\bd\/?st\b|\bdsts?\b/,"DEF"]];
-const GENERIC = new Set(["league","leagues","dynasty","fantasy","football","ff","the","of","and","sf","superflex","super","flex","ppr","half","te","tep","12","10","14","16","team","teams","2025","2026","2027","my","in","a","dyno","redraft","keeper","best","ball","lg","ffl","club","official","2.0","12t","10t","14t"]);
-function lev(a, b){ if(Math.abs(a.length - b.length) > 1) return 9; const m = a.length, n = b.length, d = Array.from({length:m+1}, (_,i)=>[i]); for(let j=1;j<=n;j++) d[0][j] = j;
-  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
-function playerIdx(){
-  const n = Object.keys(S.proj).length; if(S._pidx && S._pidxN === n) return S._pidx;
-  const fc = {}, lc = {};
-  const rows = nameIndex().map(p=>{ const full = p.full.replace(/\./g,"").replace(/'/g,"'").replace(/\s+/g," ").trim(), parts = full.split(" "), first = parts[0], lastParts = parts.slice(1).filter(w=>!/^(jr|sr|ii|iii|iv|v)$/.test(w));
-    fc[first] = (fc[first]||0) + 1; const last = lastParts.join(" "); lc[last] = (lc[last]||0) + 1; return {...p, fullN:full, parts, first, lastParts, last}; });
-  rows.forEach(r=>{ r.firstUnique = fc[r.first] === 1; r.lastDup = lc[r.last] > 1; });
-  S._pidx = rows; S._pidxN = n; return rows;
-}
-function tokenize(text){
-  const orig = text.replace(/[’‘]/g,"'").replace(/\./g,"").replace(/'s\b/gi,"").replace(/[^A-Za-z0-9'\-/ ]/g," ").split(/\s+/).filter(Boolean);
-  return {orig, toks: orig.map(t=>t.toLowerCase())};
-}
-function findPlayers2(text){
-  const {orig, toks} = tokenize(text), low = text.toLowerCase(), ctx = /\b(start|sit|or|vs|versus|trade|for|compare|better|over|sell|buy|value|rank)\b/.test(low);
-  const cands = [];
-  for(const p of playerIdx()){
-    let best = null; const n = p.parts.length;
-    for(let i=0; i+n<=toks.length && !best; i++) if(p.parts.every((w,j)=>toks[i+j] === w)) best = {s:100, a:i, b:i+n-1};
-    if(!best){ const nick = Object.keys(NICK).find(k=>NICK[k] === p.fullN && toks.includes(k)); if(nick){ const i = toks.indexOf(nick); best = {s:92, a:i, b:i}; } }
-    if(!best && p.lastParts.length){ const ln = p.lastParts.length;
-      for(let i=0; i+ln<=toks.length && !best; i++) if(p.lastParts.every((w,j)=>toks[i+j] === w)){
-        const english = ln === 1 && ENGLISH.has(p.lastParts[0]) && !/^[A-Z]/.test(orig[i]) && !ctx;
-        if(!english) best = {s: p.lastDup ? 40 : 50, a:i, b:i+ln-1}; } }
-    if(!best && p.firstUnique && p.first.length >= 4 && !STOPW.has(p.first) && !ENGLISH.has(p.first)){ const i = toks.indexOf(p.first); if(i >= 0) best = {s:40, a:i, b:i}; }
-    if(!best){ const L = p.lastParts[p.lastParts.length-1] || "";
-      for(let i=0; i<toks.length && !best; i++){ const w = toks[i]; if(w.length < 4 || STOPW.has(w) || GENERIC.has(w)) continue;
-        if(L.length > w.length && L.startsWith(w)) best = {s: 22 + w.length, a:i, b:i};
-        else if(L.length >= 5 && w.length >= 5 && lev(w, L) === 1) best = {s:33, a:i, b:i}; } }
-    if(best){ best.s += (p.mine ? 9 : 0) + Math.min(9, p.pts/2.5); cands.push({p, ...best}); }
-  }
-  cands.sort((x,y)=>y.s - x.s);
-  const used = new Set(), out = [];
-  for(const c of cands){ if(c.s < 34) break; let clash = false; for(let k=c.a; k<=c.b; k++) if(used.has(k)) clash = true; if(clash) continue;
-    for(let k=c.a; k<=c.b; k++) used.add(k); out.push(c); if(out.length >= 4) break; }
-  out.sort((x,y)=>x.a - y.a);
-  return {players: out.map(c=>({id:c.p.id, name:pname(c.p.id), pos:(S.proj[c.p.id]&&S.proj[c.p.id].player||{}).position, team:(S.proj[c.p.id]&&S.proj[c.p.id].player||{}).team})), used, toks, orig};
-}
-function findLeague(toks, used){
-  const free = toks.filter((t,i)=>!used.has(i));
-  let best = null, bs = 0, tie = false;
-  for(const r of S.results){ if(!r.league) continue; const lg = r.league;
-    const nt = lg.name.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w && !GENERIC.has(w)); if(!nt.length) continue;
-    let s = 0; for(const w of nt){ if(free.includes(w)) s += 10; else if(w.length >= 5 && free.some(t=>t.length >= 4 && !STOPW.has(t) && w.startsWith(t))) s += 6; }
-    s = s / Math.sqrt(nt.length);
-    if(s > bs){ bs = s; best = lg; tie = false; } else if(s === bs && s > 0) tie = true; }
-  return bs >= 5.5 && !tie ? best : null;
-}
-const ownedIn = pid => cbLeagues().filter(x=>(x.mine.players||[]).includes(pid));
-function ownerIn(x, pid){ const r = (x.rosters||[]).find(z=>z !== x.mine && (z.players||[]).includes(pid)); if(!r) return null;
-  const b = (S.bp||[]).find(z=>z.lg.league_id === x.lg.league_id), t = b && b.teams.find(z=>z.rid === r.roster_id); return {rid:r.roster_id, name: t ? t.name : `Team ${r.roster_id}`}; }
-function runTool(mode, P, lg){
-  TOOL.mode = mode; CB.mode = mode; CB.league = lg && cbLeagues().some(x=>x.lg.league_id === lg.league_id) ? lg.league_id : "all"; CB.b = []; CB.qa = ""; TOOL.sub = "matchup";
-  CB.a = P.slice(0,2).map(p=>({id:p.id, name:p.name})); go("ask"); if(CB.a.length === 2) setTimeout(reveal, 300);
-}
-function interpret(raw){
-  const t = raw.trim(), low = t.toLowerCase();
-  const F = findPlayers2(t), P = F.players, n = P.length;
-  const lg = findLeague(F.toks, F.used);
-  let pos = null; for(const [re, p] of POSW) if(re.test(low)){ pos = p; break; }
-  const team = (()=>{ for(let i=0;i<F.toks.length;i++){ if(F.used.has(i)) continue; if(NFLN[F.toks[i]]) return NFLN[F.toks[i]]; if(/^[A-Z]{2,3}$/.test(F.orig[i]) && NFL_ABBR.has(F.orig[i])) return F.orig[i]; } return null; })();
-  const sc = {}, add = (k, v) => { sc[k] = (sc[k]||0) + v; };
-  const T = re => re.test(low);
-  if(T(/\b(who'?s out|out|injur\w*|hurt|bye|inactive|ruled out|must fix|can'?t play|empty)\b/)) add("fix", 4);
-  if(T(/\bfix\b/) && !n) add("fix", 3);
-  if(T(/\b(questionable|game[- ]?time|gtd|doubtful|monitor)\b/)) add("monitor", 5);
-  if(T(/\b(bench points|optimal|optimi[sz]e|better lineups?|leaving points|best lineups?|set (my )?lineups?)\b/)) add("swaps", 5);
-  if(T(/\b(start|sit|flex|who should i play|play)\b/)) add("start", n >= 2 ? 6 : 3);
-  if(T(/\bor\b/) && n >= 2) add("start", 2);
-  if(T(/\b(dynasty|long[- ]?term|keep|hold|compare|vs|versus|who'?s better|better (asset|player|long))\b/)) add("compare", n >= 2 ? 6 : 3);
-  if(T(/\b(trade|offer|deal|accept|package|counter|swap)\b/)) add("trade", 5);
-  if(T(/\b(give|get|send)\b/) || (T(/\bfor\b/) && n >= 2)) add("trade", 3);
-  if(T(/\b(sell|sell high|move on from|shop|cash out|get rid of)\b/)) add("sell", 7);
-  if(T(/\b(buy|buy low|acquire|target|go get|trade for)\b/)) add("buy", 7);
-  if(T(/\b(contend\w*|rebuild\w*|retool|tank\w*|push|all[- ]in|direction|limbo|middle|blow it up|win now|which way|playoff odds|title odds|diagnos\w*|playoffs?)\b/)) add("direction", 6);
-  if(T(/\b(waivers?|wire|pick ?ups?|adds?|free agents?|fa|faab|stash\w*|claims?|stream\w*)\b/)) add("waivers", 6);
-  if(T(/\b(rank\w*|tiers?|top \d+|best (qb|rb|wr|te)s?|risers?|fallers?|trending|movers?|values?)\b/)) add("rankings", n ? 3 : 5);
-  if(pos && !n && !sc.waivers) add("rankings", 2);
-  if(T(/\b(how many|exposure|shares|do i own|rostered|where do i have|who do i have|my players)\b/)) add("exposure", 7);
-  if(T(/\b(brief|summary|recap|my week|week ahead|overview|what matters)\b/)) add("brief", 8);
-  if(T(/\b(cost|costs|paid|price|market|going for|traded for|worth|what did)\b/)) add("market", n ? 6 : 4);
-  if(T(/\b(offers?|pending|waiting|follow ?up|nudge)\b/) && !T(/\b(make|send) (an )?offer\b/)) add("offers", 4);
-  if(lg && (sc.trade || sc.sell || sc.buy) && !n) add("finder", 7);
-  if(lg && !Object.keys(sc).length) add("team", 6);
-  if(!Object.keys(sc).length){
-    if(n >= 2){ add("start", 4); add("compare", 3); add("trade", 2); }
-    else if(n === 1){ add("exposure", 4); add("start", 3); add("compare", 2); add("market", 2); add("sell", 1); add("buy", 1); }
-    else if(team) add("exposure", 5);
-    else if(pos) add("rankings", 4);
-    else add("help", 1);
-  }
-  const A = P[0], B = P[1], c = fixCounts(), out = [];
-  const push = (k, it) => { if(it) (Array.isArray(it) ? it : [it]).forEach((z,i)=>out.push({...z, key:k, score:(sc[k]||0) - i*.4})); };
-  const B_ = {
-    fix: ()=>({icon:"lineups", label:"Fix your lineups", detail:`${c.fix} lineup${c.fix===1?"":"s"} with a starter who can't play, soonest lock first`, run:()=>go("fix", {tab:"fix"})}),
-    monitor: ()=>({icon:"monitor", label:"Game-time calls", detail:`${c.monitor} lineup${c.monitor===1?"":"s"} with a Questionable starter`, run:()=>go("fix", {tab:"monitor"})}),
-    swaps: ()=>({icon:"swaps", label:"Better lineups", detail:`${c.startsit} league${c.startsit===1?"":"s"} with bench points to move in`, run:()=>go("fix", {tab:"startsit"})}),
-    start: ()=> n >= 2 ? {icon:"start", label:`Start/Sit: ${A.name} or ${B.name}`, detail:"This week's projection, matchup, weather and your ranks", run:()=>runTool("start", P, lg)}
-      : n === 1 ? {icon:"start", label:`Start/Sit with ${A.name}`, detail:"Pick who he's up against this week", run:()=>runTool("start", P, lg)} : {icon:"start", label:"Open Start/Sit", detail:"Head to head for this week", run:()=>runTool("start", [], lg)},
-    compare: ()=> n >= 2 ? {icon:"compare", label:`Compare ${A.name} vs ${B.name}`, detail:"Dynasty value, age, production and 30-day trend", run:()=>runTool("compare", P)}
-      : n === 1 ? {icon:"compare", label:`Compare ${A.name} with…`, detail:"Long-term value side by side", run:()=>runTool("compare", P)} : {icon:"compare", label:"Open Compare", detail:"Two players over the long run", run:()=>runTool("compare", [])},
-    trade: ()=>{
-      if(n >= 2){ const lgs = lg ? cbLeagues().filter(x=>x.lg.league_id === lg.league_id) : cbLeagues();
-        for(const x of lgs){ const mine = new Set(x.mine.players||[]), give = P.filter(p=>mine.has(p.id)), get = P.filter(p=>!mine.has(p.id) && ownerIn(x, p.id));
-          if(give.length && get.length){ const flipped = /\b(give|send|trade)\b/.test(low) && give[0].id !== A.id;
-            return {icon:"trades", label:`Trade check: ${give.map(p=>p.name).join(" + ")} for ${get.map(p=>p.name).join(" + ")}`, detail: flipped ? `You have ${give[0].name} in ${x.lg.name}, so he's your side` : `${x.lg.name} · fair value, fit for both teams, playoff odds`, run:()=>cbPrefillTrade({lid:x.lg.league_id, give, get})}; } }
-        return {icon:"trades", label:`Trade check with ${A.name} and ${B.name}`, detail:"They're not on opposite sides in one of your leagues. Open the builder.", run:()=>{ TOOL.mode = "trade"; CB.mode = "trade"; go("ask"); }}; }
-      if(n === 1) return ownedIn(A.id).length ? B_.sell() : B_.buy();
-      if(lg) return B_.finder();
-      return {icon:"trades", label:"Find trades", detail:"Recs for each team, trade check and market prices", run:()=>go("trades")};
-    },
-    sell: ()=>{ if(!A) return lg ? B_.finder() : {icon:"trades", label:"Find sell trades", detail:"Pick a team for buyers and offers", run:()=>go("trades")};
-      const own = ownedIn(A.id).filter(x=>!lg || x.lg.league_id === lg.league_id); if(!own.length) return B_.buy();
-      return own.slice(0,3).map(x=>({icon:"trades", label:`Sell ${A.name} in ${x.lg.name}`, detail:"Trade recs and the teams that need him", run:()=>{ S.navFrom = "trades"; go("team", {lid:x.lg.league_id, anchor:"trades"}); }})); },
-    buy: ()=>{ if(!A) return lg ? B_.finder() : {icon:"trades", label:"Find buy trades", detail:"Pick a team for upgrades and offers", run:()=>go("trades")};
-      const where = cbLeagues().filter(x=>(!lg || x.lg.league_id === lg.league_id) && !(x.mine.players||[]).includes(A.id)).map(x=>({x, o:ownerIn(x, A.id)})).filter(z=>z.o);
-      if(!where.length) return {icon:"trades", label:`Trade for ${A.name}`, detail:"He isn't rostered by a league mate in your leagues. Try waivers.", run:()=>go("waivers")};
-      return where.slice(0,3).map(z=>({icon:"trades", label:`Trade for ${A.name} in ${z.x.lg.name}`, detail:`${z.o.name} has him. Build the offer`, run:()=>cbPrefillTrade({lid:z.x.lg.league_id, give:[], get:[{id:A.id, name:A.name}]})})); },
-    finder: ()=> lg ? {icon:"trades", label:`Trade recs in ${lg.name}`, detail:"Built around that team's direction", run:()=>{ S.navFrom = "trades"; go("team", {lid:lg.league_id, anchor:"trades"}); }} : null,
-    direction: ()=> lg ? {icon:"diagnose", label:`Contend or rebuild in ${lg.name}?`, detail:"Playoff odds, roster window and the data's call", run:()=>go("team", {lid:lg.league_id})}
-      : {icon:"diagnose", label:"Diagnose every team", detail:"Playoff and bubble odds, and the right lane for each team", run:()=>go("direction")},
-    waivers: ()=>({icon:"waivers", label:`Waivers${pos ? `: best ${pos} adds` : ""}`, detail:"Holes to fill, stashes, and what to bid", run:()=>go("waivers")}),
-    rankings: ()=>{ const mode = T(/\b(this week|week \d+|start)\b/) ? "week" : T(/\b(rest of (the )?season|ros|redraft)\b/) ? "ros" : T(/\bdynasty|long[- ]?term\b/) ? "dyn" : (T(/riser|faller|trending|mover/) ? "dyn" : RK.mode);
-      const mv = T(/\b(fallers?|down|sell high|dropping)\b/) ? "fall" : T(/\b(risers?|trending|movers?|buy low|up|rising)\b/) ? "rise" : "rank";
-      const lbl = {week:`Week ${S.week}`, ros:"Rest of season", dyn:"Dynasty"}[mode];
-      return {icon:"rankings", label:`${A ? `${A.name} in the ` : ""}${pos || (A && A.pos) || "Overall"} rankings · ${lbl}${mv === "rise" ? " · 30-day risers" : mv === "fall" ? " · 30-day fallers" : ""}`, detail: A ? "Tier, value, production and why he's ranked there" : "Tiers, 30-day movers and the case for each player",
-        run:()=>{ RK.mode = mode; store.set("rk:mode", mode); RK.pos = pos || (A && A.pos) || "ALL"; RK.sort = mv; RK.q = ""; RK.open = A ? A.id : null; go("rankings", A ? {anchor:"rk-"+A.id} : {}); }}; },
-    exposure: ()=> A ? {icon:"exposure", label:`Where you have ${A.name}`, detail:`On ${ownedIn(A.id).length} of your rosters · start/sit in each`, run:()=>{ S.ptab = "exposure"; S.query = A.name; S.playerFilter = "all"; go("players"); }}
-      : team ? {icon:"exposure", label:`Your ${team} players`, detail:"Every league you start or roster them", run:()=>{ S.ptab = "exposure"; S.query = team; S.playerFilter = "all"; go("players"); }}
-      : {icon:"exposure", label:"Your exposure", detail:"Who you own across every league", run:()=>{ S.ptab = "exposure"; S.query = ""; go("players"); }},
-    brief: ()=>({icon:"brief", label:`Week ${S.week} brief`, detail:"The story of your week, before kickoff", run:()=>go("brief")}),
-    market: ()=> A ? {icon:"market", label:`What ${A.name} has cost`, detail:"Real trades in your leagues this season", run:()=>{ S.mq = A.name; go("trades", {anchor:"market"}); }}
-      : {icon:"market", label:"Trade market", detail:"Search what players actually cost", run:()=>go("trades", {anchor:"market"})},
-    offers: ()=>{ const o = offerStats(); return {icon:"offers", label:"Your offers", detail: o.all.length ? `${o.waiting} waiting · ${o.nudge} need a nudge` : "Nothing tracked yet", run:()=>go("offers")}; },
-    team: ()=> lg ? {icon:"team", label:`Open ${lg.name}`, detail:"Roster, direction and trade recs", run:()=>go("team", {lid:lg.league_id})} : null,
-    help: ()=>[{icon:"rankings", label:`Find "${t}" in rankings`, detail:"Search every ranked player", run:()=>{ RK.q = t; go("rankings"); }},
-      {icon:"orb", label:"Open the crystal ball", detail:"Start/Sit, trade check and compare", run:()=>go("ask")}]
-  };
-  for(const k of Object.keys(sc)) push(k, B_[k] && B_[k]());
-  // a named league is always one tap away
-  if(lg && !out.some(o=>o.key === "team" || o.key === "finder" || o.key === "direction")) push("team", Object.assign(B_.team(), {}));
-  const seen = new Set(), list = out.filter(o=>o && o.label && !seen.has(o.label) && seen.add(o.label)).sort((a,b)=>b.score - a.score);
-  const chips = P.map(p=>`<span>${esc(p.name)}${p.pos ? ` · ${p.pos}` : ""}${p.team ? ` ${p.team}` : ""}</span>`).concat(lg ? [`<span class="lg">${esc(lg.name)}</span>`] : [], pos ? [`<span class="lg">${pos}</span>`] : [], team && !P.length ? [`<span class="lg">${team}</span>`] : []);
-  return {list, chips, players:P, league:lg, pos, team};
-}
-function askFromText(text){
-  const t = (text||"").trim();
-  hideDrop();
-  if(!t){ go("ask"); return; }
-  const I = interpret(t), sel = S.dropSel && S.dropFor === t ? S.dropSel : 0, it = I.list[sel] || I.list[0];
-  const rec = store.get("recentAsk", []).filter(x=>x !== t); rec.unshift(t); store.set("recentAsk", rec.slice(0, 5));
-  const q = $("askq"); if(q){ q.value = ""; q.blur(); }
-  if(!it){ go("ask"); return; }
-  showToast(it.label);
-  it.run();
-}
-function hideDrop(){ const d = $("askdrop"); if(d) d.hidden = true; S.dropSel = 0; }
-function updateDrop(){
-  const q = $("askq"), d = $("askdrop"); if(!q || !d) return;
-  if(document.activeElement !== q || !S.results.length){ d.hidden = true; return; }
-  const t = q.value.trim();
-  if(!t){
-    const recent = store.get("recentAsk", []), ideas = promptIdeas().slice(0, 3);
-    S.dropIntents = []; S.dropFor = "";
-    d.innerHTML = `<div class="lab">Try</div>${ideas.map(x=>`<button class="drow" data-ask="${esc(x)}">${svgI("orb",18)}<span class="t"><b>${esc(x)}</b></span></button>`).join("")}
-      ${recent.length ? `<div class="lab">Recent</div>${recent.map(x=>`<button class="drow" data-ask="${esc(x)}">${svgI("monitor",18)}<span class="t"><b>${esc(x)}</b></span></button>`).join("")}` : ""}
-      <div class="dhint">Name a player, team, league or position, and say what you want: start, trade, sell, rank, waivers… Spin the ball or shake your phone to ask.</div>`;
-    d.hidden = false; return;
-  }
-  const I = interpret(t); S.dropIntents = I.list; if(S.dropFor !== t){ S.dropSel = 0; S.dropFor = t; }
-  d.innerHTML = (I.chips.length ? `<div class="dchips"><small>Heard</small>${I.chips.join("")}</div>` : "") +
-    I.list.slice(0, 5).map((it,i)=>`<button class="drow${i === (S.dropSel||0) ? " sel" : ""}" data-intent="${i}">${svgI(it.icon,18)}<span class="t"><b>${esc(it.label)}</b><small>${esc(it.detail)}</small></span>${i === (S.dropSel||0) ? `<kbd>↵</kbd>` : ""}</button>`).join("");
-  d.hidden = false;
-}
-
-/* ---------- spin the ball, shake the phone ---------- */
-const SHAKE = {on: store.get("shake", true), last:0, hits:[], px:null, asked:false};
-function motionOK(){
-  try{ if(SHAKE.asked || !SHAKE.on) return; if(typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function"){ SHAKE.asked = true; DeviceMotionEvent.requestPermission().catch(()=>{}); } }catch(e){}
-}
-function spinMini(dir=1){ const m = $("miniOrb"); if(!m || reduceMotion()) return;
-  m.animate([{transform:"rotate(0) scale(1)"},{transform:`rotate(${dir*560}deg) scale(1.28)`, offset:.6},{transform:`rotate(${dir*720}deg) scale(1)`}], {duration:640, easing:"cubic-bezier(.22,1,.36,1)"}); }
-function burstOrb(){ ORB.boost = 1; ORB.pulse = .6; ORB.shock = {x:.5, y:.47}; setTimeout(()=>{ ORB.boost = 0; }, 900); }
-function askNow(source){
-  haptic();
-  if(currentView() === "ask"){ burstOrb();
-    if(cbReady() && !S.thinking){ cbAsk(); return; }
-    showToast(TOOL.mode === "trade" ? "Add a player to each side, then spin" : "Pick two players, then spin the ball"); return; }
-  const q = $("askq");
-  if(q && q.value.trim()){ spinMini(); const v = q.value; setTimeout(()=>askFromText(v), reduceMotion() ? 0 : 480); return; }
-  if(source === "shake"){ go("ask"); setTimeout(burstOrb, 120); }
-}
-window.addEventListener("orbspin", ()=>askNow("spin"));
-window.addEventListener("devicemotion", e=>{
-  if(!SHAKE.on) return; const a = e.accelerationIncludingGravity || e.acceleration; if(!a || a.x == null) return;
-  const p = SHAKE.px; SHAKE.px = {x:a.x, y:a.y, z:a.z}; if(!p) return;
-  const d = Math.abs(a.x-p.x) + Math.abs(a.y-p.y) + Math.abs(a.z-p.z), now = Date.now();
-  if(d > 24){ SHAKE.hits = SHAKE.hits.filter(t=>now - t < 800); SHAKE.hits.push(now);
-    if(SHAKE.hits.length >= 3 && now - SHAKE.last > 2200 && S.results.length){ SHAKE.last = now; SHAKE.hits = []; askNow("shake"); } }
-});
-let MO = null;
-document.addEventListener("pointerdown", e=>{ const m = e.target.closest("#miniOrb"); if(!m) return; MO = {x:e.clientX, el:m, dx:0}; try{ m.setPointerCapture(e.pointerId); }catch(_){} motionOK(); });
-document.addEventListener("pointermove", e=>{ if(!MO) return; MO.dx = e.clientX - MO.x; MO.el.style.transform = `rotate(${MO.dx*5}deg) scale(1.1)`; }, {passive:true});
-document.addEventListener("pointerup", ()=>{ if(!MO) return; const m = MO; MO = null; m.el.style.transform = "";
-  const q = $("askq"), flick = Math.abs(m.dx) > 22;
-  if(q && q.value.trim()){ spinMini(m.dx < 0 ? -1 : 1); const v = q.value; setTimeout(()=>askFromText(v), reduceMotion() ? 0 : 480); }
-  else if(flick){ spinMini(m.dx < 0 ? -1 : 1); setTimeout(()=>go("ask"), 380); }
-  else if(q) q.focus(); });
-document.addEventListener("pointerdown", e=>{ if(e.target.id === "orb") motionOK(); }, {passive:true});
-
-/* ---------- wiring ---------- */
 document.addEventListener("click", e=>{
-  if(e.target.closest("#menuBtn")){ MENU.open ? closeMenu() : openMenu(); return; }
-  if(e.target.classList && e.target.classList.contains("scrim")){ closeMenu(); return; }
-  if(e.target.closest("#mRefresh")){ closeMenu(); $("refresh").click(); return; }
-  if(e.target.closest("#mSwitch")){ closeMenu(); S.userId = null; S.results = []; S.displayName = ""; S.error = null; S.bp = null; S.sim = {}; S.brief = {}; S.dir = null; S.lastKey = null; render(); return; }
-  const it = e.target.closest("[data-intent]"); if(it){ const k = +it.dataset.intent, x = (S.dropIntents||[])[k]; const q = $("askq");
-    if(x){ const t = q ? q.value.trim() : ""; if(t){ const rec = store.get("recentAsk", []).filter(z=>z !== t); rec.unshift(t); store.set("recentAsk", rec.slice(0,5)); }
-      if(q){ q.value = ""; q.blur(); } hideDrop(); showToast(x.label); x.run(); } return; }
-  const nv = e.target.closest("[data-nav]"); if(nv){ const [v, arg] = nv.dataset.nav.split(":");
-    if(v === "players"){ S.ptab = arg; go("players"); }
-    else if(v === "trades"){ go("trades", {anchor: arg}); setTimeout(()=>{ const m = $("mq"); if(m && arg === "market") m.focus({preventScroll:true}); }, 400); }
-    return; }
-  const ofs = e.target.closest("[data-ofs]"); if(ofs){ const i = ofs.dataset.ofs.lastIndexOf("|"), key = ofs.dataset.ofs.slice(0,i), st = ofs.dataset.ofs.slice(i+1);
-    const a = OFFERS.all(), x = a.find(z=>z.key === key); if(x){ x.status = st; x.ts = Date.now(); OFFERS.save(a); } render(); return; }
-  const ofr = e.target.closest("[data-ofrm]"); if(ofr){ OFFERS.save(OFFERS.all().filter(z=>z.key !== ofr.dataset.ofrm)); render(); return; }
-  const dlf = e.target.closest("[data-dlf]"); if(dlf){ S.dirFilter = dlf.dataset.dlf || null; render(); return; }
-  const dr = e.target.closest("[data-dir]"); if(dr){ go("team", {lid: dr.dataset.dir}); return; }
-  if(e.target.closest("#shakeT")){ SHAKE.on = !SHAKE.on; store.set("shake", SHAKE.on); if(SHAKE.on){ SHAKE.asked = false; motionOK(); } render(); return; }
-}, true);
-document.addEventListener("input", e=>{
-  if(e.target.id === "askq"){ updateDrop(); return; }
-  if(e.target.id === "mq2"){ MENU.q = e.target.value; renderMenu(); return; }
-  if(e.target.id === "mq"){ S.mq = e.target.value; render(); return; }
+  const el = e.target.closest("[data-acopen],[data-acclose],[data-acmode],[data-acgo],[data-aceye],[data-acout],[data-acdel],[data-acsync],[data-acdismiss]"); if(!el) return;
+  const d = el.dataset;
+  if(d.acopen){ openAccount(d.acopen); return; }
+  if(d.acclose){ closeAccount(); return; }
+  if(d.acmode){ ACC.sheet = d.acmode; ACC.msg = null; renderSheet(); return; }
+  if(d.acgo){ accSubmit(d.acgo); return; }
+  if(d.aceye){ const p = $("acPw"); if(p){ p.type = p.type === "password" ? "text" : "password"; el.setAttribute("aria-label", p.type === "password" ? "Show password" : "Hide password"); el.classList.toggle("on", p.type === "text"); p.focus(); } return; }
+  if(d.acout){ accSignOut(); return; }
+  if(d.acdel){ accDelete(); return; }
+  if(d.acsync){ ACC.busy = true; renderSheet(); pullState().catch(()=>{}).finally(()=>{ ACC.busy = false; renderSheet(); }); return; }
+  if(d.acdismiss){ store.set("acct:dismissed", true); render(); return; }
 });
-document.addEventListener("focusin", e=>{ if(e.target.id === "askq"){ updateDrop(); $("top").classList.remove("tuck"); } });
-document.addEventListener("focusout", e=>{ if(e.target.id === "askq") setTimeout(()=>{ if(document.activeElement !== $("askq")) hideDrop(); }, 160); });
+document.addEventListener("input", e=>{ if(e.target.id === "acPw") pwMeter(); });
 document.addEventListener("keydown", e=>{
-  if(e.key === "Escape"){ if(MENU.open){ closeMenu(); $("menuBtn").focus(); return; } const q = $("askq"); if(q && document.activeElement === q){ q.blur(); hideDrop(); } return; }
-  if(e.target.id === "askq" && (e.key === "ArrowDown" || e.key === "ArrowUp") && (S.dropIntents||[]).length){ e.preventDefault();
-    const n = Math.min(5, S.dropIntents.length); S.dropSel = ((S.dropSel||0) + (e.key === "ArrowDown" ? 1 : -1) + n) % n; updateDrop(); }
+  if(!ACC.sheet) return;
+  if(e.key === "Escape") closeAccount();
+  if(e.key === "Enter" && ["acId","acPw","acCode"].includes(e.target.id)){ e.preventDefault(); const g = document.querySelector("[data-acgo]"); if(g) accSubmit(g.dataset.acgo); }
 });
-{ const d = $("askdrop"); if(d){ d.addEventListener("mousedown", e=>e.preventDefault()); d.addEventListener("pointerdown", e=>{ if(e.pointerType === "mouse") e.preventDefault(); }); } }
-let lastY = 0;
-window.addEventListener("scroll", ()=>{ const y = window.scrollY, top = $("top"); if(!top) return;
-  if(document.activeElement !== $("askq")){ if(y > 140 && y > lastY + 6) top.classList.add("tuck"); else if(y < lastY - 6 || y < 140) top.classList.remove("tuck"); }
-  lastY = y; }, {passive:true});
+
+/* ---------- startup: restore a saved session, or finish an email link (confirm / reset) ---------- */
+async function accInit(){
+  if(!accountsOn()) return;
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if(hash.get("access_token")){
+    const type = hash.get("type");
+    setSession({access_token: hash.get("access_token"), refresh_token: hash.get("refresh_token"), expires_in: +hash.get("expires_in") || 3600});
+    history.replaceState(null, "", location.pathname + location.search);
+    try{ ACC.session.user = await sb("/auth/v1/user"); authSave(ACC.session); }catch(_){}
+    if(type === "recovery"){ ACC.sheet = "newpw"; ACC.msg = "Choose a new password for " + accName() + "."; ACC.msgKind = "info"; renderSheet(); }
+    else toast("Email confirmed. Your command center now follows you.");
+    try{ await pullState(); }catch(_){}
+    return;
+  }
+  if(hash.get("error_description")){ history.replaceState(null, "", location.pathname + location.search); toast(hash.get("error_description").replace(/\+/g," ")); }
+  const saved = authLoad();
+  if(saved && saved.access_token){ ACC.session = saved; await sbRefresh(); if(ACC.session){ try{ await pullState(); }catch(_){} } render(); }
+}
+
+/* settings: Sleeper handle + account */
+function renderSettings(){
+  const acct = !accountsOn() ? "" : ACC.session
+    ? `<div class="srow"><span>Account: <b>${esc(accName())}</b></span><button class="ghost" data-acopen="account">Manage</button></div>`
+    : `<div class="srow"><span>Save your setup to an account</span><button class="ghost tint" data-acopen="create">Create account</button></div>`;
+  return `<details class="settings"><summary>Settings</summary>
+    <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
+    <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
+    <div class="srow"><span>Sleeper: <b>${esc(S.displayName||S.username)}</b></span><button class="ghost" id="switch">Switch user</button></div>
+    ${acct}
+    <p class="note">Projections come from Sleeper (Rotowire) and are rescored with each league's settings. Questionable players count at 85% and Doubtful at 20% when comparing options. Sleeper doesn't share whether you've set an auto-sub, so Questionable starters stay flagged until you swap them.</p></details>`;
+}
 
 SPACE.init();
 ORB.init();
 if(S.username) S.loading = true;
 render();
 startup();
+accInit();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 </script>
