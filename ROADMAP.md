@@ -60,6 +60,13 @@ Replaces the Trades tab. First decides which way each team should go, then finds
 - **Paths compared:** Hold vs best Buy vs best Sell, run through the same simulated seasons, with a close-call warning when the other path is realistic.
 - Known limits: playoff spots stand in for payout spots; divisions aren't modeled; FantasyCalc's public trade database isn't wired in yet (comps come from your own leagues via `market.json`).
 
+## V2.0 shipped: redesign (Oct 13, 2026)
+- **Design system:** night-stadium navy field (light theme too), violet signal color shared with the Crystal Ball, severity colors only where they carry meaning. Unbounded for titles and big numbers, Geist for everything else, sentence case throughout, tabular digits.
+- **Navigation:** floating glass dock (Lineups, Waivers, Crystal Ball orb, Direction, Teams) with a sliding indicator; large title that tucks into a glass bar on scroll; segmented controls for Needs action / All leagues and Team reviews / Player exposure.
+- **Lineups hero:** a lineup-health ring (must fix / to check / upgrades / set) that sweeps in once on open; the legend filters the list.
+- **Motion:** View Transitions between sections, sliding indicators, shimmer skeletons while a section builds, Crystal Ball sheet rises in. All motion respects reduced-motion.
+- Waivers opens with a stat strip; bid methodology moved into "How bids are set".
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
