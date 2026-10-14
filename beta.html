@@ -172,7 +172,10 @@ main{padding-block:6px calc(120px + env(safe-area-inset-bottom,0px));display:fle
 .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--sev,var(--hair-2));box-shadow:0 0 0 4px color-mix(in srgb,var(--sev,transparent) 16%,transparent)}
 .row .lname{flex:1;font-weight:600;font-size:15px}
 .search{height:48px;border:0;border-radius:16px;background:var(--plate);box-shadow:inset 0 0 0 1px var(--hair-2);padding:0 16px;font-size:16px;width:100%}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:2px 16px;scroll-padding-inline:16px}
+.chips::-webkit-scrollbar{display:none}
+.chips .chip{flex:none}
+.cbsheet .chips{margin-inline:0;padding-inline:0;flex-wrap:wrap}
 .chip{border:0;background:var(--plate);box-shadow:inset 0 0 0 1px var(--hair-2);border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--field);box-shadow:none}
 .plist{background:var(--plate);border-radius:22px;box-shadow:inset 0 0 0 1px var(--hair);overflow:hidden}
@@ -282,6 +285,18 @@ details.settings summary{cursor:pointer;font-weight:600}
 .answer ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:5px}
 .answer .flip{font-size:13.5px;background:var(--plate-2);border-radius:14px;padding:10px 12px}
 
+/* Stat strip, explainers, skeletons */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--plate);border-radius:18px;padding:12px;box-shadow:inset 0 0 0 1px var(--hair);display:flex;flex-direction:column;gap:4px;min-width:0}
+.stats b{font-family:var(--display);font-weight:600;font-size:26px;line-height:1;letter-spacing:-.02em}
+.stats span{font-size:12.5px;color:var(--ink-2);line-height:1.3}
+.explain{font-size:13.5px;color:var(--ink-2)}
+.explain summary{cursor:pointer;font-weight:600;color:var(--ink)}
+.explain p{margin:8px 0 0;max-width:62ch}
+.skel{display:flex;flex-direction:column;gap:14px}
+.skel i{display:block;height:132px;border-radius:22px;background:linear-gradient(100deg,var(--plate) 30%,var(--plate-2) 50%,var(--plate) 70%);background-size:300% 100%;animation:shimmer 1.4s linear infinite}
+.skel i:nth-child(2){height:104px}.skel i:nth-child(3){height:150px}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
 /* Page transitions */
 ::view-transition-old(page){animation:.14s ease-out both vt-out}
 ::view-transition-new(page){animation:.32s var(--ease) both vt-in}
@@ -1076,11 +1091,11 @@ function renderWaivers(){
   if(f==="holes") list = list.filter(l=>l.fills.some(x=>x.hole));
   if(f==="open") list = list.filter(l=>l.open>0);
   if(f==="value") list = list.filter(l=>l.values.length);
-  let h = `<section class="summary"><h3>Waiver wire</h3>
-    <p>${holes} league${holes===1?"":"s"} can fill a lineup hole from waivers · ${openN} open roster spot${openN===1?"":"s"} · ${W.leagues.filter(l=>l.values.length).length} leagues with a dynasty stash worth more than your weakest bench player.</p>
+  const stashN = W.leagues.filter(l=>l.values.length).length;
+  let h = `<section class="stats"><div><b>${holes}</b><span>lineup holes you can fill</span></div><div><b>${openN}</b><span>open roster spots</span></div><div><b>${stashN}</b><span>leagues with a stash worth adding</span></div></section>
     <div class="chips">${[["all","All"],["holes","Lineup holes"],["open","Open spots"],["value","Stashes"]].map(([k,l])=>`<button class="chip" data-wf="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
-    <p>Bids come from ${W.bids} winning FAAB claims across your leagues this season (${W.txSource}). Typical winning bid by value tier: ${W.tierMed.map((m,i)=>`${TIER_NAME[i]} ${Math.round(m*100)}%`).join(" · ")} of budget, then adjusted for how each league bids.</p></section>`;
-  if(W.hot.length && f==="all") h += `<section class="summary"><h3>Best adds across your leagues</h3><div class="plist">${W.hot.map(x=>`<div class="prow"><div class="ptop">${faLine({f:x.f})}<span class="num">×${x.need+x.value}</span></div>
+    <details class="explain"><summary>How bids are set</summary><p>From ${W.bids.toLocaleString()} winning FAAB claims across your leagues this season (${W.txSource}). A typical winning bid is ${W.tierMed.map((m,i)=>`${Math.round(m*100)}% of budget for ${TIER_NAME[i].toLowerCase()} players`).join(", ")}. Each league's number is then scaled by how that league actually bids.</p></details>`;
+  if(W.hot.length && f==="all") h += `<section class="summary"><h3>Best adds everywhere</h3><div class="plist">${W.hot.map(x=>`<div class="prow"><div class="ptop">${faLine({f:x.f})}<span class="num">×${x.need+x.value}</span></div>
       <div class="pstat">${fmt(x.f.eff)} pts this week (PPR, league scoring varies)${x.v?` · dynasty value ${x.v.toLocaleString()}`:""} · fills a hole in ${x.need}, stash in ${x.value}${x.trend?` · ${x.trend>=1e6?(x.trend/1e6).toFixed(1)+"M":x.trend>=1e3?Math.round(x.trend/1e3)+"K":x.trend} Sleeper adds in 24h`:""}</div></div>`).join("")}</div></section>`;
   h += list.map(l=>{
     const lg = l.x.lg, id = lg.league_id;
@@ -1598,6 +1613,8 @@ function renderStatus(){
   if(S.dirLoading && !S.loading && !S.bpLoading){ el.innerHTML = `<span>${S.dirPhase||"Working"}… ${S.dirPhase&&/^(Loading|Simulating)/.test(S.dirPhase)?Math.round((S.dirProgress||0)*100)+"%":""}</span><div class="bar"><i style="width:${(S.dirProgress||0)*100}%"></i></div>`; return; }
   if((S.wvLoading||S.tfLoading) && !S.loading){ const pct = Math.round((S.txProgress||0)*100); el.innerHTML = `<span>${S.bpLoading?"Building Blueprints…":"Reading this season's transactions…"} ${S.bpLoading?Math.round(S.bpProgress*100):pct}%</span><div class="bar"><i style="width:${S.bpLoading?S.bpProgress*100:pct}%"></i></div>`; return; }
   if(S.refreshing){ el.innerHTML = `<span class="live"><i></i>Refreshing from Sleeper…</span>`; return; }
+  if(NAV_OF[S.tab] !== "lineups"){ el.innerHTML = ""; el.hidden = true; return; }
+  el.hidden = false;
   const n = S.results.filter(r=>r.sev!=="off").length;
   const gain = S.results.reduce((s,r)=>s+(r.moves && r.gain>0 ? r.gain : 0),0);
   el.innerHTML = `<span>${n} active leagues, week ${S.week}${S.week!==S.nflWeek?" (next)":""}</span>` +
@@ -1818,10 +1835,11 @@ function render(){
   if(!ready){ main.innerHTML = S.loading ? `<div class="status" id="statusline"></div>` : renderSetup(); renderStatus(); bind(); return; }
   const focusId = document.activeElement && ["q","mq"].includes(document.activeElement.id) ? document.activeElement.id : null; const focusQ = !!focusId;
   const pos = focusQ ? document.activeElement.selectionStart : null;
-  let body = `<div class="status" id="statusline"></div>`;
+  let body = nav==="lineups" && !S.loading ? heroHTML() : "";
+  body += `<div class="status" id="statusline"></div>`;
   if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
   if(!S.loading){
-    if(nav==="lineups") body += heroHTML() + segHTML([["queue","Needs action"],["leagues","All leagues"]]);
+    if(nav==="lineups") body += segHTML([["queue","Needs action"],["leagues","All leagues"]]);
     if(nav==="teams") body += segHTML([["blueprints","Team reviews"],["players","Player exposure"]]);
     if(S.tab==="queue" && !S.filter){ const tc = todayCard(); body += `<section class="today"><div><b>${tc.title}</b><span>${esc(tc.text)}</span></div>${tc.tab!=="queue"?`<button class="ghost" data-goto="${tc.tab}">${tc.cta}</button>`:""}</section>`; }
     if(S.tab==="waivers") body += renderWaivers();
@@ -1830,7 +1848,10 @@ function render(){
     if(S.tab==="leagues") body += renderLeagues();
     if(S.tab==="players") body += renderPlayers();
     if(S.tab==="blueprints") body += renderBlueprints();
-    body += renderSettings();
+    const busy = (S.tab==="waivers" && S.wvLoading) || (S.tab==="direction" && S.dirLoading) || ((S.tab==="blueprints") && S.bpLoading);
+    if(busy) body += `<div class="skel" aria-hidden="true"><i></i><i></i><i></i></div>`;
+    else body += renderSettings();
+    body = body.replace(`<h3>${NAV_TITLE[nav]}</h3>`, "");
   }
   main.innerHTML = body; renderStatus(); bind(); slideSegments();
   if(focusQ && $(focusId)){ const q = $(focusId); q.focus(); try{ q.setSelectionRange(pos,pos); }catch(e){} }
