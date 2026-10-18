@@ -222,10 +222,13 @@ Object.assign(S, {view: "home", sort: store.get("sort", "next"), dirF: "all", fi
 const VIEWS = new Set(["home","fix","ask","waivers","players","team","brief","rankings"]);
 if(!VIEWS.has(S.view) || S.view === "team") S.view = "home";
 function go(view, opts={}){
+  const prevKey = S.view + (S.view === "team" ? ":" + S.teamLid : "");
   if(view === "team") S.teamLid = opts.lid || S.teamLid;
   if(view === "fix" && opts.tab) S.fixTab = opts.tab;
   if(view !== "team") S.navFrom = null;
   S.view = view;
+  const key = view + (view === "team" ? ":" + S.teamLid : "");
+  if(!opts.fromPop && key !== prevKey && S.results.length){ try{ history.pushState({cc:1, v:view, lid:S.teamLid, tab:S.fixTab, ptab:S.ptab}, ""); S.hdepth = (S.hdepth||0) + 1; }catch(_){} }
   if(typeof closeMenu === "function") closeMenu();
   render();
   if(opts.anchor){ window.scrollTo(0, 0); setTimeout(()=>{ const a = document.getElementById(opts.anchor); if(a) a.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block:"start"}); }, 120); }
@@ -340,7 +343,7 @@ function makeBrief(){
   const items = [];
   if(top) items.push({title:`${top.f.full} is ${statusLabel(top.f) === "Bye" ? "on bye" : statusLabel(top.f).toLowerCase()}`, body:(()=>{ const n = top.rows.length, ok = top.rows.filter(x=>x.sub).length, no = n - ok; return `He starts in ${n} lineup${n>1?"s":""}. ` + (n === 1 ? (ok ? "There's a clean swap on your bench." : "There's no healthy swap on your bench, so it needs a waiver add.") : `${ok} ha${ok===1?"s":"ve"} a clean swap on the bench${no?`, ${no} need${no===1?"s":""} a waiver add`:""}.`); })(), cta:`Fix ${fixes} lineup${fixes===1?"":"s"}`, go:"fix", tab:"fix"});
   if(qTop) items.push({title:`${qTop.f.full} is a game-time call`, body:`Questionable in ${qTop.n} league${qTop.n>1?"s":""}. ${qTop.subs ? `${qTop.subs} allow auto-subs, so set them now; the rest need a check before kickoff.` : "None of those leagues allow auto-subs, so check before kickoff."}`, cta:"See every Questionable starter", go:"fix", tab:"monitor"});
-  if(bench >= 1) items.push({title:`${fmt(bench)} points on your benches`, body:`Better lineups are available in ${live.filter(r=>r.moves && r.gain>0).length} leagues, scored with each league's own settings.`, cta:"See the swaps", go:"fix", tab:"startsit"});
+  if(bench >= 1) items.push({title:`${fmt(bench)} points on your benches`, body:`Upgrades are available in ${live.filter(r=>r.moves && r.gain>0).length} leagues, scored with each league's own settings.`, cta:"See the swaps", go:"fix", tab:"startsit"});
   if(items.length < 3 && S.bp){ const weak = {}; for(const b of S.bp) for(const p of ["QB","RB","WR","TE"]) if(["D","F"].includes(b.me.grades[p])) weak[p] = (weak[p]||0)+1;
     const w = Object.entries(weak).sort((a,b)=>b[1]-a[1])[0]; if(w) items.push({title:`${w[0]} is your thinnest spot`, body:`Graded D or F in ${w[1]} leagues. It's the position to target in trades and on waivers.`, cta:"Open waivers", go:"waivers"}); }
   let long = null;
@@ -445,39 +448,79 @@ function viewHome(){
     <section class="tiles">
       <button class="tile glass crit" data-go="fix" data-tab="fix"><b data-count="${c.fix}">${S.counted ? c.fix : 0}</b><span>Must fix</span></button>
       <button class="tile glass warn" data-go="fix" data-tab="monitor"><b data-count="${c.monitor}">${S.counted ? c.monitor : 0}</b><span>Game-time</span></button>
-      <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Better lineups</span></button></section>
+      <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Upgrades</span></button></section>
     ${planHTML()}
-    <button class="brief-entry glass" data-go="brief">${ICON.brief}<span class="t"><b>Week ${S.week} brief</b><small>The story of your week, before kickoff</small></span><span class="cta">${S.brief[S.week] ? "Open" : "Generate"}</span></button>
-    ${accountCardHTML()}
     <div class="statusline" id="statusline"></div>`;
-  let list = teamList();
-  const counts = {all:list.length, contend:0, rebuild:0, none:0}; list.forEach(x=>counts[x.dir]++);
-  if(S.dirF !== "all") list = list.filter(x=>x.dir === S.dirF);
-  if(!["next","az","cs","rs"].includes(S.sort)) S.sort = "next";
-  if(S.sort === "next") list.sort((a,b)=>((locks[a.id]||{k:{ts:9e15}}).k.ts - (locks[b.id]||{k:{ts:9e15}}).k.ts) || (a.alert === "crit" ? 0 : a.alert ? 1 : 2) - (b.alert === "crit" ? 0 : b.alert ? 1 : 2) || a.name.localeCompare(b.name));
-  if(S.sort === "az") list.sort((a,b)=>a.name.localeCompare(b.name));
-  if(S.sort === "cs") list.sort((a,b)=>(b.cs ?? -1) - (a.cs ?? -1));
-  if(S.sort === "rs") list.sort((a,b)=>(b.rs ?? -1) - (a.rs ?? -1));
-  const sorts = [["next","Next lock"],["az","A–Z"],["cs","Contend"],["rs","Rebuild"]], si = sorts.findIndex(z=>z[0] === S.sort);
-  h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">My teams</h2><span class="sub">${S.bpLoading ? "Scoring teams…" : list.length + " shown"}</span></div>
-    <div class="seg" role="tablist" aria-label="Sort teams" style="--n:4;--i:${si}">${sorts.map(([k,l])=>`<button role="tab" data-sort="${k}" aria-selected="${S.sort===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="chips">${[["all","All"],["contend","Contend"],["rebuild","Rebuild"],["none","Undecided"]].map(([k,l])=>`<button class="chip" data-dirf="${k}" aria-pressed="${S.dirF===k}">${l} · ${counts[k]}</button>`).join("")}</div>
-    <div class="teamrow-list">${list.map(x=>{
-      const sc = S.sort === "cs" ? x.cs : S.sort === "rs" ? x.rs : null, l = locks[x.id];
-      const right = S.sort === "next" ? (l ? `<span class="lk k-${l.kind}"><b>${esc(kickLabel(l.k))}</b><small>${{fix:"fix",monitor:"check",startsit:"swap"}[l.kind]}</small></span>` : `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`)
-        : S.sort === "az" ? `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`
-        : sc == null ? `<span class="sub">…</span>` : `<span class="sbar"><i><b style="width:${sc}%;background:${S.sort==="cs"?"var(--ok)":"var(--violet-2)"}"></b></i><span>${sc}</span></span>`;
-      return `<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert==="crit"?"var(--crit)":x.alert==="warn"?"var(--warn)":"transparent"};box-shadow:${x.alert?"0 0 8px currentColor":"none"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.meta)}${S.sort!=="az"?" · "+DIR3[x.dir]:""}</span></span>${right}</button>`;
-    }).join("") || `<div class="empty" style="margin:0">No teams in this group.</div>`}</div></section>`;
+  h += teamsSectionHTML(locks);
+  h += accountCardHTML();
   h += renderSettings();
   h += `<p class="src">Sources: Sleeper (leagues, rosters, injuries, Rotowire projections rescored with each league's settings) · ESPN schedule (kickoff times and venues) · FantasyCalc (dynasty values built from real trades). Playoff and title odds are simulations built on that data and are labeled as such.</p>`;
   return h;
 }
+/* ---------- My teams: sort and filter every league to plan next steps ---------- */
+const TSORTS = [["next","Next lock"],["rec","Record"],["now","Win-now rank"],["fut","Future rank"],["age","Youngest"],["odds","Playoff odds"],["az","A–Z"]];
+const TSORT_NOTE = {
+  next:"Teams with a lineup decision first, by when it locks.",
+  rec:"Best record first, ties broken by points scored.",
+  now:"Win-now rank: your best lineup's value against the rest of that league. 1st = strongest today.",
+  fut:"Future rank: young talent, age curves and picks against the rest of that league. 1st = best set up for the next two seasons.",
+  age:"Value-weighted average age of each roster, youngest first. Older rosters lose value fastest.",
+  odds:"Playoff odds from 1,000 simulated seasons per league.",
+  az:""};
+function teamFacts(x){
+  const b = x.b, st = x.r.roster && x.r.roster.settings || {}, g = (st.wins||0) + (st.losses||0) + (st.ties||0);
+  const L = S.dir && S.dir.leagues && S.dir.leagues[x.id];
+  return {wp: g ? ((st.wins||0) + (st.ties||0)/2)/g : -1, pf: (st.fpts||0) + (st.fpts_decimal||0)/100, N: b ? b.N : (x.r.league.total_rosters||0),
+    now: b ? b.me.nowRank : null, fut: b ? b.me.futRank : null, age: b ? b.me.age : null, po: L && L.me ? L.me.odds.po : null};
+}
+function teamsSectionHTML(locks){
+  let list = teamList();
+  if(S.sort === "cs") S.sort = "now"; if(S.sort === "rs") S.sort = "fut";
+  if(!TSORTS.some(z=>z[0] === S.sort)) S.sort = "next";
+  if(S.sort === "odds" && !S.dir && !S.dirLoading && !S.dirError) setTimeout(loadDirection, 0);
+  const F = {}; list.forEach(x=>F[x.id] = teamFacts(x));
+  const filters = [["all","All"],["contend","Contend"],["rebuild","Rebuild"],["none","Undecided"],["issues","Lineup issues"],["young","Young core"],["old","Aging"]];
+  const test = {all:()=>true, contend:x=>x.dir === "contend", rebuild:x=>x.dir === "rebuild", none:x=>x.dir === "none", issues:x=>!!x.alert,
+    young:x=>F[x.id].age != null && F[x.id].age < 25.5, old:x=>F[x.id].age != null && F[x.id].age >= 27};
+  if(!test[S.dirF]) S.dirF = "all";
+  const counts = {}; for(const [k] of filters) counts[k] = list.filter(test[k]).length;
+  list = list.filter(test[S.dirF]);
+  const nul = (v, big) => v == null ? big : v, byName = (a,b)=>a.name.localeCompare(b.name);
+  const sorters = {
+    next:(a,b)=>((locks[a.id]||{k:{ts:9e15}}).k.ts - (locks[b.id]||{k:{ts:9e15}}).k.ts) || (a.alert === "crit" ? 0 : a.alert ? 1 : 2) - (b.alert === "crit" ? 0 : b.alert ? 1 : 2) || byName(a,b),
+    rec:(a,b)=>F[b.id].wp - F[a.id].wp || F[b.id].pf - F[a.id].pf,
+    now:(a,b)=>nul(F[a.id].now, 99) - nul(F[b.id].now, 99) || byName(a,b),
+    fut:(a,b)=>nul(F[a.id].fut, 99) - nul(F[b.id].fut, 99) || byName(a,b),
+    age:(a,b)=>nul(F[a.id].age, 99) - nul(F[b.id].age, 99),
+    odds:(a,b)=>nul(F[b.id].po, -1) - nul(F[a.id].po, -1) || byName(a,b),
+    az:byName};
+  list.sort(sorters[S.sort]);
+  const ages = list.map(x=>F[x.id].age).filter(v=>v != null), avgAge = ages.length ? ages.reduce((s,v)=>s+v,0)/ages.length : null;
+  const sumLine = [`${list.length} team${list.length===1?"":"s"}`, avgAge ? `avg age ${avgAge.toFixed(1)}` : "", list.filter(x=>x.dir==="contend").length + " contend", list.filter(x=>x.dir==="rebuild").length + " rebuild"].filter(Boolean).join(" · ");
+  const right = x => { const f = F[x.id], l = locks[x.id];
+    const big = (b, s) => `<span class="lk"><b>${b}</b><small>${s}</small></span>`;
+    switch(S.sort){
+      case "next": return l ? `<span class="lk k-${l.kind}"><b>${esc(kickLabel(l.k))}</b><small>${LOCKWORD[l.kind]}</small></span>` : `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`;
+      case "rec": return big(esc(x.rec || "–"), f.pf ? `${Math.round(f.pf)} PF` : "record");
+      case "now": return f.now ? big(ord(f.now), `of ${f.N} now`) : big("…", "scoring");
+      case "fut": return f.fut ? big(ord(f.fut), `of ${f.N} future`) : big("…", "scoring");
+      case "age": return f.age ? big(f.age.toFixed(1), "avg age") : big("…", "scoring");
+      case "odds": return f.po != null ? big(pct(f.po), "playoffs") : big("…", S.dirLoading ? "simulating" : "odds");
+      default: return `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`;
+    } };
+  const meta = x => { const f = F[x.id]; if(!x.b) return x.meta + " · " + DIR3[x.dir];
+    return [x.r.bestBall ? "Best ball" : x.rec, `Now ${ord(f.now)}`, `Future ${ord(f.fut)}`, `Age ${f.age.toFixed(1)}`, DIR3[x.dir]].join(" · "); };
+  return `<section style="display:flex;flex-direction:column;gap:10px" id="myteams"><div class="sec"><h2 class="h2">My teams</h2><span class="sub">${S.bpLoading ? "Scoring teams…" : `${list.length} shown`}</span></div>
+    <div class="chips" role="tablist" aria-label="Sort teams"><span class="chiplab">Sort</span>${TSORTS.map(([k,l])=>`<button class="chip sortchip" role="tab" data-sort="${k}" aria-selected="${S.sort===k}" aria-pressed="${S.sort===k}">${l}</button>`).join("")}</div>
+    <div class="chips" aria-label="Filter teams"><span class="chiplab">Show</span>${filters.filter(([k])=>k === "all" || counts[k]).map(([k,l])=>`<button class="chip" data-dirf="${k}" aria-pressed="${S.dirF===k}">${l} · ${counts[k]}</button>`).join("")}</div>
+    <p class="scorenote"><b style="color:var(--ink-2)">${esc(sumLine)}.</b> ${TSORT_NOTE[S.sort]}</p>
+    <div class="teamrow-list">${list.map(x=>`<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert==="crit"?"var(--crit)":x.alert==="warn"?"var(--warn)":"transparent"};box-shadow:${x.alert?"0 0 8px currentColor":"none"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(meta(x))}</span></span>${right(x)}</button>`).join("") || `<div class="empty" style="margin:0">No teams in this group.</div>`}</div></section>`;
+}
 function viewFix(){
-  const c = fixCounts(), tabs = [["fix","Must fix",c.fix],["monitor","Monitor",c.monitor],["startsit","Start / sit",c.startsit]], ti = tabs.findIndex(t=>t[0] === S.fixTab);
+  const c = fixCounts(), tabs = [["fix","Must fix",c.fix],["monitor","Game-time",c.monitor],["startsit","Upgrades",c.startsit]], ti = tabs.findIndex(t=>t[0] === S.fixTab);
   const K = S.kick[S.week], exact = K && K.ok;
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">${{fix:"Out in your lineups", monitor:"Game-time calls", startsit:"Better lineups"}[S.fixTab]}</h1>
-    <div class="sub">${{fix:"Every starter who can't play, soonest lock first. Open jumps straight to your team in Sleeper.", monitor:"Questionable starters and healthy players stuck in IR slots, soonest lock first.", startsit:"Leagues where a bench player outscores a starter in that league's scoring, soonest lock first."}[S.fixTab]}</div></section>
+  let h = `<section class="pagehead"><h1 class="h1">Lineups</h1>
+    <div class="sub">${{fix:"Must fix: starters who can't play (out, bye or an empty slot), soonest lock first. Open jumps straight to that team in Sleeper.", monitor:"Game-time: Questionable starters and healthy players stuck in IR slots, soonest lock first.", startsit:"Upgrades: a bench player projects more than a starter in that league's own scoring, soonest lock first."}[S.fixTab]}</div></section>
     <div class="seg" role="tablist" style="--n:3;--i:${ti}">${tabs.map(([k,l,n])=>`<button role="tab" data-fixtab="${k}" aria-selected="${S.fixTab===k}">${l}<span class="ct">${n}</span></button>`).join("")}<i aria-hidden="true"></i></div>
     <div class="statusline" id="statusline"></div>`;
   if(S.fixTab === "fix"){
@@ -514,7 +557,7 @@ function viewAsk(){
 }
 function viewBrief(){
   const B = S.brief[S.week];
-  let h = `<button class="ghost back" data-go="home">${ICON.back} Home</button>`;
+  let h = backBtn("home","Home");
   if(S.briefPhase === "loading") return h + `<section class="skel" aria-hidden="true"><i style="height:16px;width:40%"></i><i style="height:40px;width:85%"></i><i style="height:80px"></i><i style="height:110px"></i><i style="height:90px"></i></section><p class="sub">Reading ${S.results.filter(r=>r.sev!=="off").length} lineups and this week's injury report…</p>`;
   if(!B) return h + `<section class="brief-hero"><h1 class="h1" style="font-size:44px">Your week,<br>in two minutes.</h1><p class="sub" style="font-size:15px">One read before kickoff: the story of your week across every team, the problems that matter, and what to do about each.</p>
     <button class="primary" data-brief="1">Generate my week ${S.week} brief</button><p class="note">Built from your rosters, this week's projections and injury news. Regenerate any time news breaks.</p></section>`;
@@ -528,15 +571,11 @@ function viewBrief(){
   return h;
 }
 function viewWaivers(){
-  return `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">Waivers</h1><div class="sub">Holes you can fill, stashes worth adding, and what to bid based on how your leagues actually bid.</div></section><div class="statusline" id="statusline"></div>${renderWaivers()}${S.wvLoading ? `<div class="skel" aria-hidden="true"><i style="height:130px"></i><i style="height:110px"></i><i style="height:140px"></i></div>` : ""}`;
+  return `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Waivers</h1><div class="sub">Holes you can fill, stashes worth adding, and what to bid based on how your leagues actually bid.</div></section><div class="statusline" id="statusline"></div>${renderWaivers()}${S.wvLoading ? `<div class="skel" aria-hidden="true"><i style="height:130px"></i><i style="height:110px"></i><i style="height:140px"></i></div>` : ""}`;
 }
 function viewPlayers(){
-  const tabs = [["exposure","Exposure"],["reviews","Team reviews"]], i = tabs.findIndex(t=>t[0] === S.ptab);
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">Players</h1><div class="sub">Who you own everywhere, and a full review of every dynasty team.</div></section>
-    <div class="seg" role="tablist" style="--n:2;--i:${i}">${tabs.map(([k,l])=>`<button role="tab" data-ptab="${k}" aria-selected="${S.ptab===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div><div class="statusline" id="statusline"></div>`;
-  if(S.ptab === "exposure") h += renderPlayers();
-  else { h += renderBlueprints(); if(S.bpLoading) h += `<div class="skel" aria-hidden="true"><i style="height:130px"></i><i style="height:110px"></i></div>`; }
-  return h;
+  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Exposure</h1><div class="sub">Every player you own, how many of your leagues he's in, and where he's starting or sitting.</div></section><div class="statusline" id="statusline"></div>`;
+  return h + renderPlayers();
 }
 
 /* ---------- ask screen body (the crystal ball tools) ---------- */
@@ -607,7 +646,7 @@ function render(){
   if(S.week) $("wklabel").textContent = "WK " + S.week;
   const acs = $("acslot"); if(acs){ const ah = accountChipHTML(); if(acs.innerHTML !== ah) acs.innerHTML = ah; }
   document.querySelectorAll("[data-go]").forEach(b=>{ if(!b.classList.contains("navb") && b.id !== "orbBtn") return;
-    const on = b.dataset.go === v || (b.dataset.go === "home" && ["team","brief"].includes(v) && S.navFrom !== "trades") || (b.dataset.go === "trades" && (["direction","offers"].includes(v) || (v === "team" && S.navFrom === "trades"))); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+    const on = b.dataset.go === v || (b.dataset.go === "home" && (["brief","waivers","players","rankings"].includes(v) || (v === "team" && !S.navFrom))) || (b.dataset.go === "trades" && (v === "offers" || (v === "team" && S.navFrom === "trades"))) || (b.dataset.go === "direction" && v === "team" && S.navFrom === "teams"); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   const c = ready ? fixCounts().fix : 0, bd = $("fixBadge"); bd.hidden = !c; bd.textContent = c;
   SPACE.target = v === "connect" || v === "loading" || v === "ask" ? .95 : .7;
   SPACE.warpTarget = v === "loading" ? .22 : 0;

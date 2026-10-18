@@ -80,23 +80,18 @@ function stepInfo(k){
   if(k === "offers"){ const o = offerStats();
     return {badge: o.waiting || null, tone: o.nudge ? "warn" : "up", title:"Track your offers", line: o.all.length ? `${o.waiting} waiting on an answer${o.nudge ? ` · ${o.nudge} need${o.nudge>1?"":"s"} a nudge` : ""}${o.countered ? ` · ${o.countered} countered` : ""}` : "Copy any trade rec and it's tracked here until they answer"}; }
   if(k === "fix"){ const c = fixCounts(), nl = nextLock(), urgent = !!(nl && hoursTo(nl.k.ts) < 48 && (c.fix || nl.fix));
-    const line = c.fix + c.monitor + c.startsit ? `${c.fix} must fix · ${c.monitor} game-time · ${c.startsit} better lineups${nl ? ` · first lock ${kickLabel(nl.k)}` : ""}` : "Every lineup is set";
+    const line = c.fix + c.monitor + c.startsit ? `${c.fix} must fix · ${c.monitor} game-time · ${c.startsit} upgrades${nl ? ` · first lock ${kickLabel(nl.k)}` : ""}` : "Every lineup is set";
     return {badge: c.fix || null, tone:"crit", title:"Set your lineups", line, urgent}; }
   if(k === "waivers"){ const d = ET(Date.now()), dow = d.getDay(), soon = dow === 2 || (dow === 3 && d.getHours() < 12);
     return {title:"Work the waiver wire", line: soon ? "Most claims process tonight. Set bids before bed" : "Fill holes, stash value, and bid what your leagues actually pay", urgent:false, badge: soon ? "!" : null, tone:"warn"}; }
   return {title:k, line:""};
 }
 function renderChrome(){
-  const rail = $("rail"), v = currentView();
-  if(rail){
-    const html = STEPS.map((s,i)=>{ const st = stepInfo(s.go), on = v === s.go || (v === "team" && s.go === "trades" && S.navFrom === "trades");
-      return `${i ? `<span class="rsep" aria-hidden="true">›</span>` : ""}<button class="rstep${on ? " on" : ""}${st.urgent ? " hot" : ""}" data-go="${s.go}"${on ? ` aria-current="page"` : ""}><span class="n">${s.n}</span>${s.label}${st.badge ? `<i class="b t-${st.tone}">${st.badge}</i>` : ""}</button>`; }).join("");
-    if(rail.dataset.h !== html){ rail.dataset.h = html; rail.innerHTML = html; }
-    const on = rail.querySelector(".on") || rail.querySelector(".hot"); if(on && rail.dataset.v !== v){ rail.dataset.v = v; try{ rail.scrollTo({left: Math.max(0, on.offsetLeft - (rail.clientWidth - on.offsetWidth)/2), behavior: reduceMotion() ? "auto" : "smooth"}); }catch(_){} }
-  }
   const dot = $("menuDot"); if(dot) dot.hidden = !(S.results.length && fixCounts().fix);
   if(MENU.open) renderMenu();
 }
+const LOCKWORD = {fix:"fix", monitor:"game-time", startsit:"upgrade"};
+function backBtn(parent, label){ return `<button class="ghost back" data-back="${parent}">${ICON.back} ${esc(label)}</button>`; }
 
 /* ---------- top-left menu ---------- */
 const MENU = {open:false, q:""};
@@ -105,38 +100,39 @@ function menuItem(icon, label, sub, attrs, count, tone){
 }
 function renderMenu(){
   const p = $("mpanel"); if(!p) return;
-  const c = fixCounts(), o = offerStats(), nl = nextLock();
-  const q = MENU.q.trim().toLowerCase();
-  let teams = teamList();
-  const locks = lockMap();
-  teams = q ? teams.filter(x=>x.name.toLowerCase().includes(q)) : teams.filter(x=>locks[x.id]).sort((a,b)=>locks[a.id].k.ts - locks[b.id].k.ts).concat(teams.filter(x=>!locks[x.id]));
+  const c = fixCounts(), o = offerStats(), nl = nextLock(), dirI = stepInfo("direction");
+  const q = MENU.q.trim().toLowerCase(), locks = lockMap();
+  const teams = q ? teamList().filter(x=>x.name.toLowerCase().includes(q)).slice(0, 12) : [];
   const ae = document.activeElement, keep = ae && ae.id === "mq2" ? ae.selectionStart : null;
+  const acct = !accountsOn() ? "" : ACC.session ? menuItem("user", "Account", accName(), `data-acopen="account"`) : menuItem("user", "Sign in", "Save your setup and use it on every device", `data-acopen="signin"`);
   p.innerHTML = `
-    <div class="mgroup"><div class="lab">Right now${nl ? ` · first lock ${esc(kickLabel(nl.k))}` : ""}</div>
+    <div class="mgroup"><input class="search" id="mq2" type="search" placeholder="Jump to a team · ${teamList().length} leagues" value="${esc(MENU.q)}" autocomplete="off">
+      ${q ? `<div class="mteams">${teams.map(x=>{ const l = locks[x.id];
+        return `<button class="mitem" data-team="${x.id}">${svgI("team",18)}<span class="t">${esc(x.name)}<small>${esc(x.rec)} · ${DIR3[x.dir]}${l ? ` · ${LOCKWORD[l.kind]} by ${esc(kickLabel(l.k))}` : ""}</small></span>${l ? `<span class="ct ${l.kind === "fix" ? "crit" : l.kind === "monitor" ? "warn" : "up"}">${l.kind === "fix" ? "Fix" : l.kind === "monitor" ? "Check" : "Swap"}</span>` : ""}</button>`; }).join("") || `<div class="sub" style="padding:6px 8px">No league matches.</div>`}</div>` : ""}
+    </div>
+    <div class="mgroup"><div class="lab">This week${nl ? ` · first lock ${esc(kickLabel(nl.k))}` : ""}</div>
       ${menuItem("lineups","Must fix","Starters who can't play",`data-go="fix" data-tab="fix"`, c.fix, c.fix ? "crit" : "")}
-      ${menuItem("monitor","Game-time calls","Questionable starters",`data-go="fix" data-tab="monitor"`, c.monitor, c.monitor ? "warn" : "")}
-      ${menuItem("swaps","Better lineups","Bench points to move in",`data-go="fix" data-tab="startsit"`, c.startsit, "")}
-      ${menuItem("brief",`Week ${S.week} brief`,"The story of your week","data-go=\"brief\"")}
+      ${menuItem("monitor","Game-time","Questionable starters to check",`data-go="fix" data-tab="monitor"`, c.monitor, c.monitor ? "warn" : "")}
+      ${menuItem("swaps","Upgrades","Bench players who outscore a starter",`data-go="fix" data-tab="startsit"`, c.startsit, "")}
+      ${menuItem("waivers","Waivers","Holes to fill, stashes and bids",`data-go="waivers"`)}
+      ${menuItem("brief",`Week ${S.week} brief`,"The story of your week",`data-go="brief"`)}
     </div>
-    <div class="mgroup"><div class="lab">Your game plan</div>
-      ${STEPS.map(s=>{ const st = stepInfo(s.go); return `<button class="mitem step" data-go="${s.go}"><span class="n">${s.n}</span><span class="t">${esc(st.title)}<small>${esc(st.line)}</small></span>${st.badge ? `<span class="ct ${st.tone}">${st.badge}</span>` : ""}</button>`; }).join("")}
-    </div>
-    <div class="mgroup"><div class="lab">Tools</div><div class="mgrid">
-      <button class="mtile" data-opentool="start">${svgI("start",18)}Start / Sit</button>
-      <button class="mtile" data-opentool="trade">${svgI("trades",18)}Trade check</button>
+    <div class="mgroup"><div class="lab">Trades</div><div class="mgrid">
+      <button class="mtile" data-go="trades">${svgI("trades",18)}Trade finder</button>
+      <button class="mtile" data-opentool="trade">${svgI("swaps",18)}Trade check</button>
       <button class="mtile" data-opentool="compare">${svgI("compare",18)}Compare</button>
-      <button class="mtile" data-go="rankings">${svgI("rankings",18)}Rankings</button>
-      <button class="mtile" data-nav="trades:market">${svgI("market",18)}Trade market</button>
-      <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
-      <button class="mtile" data-nav="players:reviews">${svgI("reviews",18)}Team reviews</button>
       <button class="mtile" data-go="offers">${svgI("offers",18)}Offers${o.waiting ? ` <span class="ct up">${o.waiting}</span>` : ""}</button>
+      <button class="mtile" data-nav="trades:market">${svgI("market",18)}Trade market</button>
+      <button class="mtile" data-opentool="start">${svgI("start",18)}Start / Sit</button>
     </div></div>
-    <div class="mgroup"><div class="lab">Jump to a team</div>
-      <input class="search" id="mq2" type="search" placeholder="Search ${teamList().length} leagues" value="${esc(MENU.q)}" autocomplete="off">
-      <div class="mteams">${teams.slice(0, q ? 12 : 6).map(x=>{ const l = locks[x.id];
-        return `<button class="mitem" data-team="${x.id}">${svgI("team",18)}<span class="t">${esc(x.name)}<small>${esc(x.rec)} · ${DIR3[x.dir]}${l ? ` · ${{fix:"fix",monitor:"check",startsit:"swap"}[l.kind]} by ${esc(kickLabel(l.k))}` : ""}</small></span>${l ? `<span class="ct ${l.kind === "fix" ? "crit" : l.kind === "monitor" ? "warn" : "up"}">${l.kind === "fix" ? "Fix" : l.kind === "monitor" ? "Check" : "Swap"}</span>` : ""}</button>`; }).join("") || `<div class="sub" style="padding:6px 8px">No league matches.</div>`}</div>
-    </div>
-    <div class="mfoot"><button class="ghost" id="mRefresh">${svgI("refresh",16)}Refresh</button><button class="ghost" id="mSwitch">${svgI("user",16)}Switch user</button></div>`;
+    <div class="mgroup"><div class="lab">Players &amp; teams</div><div class="mgrid">
+      <button class="mtile" data-go="rankings">${svgI("rankings",18)}Rankings</button>
+      <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
+      <button class="mtile" data-nav="teams:value">${svgI("reviews",18)}Now vs future</button>
+      <button class="mtile" data-nav="teams:odds">${svgI("diagnose",18)}Playoff odds${dirI.badge ? ` <span class="ct warn">${dirI.badge}</span>` : ""}</button>
+    </div></div>
+    ${acct ? `<div class="mgroup">${acct}</div>` : ""}
+    <div class="mfoot"><button class="ghost" id="mRefresh">${svgI("refresh",16)}Refresh</button><button class="ghost" id="mSwitch">${svgI("user",16)}Switch Sleeper user</button></div>`;
   if(keep != null){ const el = $("mq2"); el.focus({preventScroll:true}); try{ el.setSelectionRange(keep, keep); }catch(_){} }
 }
 function openMenu(){
@@ -163,13 +159,21 @@ function showToast(text){
 
 /* ---------- Diagnose: every team simulated, limbo first ---------- */
 function viewDirection(){
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><div class="lab">Step 1 of 5</div><h1 class="h1">Diagnose</h1><div class="sub">Every team simulated through the rest of the season. Teams stuck in the middle come first: that's where a move matters most.</div></section><div class="statusline" id="statusline"></div>`;
+  const tabs = [["value","Now vs future"],["odds","Playoff odds"]];
+  if(!tabs.some(x=>x[0] === S.ttab)) S.ttab = store.get("ttab", "value");
+  const ti = tabs.findIndex(x=>x[0] === S.ttab);
+  let h = `<section class="pagehead"><h1 class="h1">Teams</h1><div class="sub">${S.ttab === "value"
+      ? "Every dynasty team's value today and in two seasons, graded by position against its league. Tap a team for its full diagnosis and trade recs."
+      : "Every season simulated 1,000 times to pick a lane: contend or rebuild. Teams stuck in the middle come first, because that's where a move matters most."}</div></section>
+    <div class="seg" role="tablist" aria-label="Team view" style="--n:2;--i:${ti}">${tabs.map(([k,l])=>`<button role="tab" data-ttab="${k}" aria-selected="${S.ttab===k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
+    <div class="statusline" id="statusline"></div>`;
+  if(S.ttab === "value"){ h += renderBlueprints(); if(S.bpLoading || !S.bp) h += `<div class="skel" aria-hidden="true"><i style="height:130px"></i><i style="height:150px"></i><i style="height:150px"></i></div>`; return h; }
   if(!S.dir){
     if(!S.dirLoading && !S.dirError) setTimeout(loadDirection, 0);
     if(S.dirError) return h + `<div class="err">${esc(S.dirError)}</div>`;
     return h + `<div class="skel" aria-hidden="true"><i style="height:120px"></i><i style="height:150px"></i><i style="height:150px"></i></div>`;
   }
-  return h + renderDirList() + `<div class="nextstep"><span class="sub">Next: find the deals that move each team in its lane.</span><button class="ghost go" data-go="trades">Step 2 · Trades →</button></div>`;
+  return h + renderDirList() + `<div class="nextstep"><span class="sub">Lanes set. Find the deals that move each team along it.</span><button class="ghost go" data-go="trades">Trade finder →</button></div>`;
 }
 
 /* ---------- Trades hub: finder per team, check, compare, market ---------- */
@@ -178,7 +182,7 @@ function viewTrades(){
   const L = S.dir && S.dir.leagues;
   const pri = x => { const z = L && L[x.id] && L[x.id].me; if(z) return LIMBO.has(z.dir) ? 0 : x.dir === "none" ? 1 : 2; return x.dir === "none" ? 1 : 2; };
   const list = tl.filter(x=>x.b).sort((a,b)=>pri(a) - pri(b) || a.name.localeCompare(b.name));
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><div class="lab">Step 2 of 5</div><h1 class="h1">Trades</h1><div class="sub">Pick a team for recs built around its direction, check any offer, or see what a player actually cost.</div></section>
+  let h = `<section class="pagehead"><h1 class="h1">Trades</h1><div class="sub">Pick a team for recs built around its direction, check any offer, or see what a player actually cost.</div></section>
     <section class="hub3">
       <button class="ttile glass" data-opentool="trade">${svgI("trades",24)}<b>Trade check</b><small>Build any offer and grade it</small></button>
       <button class="ttile glass" data-opentool="compare">${svgI("compare",24)}<b>Compare</b><small>Two players, long term</small></button>
@@ -190,7 +194,6 @@ function viewTrades(){
         return `<button class="trow" data-team="${x.id}" data-anchor="trades" data-from="trades"><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.rec)}${z ? ` · ${pct(z.odds.po)} playoff odds` : ""} · ${x.dir === "none" ? "no direction set" : DIR3[x.dir].toLowerCase()}</span></span>${tag}<span class="chev" aria-hidden="true">›</span></button>`; }).join("") || `<div class="empty" style="margin:0">${S.bpLoading ? "Scoring your teams…" : "No dynasty teams with enough data yet."}</div>`}</div>
       ${!L ? `<button class="ghost tint" data-go="direction" style="align-self:flex-start">${svgI("diagnose",16)} Simulate every season to sort by playoff odds</button>` : ""}</section>`;
   h += marketHTML();
-  h += `<div class="nextstep"><span class="sub">Sent an offer? Track the answer.</span><button class="ghost go" data-go="offers">Step 3 · Offers →</button></div>`;
   return h;
 }
 function marketHTML(){
@@ -213,7 +216,7 @@ function marketHTML(){
 const OF_STATUS = [["sent","Waiting"],["countered","Countered"],["accepted","Accepted"],["declined","Declined"]];
 function viewOffers(){
   const o = offerStats();
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><div class="lab">Step 3 of 5</div><h1 class="h1">Offers</h1><div class="sub">Every trade message you copy is saved here. Mark the answer when it comes back so you know who to nudge.</div></section>`;
+  let h = `<section class="pagehead">${backBtn("trades","Trades")}<h1 class="h1">Offers</h1><div class="sub">Every trade message you copy is saved here. Mark the answer when it comes back so you know who to nudge.</div></section>`;
   if(!o.all.length) return h + `<div class="empty">No offers yet. Open a team's trade recs and tap <b>Copy message</b>: the offer lands here.<div style="margin-top:12px"><button class="ghost go" data-go="trades">Find trades →</button></div></div>`;
   h += `<section class="stats"><div><b>${o.waiting}</b><span>waiting on an answer</span></div><div><b style="color:var(--warn)">${o.nudge}</b><span>need a nudge (2+ days)</span></div><div><b style="color:var(--ok)">${o.rate == null ? "—" : pct(o.rate)}</b><span>accepted, of answered</span></div></section>`;
   for(const [st, label] of OF_STATUS){
@@ -226,7 +229,6 @@ function viewOffers(){
         <div class="seg sm" role="radiogroup" aria-label="Answer" style="--n:4;--i:${OF_STATUS.findIndex(s=>s[0] === st)}">${OF_STATUS.map(([k,l])=>`<button role="radio" aria-checked="${k === st}" data-ofs="${esc(x.key)}|${k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
         <div class="cfoot" style="padding:0">${old ? `<button class="ghost tint" data-copy="${esc(nudge)}" data-label="Copy nudge">Copy nudge</button>` : ""}${x.cb ? `<button class="ghost" data-cbt="${esc(JSON.stringify(x.cb))}">Re-check</button>` : ""}<a class="ghost" href="${leagueLink(x.lid)}" target="_blank" rel="noopener">Sleeper ${ICON.ext}</a><button class="ghost" data-ofrm="${esc(x.key)}" aria-label="Remove this offer">Remove</button></div></article>`; }).join("")}</section>`;
   }
-  h += `<div class="nextstep"><span class="sub">Offers out. Now make sure every lineup can play.</span><button class="ghost go" data-go="fix">Step 4 · Lineups →</button></div>`;
   return h;
 }
 
@@ -238,10 +240,19 @@ function nowCardHTML(){
   return `<section class="nowcard glass${hot ? " hot" : ""}"><span class="t"><span class="lab">Next lock · ${esc(kickLabel(nl.k))}</span><b>${nl.n} lineup${nl.n>1?"s":""} to handle before ${esc(kickLabel(nl.k).split(" ")[0])} kickoff</b><small>${nl.fix ? `${nl.fix} with a starter who can't play` : "Game-time calls and better lineups"}</small></span>
     <span class="cd${hot ? " hot" : ""}">${esc(untilText(nl.k.ts))}</span><button class="ghost go" data-go="fix" data-tab="${nl.fix ? "fix" : "monitor"}">Fix</button></section>`;
 }
+function weekItems(){
+  const items = [], o = offerStats(), dir = stepInfo("direction"), wv = stepInfo("waivers");
+  items.push(wv.badge ? {go:"waivers", icon:"waivers", tone:"warn", hot:true, title:"Waivers run tonight", line:"Most leagues process claims overnight. Fill holes and set bids before bed", badge:"!"}
+    : {go:"waivers", icon:"waivers", calm:true, title:"Waivers", line:"Lineup holes to fill, stashes worth adding, and what to bid"});
+  if(dir.badge) items.push({go:"direction", nav:"teams:odds", icon:"diagnose", tone:"warn", title:`Diagnose ${dir.badge} team${dir.badge>1?"s":""} with no lane`, line:"Undecided teams lose value every season. Simulate the year and pick contend or rebuild", badge:dir.badge});
+  if(o.waiting) items.push({go:"offers", icon:"offers", tone: o.nudge ? "warn" : "up", title:`${o.waiting} trade offer${o.waiting>1?"s":""} waiting`, line: o.nudge ? `${o.nudge} sent 2+ days ago: time for a nudge` : "Mark the answer when it comes back", badge:o.waiting});
+  items.push({go:"brief", icon:"brief", calm:true, title:`Week ${S.week} brief`, line:"Your whole week in a two-minute read", cta: S.brief[S.week] ? "Open" : "Generate"});
+  return items;
+}
 function planHTML(){
-  return `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">Your game plan</h2><span class="sub">Red can't wait</span></div>
-    <div class="plan glass">${STEPS.map(s=>{ const st = stepInfo(s.go);
-      return `<button class="pstep${st.urgent ? " hot" : ""}" data-go="${s.go}"><span class="n">${s.n}</span><span class="t"><b>${esc(st.title)}${st.urgent ? `<span class="do">Do first</span>` : ""}</b><small>${esc(st.line)}</small></span>${st.badge ? `<span class="ct ${st.tone}">${st.badge}</span>` : ""}<span class="chev" aria-hidden="true">›</span></button>`; }).join("")}</div></section>`;
+  const items = weekItems(), need = items.filter(x=>!x.calm).length;
+  return `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">This week</h2><span class="sub">${need ? `${need} more thing${need>1?"s":""} need${need>1?"":"s"} you` : "Nothing else needs you"}</span></div>
+    <div class="plan glass">${items.map(x=>`<button class="pstep${x.hot ? " hot" : ""}${x.calm ? " calm" : ""}" ${x.nav ? `data-nav="${x.nav}"` : `data-go="${x.go}"`}><span class="n">${svgI(x.icon,16)}</span><span class="t"><b>${esc(x.title)}</b><small>${esc(x.line)}</small></span>${x.badge ? `<span class="ct ${x.tone}">${x.badge}</span>` : x.cta ? `<span class="cta" style="color:var(--cyan-2);font-weight:650;font-size:13px">${x.cta}</span>` : ""}<span class="chev" aria-hidden="true">›</span></button>`).join("")}</div></section>`;
 }
 
 /* ---------- the pinned ask bar: live read of what you typed ---------- */
@@ -328,6 +339,7 @@ function interpret(raw){
   if(T(/\b(sell|sell high|move on from|shop|cash out|get rid of)\b/)) add("sell", 7);
   if(T(/\b(buy|buy low|acquire|target|go get|trade for)\b/)) add("buy", 7);
   if(T(/\b(contend\w*|rebuild\w*|retool|tank\w*|push|all[- ]in|direction|limbo|middle|blow it up|win now|which way|playoff odds|title odds|diagnos\w*|playoffs?)\b/)) add("direction", 6);
+  if(T(/\b(team values?|now (vs|and) future|future value|current value|portfolio|grades?|diagnos\w*|my teams?|teams?|values?)\b/) && !n) add("teamval", (T(/\bvalues?\b/) && pos) || sc.trade || sc.sell || sc.buy ? 3 : 6);
   if(T(/\b(waivers?|wire|pick ?ups?|adds?|free agents?|fa|faab|stash\w*|claims?|stream\w*)\b/)) add("waivers", 6);
   if(T(/\b(rank\w*|tiers?|top \d+|best (qb|rb|wr|te)s?|risers?|fallers?|trending|movers?|values?)\b/)) add("rankings", n ? 3 : 5);
   if(pos && !n && !sc.waivers) add("rankings", 2);
@@ -336,10 +348,10 @@ function interpret(raw){
   if(T(/\b(cost|costs|paid|price|market|going for|traded for|worth|what did)\b/)) add("market", n ? 6 : 4);
   if(T(/\b(offers?|pending|waiting|follow ?up|nudge)\b/) && !T(/\b(make|send) (an )?offer\b/)) add("offers", 4);
   if(lg && (sc.trade || sc.sell || sc.buy) && !n) add("finder", 7);
-  if(lg && !Object.keys(sc).length) add("team", 6);
+  if(lg && !Object.keys(sc).length){ add("team", 6); add("finder", 5); }
   if(!Object.keys(sc).length){
     if(n >= 2){ add("start", 4); add("compare", 3); add("trade", 2); }
-    else if(n === 1){ add("exposure", 4); add("start", 3); add("compare", 2); add("market", 2); add("sell", 1); add("buy", 1); }
+    else if(n === 1){ add(ownedIn(P[0].id).length ? "sell" : "buy", 4.2); add("compare", 4); add("exposure", 3); add("start", 2.5); add("market", 2); }
     else if(team) add("exposure", 5);
     else if(pos) add("rankings", 4);
     else add("help", 1);
@@ -349,7 +361,7 @@ function interpret(raw){
   const B_ = {
     fix: ()=>({icon:"lineups", label:"Fix your lineups", detail:`${c.fix} lineup${c.fix===1?"":"s"} with a starter who can't play, soonest lock first`, run:()=>go("fix", {tab:"fix"})}),
     monitor: ()=>({icon:"monitor", label:"Game-time calls", detail:`${c.monitor} lineup${c.monitor===1?"":"s"} with a Questionable starter`, run:()=>go("fix", {tab:"monitor"})}),
-    swaps: ()=>({icon:"swaps", label:"Better lineups", detail:`${c.startsit} league${c.startsit===1?"":"s"} with bench points to move in`, run:()=>go("fix", {tab:"startsit"})}),
+    swaps: ()=>({icon:"swaps", label:"Lineup upgrades", detail:`${c.startsit} league${c.startsit===1?"":"s"} where a bench player outscores a starter`, run:()=>go("fix", {tab:"startsit"})}),
     start: ()=> n >= 2 ? {icon:"start", label:`Start/Sit: ${A.name} or ${B.name}`, detail:"This week's projection, matchup, weather and your ranks", run:()=>runTool("start", P, lg)}
       : n === 1 ? {icon:"start", label:`Start/Sit with ${A.name}`, detail:"Pick who he's up against this week", run:()=>runTool("start", P, lg)} : {icon:"start", label:"Open Start/Sit", detail:"Head to head for this week", run:()=>runTool("start", [], lg)},
     compare: ()=> n >= 2 ? {icon:"compare", label:`Compare ${A.name} vs ${B.name}`, detail:"Dynasty value, age, production and 30-day trend", run:()=>runTool("compare", P)}
@@ -373,7 +385,9 @@ function interpret(raw){
       return where.slice(0,3).map(z=>({icon:"trades", label:`Trade for ${A.name} in ${z.x.lg.name}`, detail:`${z.o.name} has him. Build the offer`, run:()=>cbPrefillTrade({lid:z.x.lg.league_id, give:[], get:[{id:A.id, name:A.name}]})})); },
     finder: ()=> lg ? {icon:"trades", label:`Trade recs in ${lg.name}`, detail:"Built around that team's direction", run:()=>{ S.navFrom = "trades"; go("team", {lid:lg.league_id, anchor:"trades"}); }} : null,
     direction: ()=> lg ? {icon:"diagnose", label:`Contend or rebuild in ${lg.name}?`, detail:"Playoff odds, roster window and the data's call", run:()=>go("team", {lid:lg.league_id})}
-      : {icon:"diagnose", label:"Diagnose every team", detail:"Playoff and bubble odds, and the right lane for each team", run:()=>go("direction")},
+      : {icon:"diagnose", label:"Playoff odds for every team", detail:"1,000 simulated seasons per league, and the right lane for each", run:()=>{ S.ttab = "odds"; go("direction"); }},
+    teamval: ()=> lg ? {icon:"team", label:`Diagnose ${lg.name}`, detail:"Value now vs in two seasons, position grades and trade recs", run:()=>go("team", {lid:lg.league_id})}
+      : {icon:"reviews", label:"Every team: now vs future value", detail:"Position grades and the two-season outlook for each dynasty team", run:()=>{ S.ttab = "value"; go("direction"); }},
     waivers: ()=>({icon:"waivers", label:`Waivers${pos ? `: best ${pos} adds` : ""}`, detail:"Holes to fill, stashes, and what to bid", run:()=>go("waivers")}),
     rankings: ()=>{ const mode = T(/\b(this week|week \d+|start)\b/) ? "week" : T(/\b(rest of (the )?season|ros|redraft)\b/) ? "ros" : T(/\bdynasty|long[- ]?term\b/) ? "dyn" : (T(/riser|faller|trending|mover/) ? "dyn" : RK.mode);
       const mv = T(/\b(fallers?|down|sell high|dropping)\b/) ? "fall" : T(/\b(risers?|trending|movers?|buy low|up|rising)\b/) ? "rise" : "rank";
@@ -387,9 +401,8 @@ function interpret(raw){
     market: ()=> A ? {icon:"market", label:`What ${A.name} has cost`, detail:"Real trades in your leagues this season", run:()=>{ S.mq = A.name; go("trades", {anchor:"market"}); }}
       : {icon:"market", label:"Trade market", detail:"Search what players actually cost", run:()=>go("trades", {anchor:"market"})},
     offers: ()=>{ const o = offerStats(); return {icon:"offers", label:"Your offers", detail: o.all.length ? `${o.waiting} waiting · ${o.nudge} need a nudge` : "Nothing tracked yet", run:()=>go("offers")}; },
-    team: ()=> lg ? {icon:"team", label:`Open ${lg.name}`, detail:"Roster, direction and trade recs", run:()=>go("team", {lid:lg.league_id})} : null,
-    help: ()=>[{icon:"rankings", label:`Find "${t}" in rankings`, detail:"Search every ranked player", run:()=>{ RK.q = t; go("rankings"); }},
-      {icon:"orb", label:"Open the crystal ball", detail:"Start/Sit, trade check and compare", run:()=>go("ask")}]
+    team: ()=> lg ? {icon:"team", label:`Diagnose ${lg.name}`, detail:"Value now vs future, the data's lane, and trade recs", run:()=>go("team", {lid:lg.league_id})} : null,
+    help: ()=>{ const j = jumpMatches(t); return j.length ? j.slice(0, 3).map(x=>({icon:x.icon, label:x.label, detail:x.detail, run:x.run})) : [{icon:"orb", label:"Open the crystal ball", detail:"Start/Sit, trade check and compare", run:()=>go("ask")}]; }
   };
   for(const k of Object.keys(sc)) push(k, B_[k] && B_[k]());
   // a named league is always one tap away
@@ -410,21 +423,73 @@ function askFromText(text){
   it.run();
 }
 function hideDrop(){ const d = $("askdrop"); if(d) d.hidden = true; S.dropSel = 0; }
+/* every place the search can send you; words are what people type for it */
+const JUMPS = [
+  {k:"lineups", icon:"lineups", label:"Lineups", detail:"Must fix, game-time and upgrades", words:"lineups lineup fix start sit out injured bye", run:()=>go("fix")},
+  {k:"trades", icon:"trades", label:"Trade finder", detail:"Recs built around each team's lane", words:"trades trade finder recs deal", run:()=>go("trades")},
+  {k:"check", icon:"swaps", label:"Trade check", detail:"Build any offer and grade it", words:"trade check offer grade evaluate accept counter", run:()=>{ TOOL.mode = "trade"; CB.mode = "trade"; go("ask"); }},
+  {k:"compare", icon:"compare", label:"Compare players", detail:"Dynasty value, age and production side by side", words:"compare versus vs value", run:()=>{ TOOL.mode = "compare"; CB.mode = "compare"; go("ask"); }},
+  {k:"teams", icon:"reviews", label:"Teams: now vs future", detail:"Value today and in two seasons, by team", words:"teams team value values future current diagnose diagnosis grades portfolio", run:()=>{ S.ttab = "value"; go("direction"); }},
+  {k:"odds", icon:"diagnose", label:"Playoff odds", detail:"Contend or rebuild, for every team", words:"playoff odds contend rebuild direction lane simulate", run:()=>{ S.ttab = "odds"; go("direction"); }},
+  {k:"rankings", icon:"rankings", label:"Rankings", detail:"Week, rest of season and dynasty tiers", words:"rankings rank tiers risers fallers", run:()=>go("rankings")},
+  {k:"waivers", icon:"waivers", label:"Waivers", detail:"Holes to fill, stashes and bids", words:"waivers waiver wire adds pickups faab free agents stash", run:()=>go("waivers")},
+  {k:"offers", icon:"offers", label:"Offers", detail:"Trades you sent and their answers", words:"offers offer pending sent nudge", run:()=>go("offers")},
+  {k:"market", icon:"market", label:"Trade market", detail:"What players actually cost in your leagues", words:"market cost price paid traded", run:()=>go("trades", {anchor:"market"})},
+  {k:"exposure", icon:"exposure", label:"Exposure", detail:"Who you own across every league", words:"exposure shares own rostered players", run:()=>{ S.ptab = "exposure"; S.query = ""; go("players"); }},
+  {k:"brief", icon:"brief", label:`Week brief`, detail:"Your whole week in a two-minute read", words:"brief summary recap week overview", run:()=>go("brief")}
+];
+function jumpMatches(text){
+  const ws = text.toLowerCase().split(/\s+/).filter(w=>w.length >= 2);
+  if(!ws.length) return [];
+  return JUMPS.map(j=>{ const vocab = (j.words + " " + j.label.toLowerCase()).split(/\s+/); let s = 0;
+    for(const w of ws) if(vocab.some(v=>v === w)) s += 3; else if(vocab.some(v=>v.startsWith(w))) s += 2; else if(w.length >= 4 && vocab.some(v=>v.length >= 5 && lev(w, v) === 1)) s += 1;
+    return {...j, s}; }).filter(j=>j.s).sort((a,b)=>b.s - a.s);
+}
+/* finish what's being typed: a player, a league or a keyword that will actually work */
+function completions(text){
+  const raw = text.replace(/\s+$/,""), words = raw.split(/\s+/); if(!words[0] || text.endsWith(" ")) return [];
+  const leagues = S.results.filter(r=>r.league).map(r=>r.league), pidx = playerIdx(), out = [];
+  for(let k = Math.min(3, words.length); k >= 1 && !out.length; k--){
+    const frag = words.slice(-k).join(" ").toLowerCase().replace(/[.']/g,""), head = words.slice(0, -k).join(" ");
+    if(frag.length < 2) continue;
+    const pl = pidx.filter(p=>(p.fullN.startsWith(frag) || (k === 1 && frag.length >= 3 && p.last.startsWith(frag))) && p.fullN !== frag)
+      .sort((a,b)=>(b.mine - a.mine) || b.pts - a.pts).slice(0, 3);
+    for(const p of pl){ const nm = pname(p.id), e = S.proj[p.id] && S.proj[p.id].player || {};
+      out.push({kind:"player", icon:"exposure", text:(head ? head + " " : "") + nm + " ", label:nm, detail:`${e.position||""} ${e.team||""}${p.mine ? ` · on ${ownedIn(p.id).length} of your rosters` : ""}`.trim()}); }
+    if(frag.length >= 3) for(const lg of leagues.filter(l=>{ const n = l.name.toLowerCase(); return n !== frag && (n.startsWith(frag) || n.split(/[^a-z0-9]+/).some(w=>w.length >= 3 && w.startsWith(frag))); }).slice(0, 2))
+      out.push({kind:"league", icon:"team", text:(head ? head + " " : "") + lg.name + " ", label:lg.name, detail:"League"});
+    if(k === 1 && frag.length >= 2){ const kw = ["trade","sell","buy","compare","value","diagnose","rank","waivers","lineups","start","offers","market","brief","rebuild","contend"].filter(w=>w.startsWith(frag) && w !== frag).slice(0, 2);
+      for(const w of kw) out.push({kind:"word", icon:"orb", text:(head ? head + " " : "") + w + " ", label:w, detail:"Keyword"}); }
+  }
+  return out.slice(0, 4);
+}
+function suggested(){
+  const out = [], c = fixCounts(), nl = nextLock();
+  if(c.fix) out.push({icon:"lineups", label:`Fix ${c.fix} lineup${c.fix>1?"s":""}`, detail: nl ? `First lock ${kickLabel(nl.k)}` : "Starters who can't play", run:()=>go("fix", {tab:"fix"})});
+  const tl = teamList().filter(x=>x.b && !x.r.bestBall), L = S.dir && S.dir.leagues;
+  const pick = (L ? tl.find(x=>L[x.id] && LIMBO.has(L[x.id].me.dir)) : null) || tl.find(x=>x.dir === "none");
+  if(pick) out.push({icon:"team", label:`Diagnose ${pick.name}`, detail: L && L[pick.id] && LIMBO.has(L[pick.id].me.dir) ? `${pct(L[pick.id].me.odds.po)} playoff odds, stuck in the middle` : "No lane set yet: see value now vs future", run:()=>go("team", {lid:pick.id})});
+  const idea = promptIdeas().find(x=>/,? dynasty value\?$/.test(x)); if(idea) out.push({icon:"compare", label:idea.replace(/, dynasty value\?$/, "").replace(" or ", " vs "), detail:"Compare dynasty value", ask:idea});
+  return out.slice(0, 3);
+}
 function updateDrop(){
   const q = $("askq"), d = $("askdrop"); if(!q || !d) return;
   if(document.activeElement !== q || !S.results.length){ d.hidden = true; return; }
-  const t = q.value.trim();
+  const t = q.value.trim(), row = (it, attrs, sel) => `<button class="drow${sel ? " sel" : ""}" ${attrs}>${svgI(it.icon,18)}<span class="t"><b>${esc(it.label)}</b>${it.detail ? `<small>${esc(it.detail)}</small>` : ""}</span>${sel ? `<kbd>↵</kbd>` : ""}</button>`;
   if(!t){
-    const recent = store.get("recentAsk", []), ideas = promptIdeas().slice(0, 3);
-    S.dropIntents = []; S.dropFor = "";
-    d.innerHTML = `<div class="lab">Try</div>${ideas.map(x=>`<button class="drow" data-ask="${esc(x)}">${svgI("orb",18)}<span class="t"><b>${esc(x)}</b></span></button>`).join("")}
-      ${recent.length ? `<div class="lab">Recent</div>${recent.map(x=>`<button class="drow" data-ask="${esc(x)}">${svgI("monitor",18)}<span class="t"><b>${esc(x)}</b></span></button>`).join("")}` : ""}
-      <div class="dhint">Name a player, team, league or position, and say what you want: start, trade, sell, rank, waivers… Spin the ball or shake your phone to ask.</div>`;
+    const recent = store.get("recentAsk", []).slice(0, 3), sug = suggested();
+    S.dropIntents = sug.filter(x=>x.run); S.dropFor = "";
+    d.innerHTML = `<div class="dchips jump"><small>Go to</small>${["lineups","trades","teams","compare","check","rankings","waivers","offers"].map(k=>{ const j = JUMPS.find(z=>z.k === k); return `<button class="jchip" data-jump="${k}">${esc(j.label.replace(": now vs future","").replace(" players","").replace(" finder",""))}</button>`; }).join("")}</div>
+      ${sug.length ? `<div class="lab">Suggested</div>${sug.map(x=>x.run ? row(x, `data-intent="${S.dropIntents.indexOf(x)}"`) : row(x, `data-ask="${esc(x.ask)}"`)).join("")}` : ""}
+      ${recent.length ? `<div class="lab">Recent</div>${recent.map(x=>row({icon:"monitor", label:x}, `data-ask="${esc(x)}"`)).join("")}` : ""}
+      <div class="dhint">Type a keyword (trade, value, compare, rank, waivers), a player, or one of your leagues. Mix them: "sell Puka in Gridiron".</div>`;
     d.hidden = false; return;
   }
-  const I = interpret(t); S.dropIntents = I.list; if(S.dropFor !== t){ S.dropSel = 0; S.dropFor = t; }
-  d.innerHTML = (I.chips.length ? `<div class="dchips"><small>Heard</small>${I.chips.join("")}</div>` : "") +
-    I.list.slice(0, 5).map((it,i)=>`<button class="drow${i === (S.dropSel||0) ? " sel" : ""}" data-intent="${i}">${svgI(it.icon,18)}<span class="t"><b>${esc(it.label)}</b><small>${esc(it.detail)}</small></span>${i === (S.dropSel||0) ? `<kbd>↵</kbd>` : ""}</button>`).join("");
+  const I = interpret(t), C = completions(q.value); S.dropIntents = I.list; if(S.dropFor !== t){ S.dropSel = 0; S.dropFor = t; }
+  d.innerHTML = (C.length ? `<div class="lab">Finish typing</div>${C.map(c=>row(c, `data-complete="${esc(c.text)}"`)).join("")}` : "") +
+    (I.chips.length ? `<div class="dchips"><small>Heard</small>${I.chips.join("")}</div>` : "") +
+    (I.list.length ? `<div class="lab">${C.length ? "Or go" : "Go"}</div>` : "") +
+    I.list.slice(0, 4).map((it,i)=>row(it, `data-intent="${i}"`, i === (S.dropSel||0))).join("");
   d.hidden = false;
 }
 
@@ -472,13 +537,19 @@ document.addEventListener("click", e=>{
   const it = e.target.closest("[data-intent]"); if(it){ const k = +it.dataset.intent, x = (S.dropIntents||[])[k]; const q = $("askq");
     if(x){ const t = q ? q.value.trim() : ""; if(t){ const rec = store.get("recentAsk", []).filter(z=>z !== t); rec.unshift(t); store.set("recentAsk", rec.slice(0,5)); }
       if(q){ q.value = ""; q.blur(); } hideDrop(); showToast(x.label); x.run(); } return; }
+  const jp = e.target.closest("[data-jump]"); if(jp){ const j = JUMPS.find(z=>z.k === jp.dataset.jump), q = $("askq"); if(q){ q.value = ""; q.blur(); } hideDrop(); if(j) j.run(); return; }
+  const cp = e.target.closest("[data-complete]"); if(cp){ const q = $("askq"); if(q){ q.value = cp.dataset.complete; q.focus(); try{ q.setSelectionRange(q.value.length, q.value.length); }catch(_){} } S.dropSel = 0; updateDrop(); return; }
+  const bk = e.target.closest("[data-back]"); if(bk){ if((S.hdepth||0) > 0) history.back(); else go(bk.dataset.back); return; }
   const nv = e.target.closest("[data-nav]"); if(nv){ const [v, arg] = nv.dataset.nav.split(":");
-    if(v === "players"){ S.ptab = arg; go("players"); }
+    if(v === "players" && arg === "reviews"){ S.ttab = "value"; go("direction"); }
+    else if(v === "players"){ S.ptab = arg; go("players"); }
+    else if(v === "teams"){ S.ttab = arg; store.set("ttab", arg); go("direction"); }
     else if(v === "trades"){ go("trades", {anchor: arg}); setTimeout(()=>{ const m = $("mq"); if(m && arg === "market") m.focus({preventScroll:true}); }, 400); }
     return; }
   const ofs = e.target.closest("[data-ofs]"); if(ofs){ const i = ofs.dataset.ofs.lastIndexOf("|"), key = ofs.dataset.ofs.slice(0,i), st = ofs.dataset.ofs.slice(i+1);
     const a = OFFERS.all(), x = a.find(z=>z.key === key); if(x){ x.status = st; x.ts = Date.now(); OFFERS.save(a); } render(); return; }
   const ofr = e.target.closest("[data-ofrm]"); if(ofr){ OFFERS.save(OFFERS.all().filter(z=>z.key !== ofr.dataset.ofrm)); render(); return; }
+  const tt = e.target.closest("[data-ttab]"); if(tt){ S.ttab = tt.dataset.ttab; store.set("ttab", S.ttab); render(); return; }
   const dlf = e.target.closest("[data-dlf]"); if(dlf){ S.dirFilter = dlf.dataset.dlf || null; render(); return; }
   const dr = e.target.closest("[data-dir]"); if(dr){ go("team", {lid: dr.dataset.dir}); return; }
   if(e.target.closest("#shakeT")){ SHAKE.on = !SHAKE.on; store.set("shake", SHAKE.on); if(SHAKE.on){ SHAKE.asked = false; motionOK(); } render(); return; }
@@ -500,3 +571,13 @@ let lastY = 0;
 window.addEventListener("scroll", ()=>{ const y = window.scrollY, top = $("top"); if(!top) return;
   if(document.activeElement !== $("askq")){ if(y > 140 && y > lastY + 6) top.classList.add("tuck"); else if(y < lastY - 6 || y < 140) top.classList.remove("tuck"); }
   lastY = y; }, {passive:true});
+
+/* ---------- phone back gesture walks back through screens ---------- */
+try{ history.replaceState({cc:1, v:"home"}, ""); }catch(_){}
+window.addEventListener("popstate", e=>{
+  const st = e.state; S.hdepth = Math.max(0, (S.hdepth||0) - 1);
+  if(MENU.open) closeMenu();
+  if(!S.results.length) return;
+  if(st && st.cc){ if(st.v === "fix" && st.tab) S.fixTab = st.tab; if(st.v === "players" && st.ptab) S.ptab = st.ptab; go(st.v, {lid: st.lid, fromPop: true}); }
+  else go("home", {fromPop: true});
+});

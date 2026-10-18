@@ -124,6 +124,17 @@ Supabase project `uxqevvuqibqvypwpccjz`, called directly over its REST endpoints
 The accounts build (05290fb) was made from the V2 code and dropped the whole V2.1 "one flow" release (pinned crystal ball, game plan rail, menu, Diagnose / Trades / Offers screens, spin and shake to ask, richer rankings). Restored by a three-way merge of V2 → V2.1 onto the accounts build; the three overlapping spots kept both sides, with the account button added to the V2.1 header. V2.1's code now lives in `src/ui6.js`; `tools/assemble.py` keeps engine lines 348–1774. Full app and account tests pass.
 **Rule for every session:** pull `main` first, edit `src/`, run `python3 tools/assemble.py` and both tests before pushing.
 
+## V2.2 · clarity pass (Oct 18, 2026)
+Review found the features solid but the way around them scattered: four overlapping navigation systems, a tall pinned header, and Home burying the team list.
+- **One navigation:** bottom bar is Home · Lineups · Ask (ball) · Trades · Teams. The numbered game-plan strip and the duplicate list on Home are gone. The menu is a grouped index: team search, This week, Trades, Players & teams, Account.
+- **Back works everywhere:** inner screens have a back button, and the phone's swipe/back gesture walks back through screens (history state).
+- **Teams screen** (new dock tab) merges Diagnose and Team reviews: *Now vs future* (value today vs in two seasons, position grades) and *Playoff odds* (1,000 simulated seasons). Every card opens the team's full diagnosis and trade recs.
+- **Home:** urgent card and Must fix · Game-time · Upgrades counts, then *This week* (only what needs you: waiver night, teams with no lane, offers waiting, the brief), then **My teams**.
+- **My teams sort and filter:** sort by Next lock, Record, Win-now rank, Future rank, Youngest, Playoff odds, A–Z. Filter by Contend, Rebuild, Undecided, Lineup issues, Young core (<25.5), Aging (27+). Each row shows record · now rank · future rank · avg age, plus a summary line and what the sort means.
+- **Search (crystal ball) as a navigator:** keywords act as designators (trade, sell, buy, value, diagnose, compare, rank, waivers, lineups, offers). It finishes player and league names as you type, using only names that exist, and infers intent from players, leagues and teams ("sell lond" → Sell George London in Gridiron; "gridiron value" → that team's diagnosis). Empty search shows Go-to chips, suggestions from your data, and recents.
+- **Naming:** Must fix · Game-time · Upgrades everywhere. No more "Step X of 5".
+- **Header:** Sign in moved to the menu (header shows your initial once signed in). While scrolling down, the top row slides away and the search stays pinned, without shifting the page. The account banner is now one line.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

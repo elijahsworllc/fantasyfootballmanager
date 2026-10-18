@@ -155,7 +155,7 @@ function viewRankings(){
   const posOpts = RK.mode === "week" ? ["ALL","QB","RB","WR","TE","K","DEF"] : ["ALL","QB","RB","WR","TE"];
   if(!posOpts.includes(RK.pos)) RK.pos = "ALL";
   const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
-  let h = `<section style="display:flex;flex-direction:column;gap:6px"><h1 class="h1">Rankings</h1><div class="sub">Tiers, 30-day value moves and the case for every spot. Tap a player for the why; drag the handle to make the list yours.</div></section>
+  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Rankings</h1><div class="sub">Tiers, 30-day value moves and the case for every spot. Tap a player for the why; drag the handle to make the list yours.</div></section>
     <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
     <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
       ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
@@ -292,7 +292,7 @@ function viewTeam(){
   const x = teamList().find(z=>z.id === S.teamLid);
   if(!x) return `<button class="ghost back" data-go="home">${ICON.back} My teams</button><div class="empty">That league isn't loaded.</div>`;
   const b = x.b, id = x.id, r = x.r;
-  let h = `<button class="ghost back" data-go="home">${ICON.back} My teams</button>`;
+  let h = S.navFrom === "trades" ? backBtn("trades","Trades") : S.navFrom === "teams" ? backBtn("direction","Teams") : backBtn("home","Home");
   if(!b){ return h + `<section style="display:flex;flex-direction:column;gap:4px"><h1 class="h1" style="font-size:32px">${esc(x.name)}</h1><div class="sub">${esc(x.meta)}</div></section>` + (S.bpLoading ? `<div class="skel" aria-hidden="true"><i style="height:120px"></i><i style="height:300px"></i></div>` : `<div class="empty">${S.bpError ? esc(S.bpError) : "Not enough roster data to review this team."}</div>`); }
   const me = b.me, N = b.N, st = S.sim[id];
   if(!st) setTimeout(()=>ensureSim(id), 0);

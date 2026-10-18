@@ -776,6 +776,29 @@ section.dirsum{border-radius:22px;padding:14px;display:flex;flex-direction:colum
 section.dirsum p{font-size:13.5px}
 section.dirsum p b{color:var(--ink)}
 section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
+/* ===== V2.2 · clarity: one nav, slimmer header, calmer type ===== */
+.top.scrolled{background:rgba(6,8,18,.88)}
+.dock{background:rgba(10,14,30,.84)}
+.top{transition:background .3s,backdrop-filter .3s,transform .32s var(--ease)}
+.toprow{transition:opacity .2s}
+.top.tuck{transform:translateY(-48px)}
+.top.tuck .toprow{opacity:0;pointer-events:none}
+.h1{font-size:30px;line-height:1.02}
+.pagehead{display:flex;flex-direction:column;gap:6px}
+.pagehead .ghost.back{margin-bottom:2px}
+.pstep .n svg{width:16px;height:16px}
+.pstep.calm .n{background:rgba(95,214,230,.1);color:var(--cyan-2)}
+.acline{display:flex;align-items:center;gap:10px;border-radius:18px;padding:10px 10px 10px 14px}
+.acline .t{flex:1;min-width:0;font-size:13px;color:var(--ink-2);line-height:1.35}
+.acline .t b{color:var(--ink);font-weight:650}
+.acline .tc-x{position:static;flex:none}
+.scorenote{font-size:12px;color:var(--ink-3);line-height:1.4;margin:-2px 2px 0}
+.mitem.acc{margin-top:2px}
+.chiplab{flex:none;align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-right:-2px}
+.chip.sortchip[aria-pressed="true"]{background:var(--grad);color:#0A0F1A;box-shadow:none}
+.dchips.jump{gap:6px;padding:8px 8px 6px}
+.jchip{border:0;border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:650;background:rgba(160,140,255,.14);color:var(--ink);box-shadow:inset 0 0 0 1px rgba(160,140,255,.28)}
+@media (hover:hover){.jchip:hover{background:rgba(160,140,255,.24)}}
 </style>
 </head>
 <body>
@@ -798,7 +821,6 @@ section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
       <input id="askq" placeholder="Ask anything: start, trade, rank, waivers…" autocomplete="off" enterkeyhint="go" aria-label="Ask the crystal ball" aria-controls="askdrop" aria-autocomplete="list"><button class="go" type="submit" aria-label="Ask"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6" opacity=".55"/></svg></button></form>
     <div class="askdrop" id="askdrop" role="listbox" aria-label="What the crystal ball heard" hidden></div>
   </div>
-  <nav class="rail" id="rail" aria-label="Your game plan"></nav>
 </header>
 <div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu" hidden><div class="scrim"></div><div class="mpanel" id="mpanel"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -812,6 +834,6 @@ section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
   <div class="orbslot"><button class="orbbtn" id="orbBtn" data-go="ask" aria-label="Ask the crystal ball"></button></div>
   
   <button class="navb" data-go="trades"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h12l-3-3"/><path d="M19 16H7l3 3"/></svg><span>Trades</span></button>
-  <button class="navb" data-go="rankings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h3M4 12h3M4 18h3"/><path d="M10 6h10M10 12h7M10 18h4"/></svg><span>Rankings</span></button>
+  <button class="navb" data-go="direction"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="M8.5 12.5h2l1.2-2.6 1.6 4.4 1.1-1.8h1.6"/></svg><span>Teams</span></button>
 </nav>
 <script>

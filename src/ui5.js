@@ -197,13 +197,11 @@ function toast(text){ const t = $("toast"); if(!t) return; t.textContent = text;
 /* ---------- entry points in the app ---------- */
 function accountCardHTML(){
   if(!accountsOn() || ACC.session || store.get("acct:dismissed", false)) return "";
-  return `<section class="takecontrol glass"><button class="tc-x" data-acdismiss="1" aria-label="Not now">✕</button>
-    <div class="tc-t"><b>Take control of your command center</b><span>Create a free account and your rankings, team directions and settings follow you to every device.</span></div>
-    <div class="acrow"><button class="cbtn" data-acopen="create">Create account<span class="arr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg></span></button><button class="ghost" data-acopen="signin">Sign in</button></div></section>`;
+  return `<section class="acline glass"><span class="t"><b>Use it on every device.</b> A free account saves your rankings, team lanes and settings.</span><button class="ghost tint" data-acopen="create">Create</button><button class="tc-x" data-acdismiss="1" aria-label="Not now">✕</button></section>`;
 }
 function accountChipHTML(){
   if(!accountsOn()) return "";
-  return ACC.session ? `<button class="acchip on" data-acopen="account" aria-label="Your account">${esc((accName()[0]||"•").toUpperCase())}</button>` : `<button class="acchip" data-acopen="signin">Sign in</button>`;
+  return ACC.session ? `<button class="acchip on" data-acopen="account" aria-label="Your account">${esc((accName()[0]||"•").toUpperCase())}</button>` : "";
 }
 document.addEventListener("click", e=>{
   const el = e.target.closest("[data-acopen],[data-acclose],[data-acmode],[data-acgo],[data-aceye],[data-acout],[data-acdel],[data-acsync],[data-acdismiss]"); if(!el) return;
