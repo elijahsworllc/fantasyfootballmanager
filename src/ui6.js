@@ -121,7 +121,7 @@ function renderMenu(){
       <button class="mtile" data-go="trades">${svgI("trades",18)}Trade finder</button>
       <button class="mtile" data-opentool="trade">${svgI("swaps",18)}Trade check</button>
       <button class="mtile" data-opentool="compare">${svgI("compare",18)}Compare</button>
-      <button class="mtile" data-go="offers">${svgI("offers",18)}Offers${o.waiting ? ` <span class="ct up">${o.waiting}</span>` : ""}</button>
+      <button class="mtile" data-go="offers">${svgI("offers",18)}Offers${INBOX.all().filter(x=>x.status === "open").length ? ` <span class="ct warn">${INBOX.all().filter(x=>x.status === "open").length}</span>` : ""}</button>
       <button class="mtile" data-nav="trades:market">${svgI("market",18)}Trade market</button>
       <button class="mtile" data-opentool="start">${svgI("start",18)}Start / Sit</button>
     </div></div>
@@ -214,24 +214,6 @@ function marketHTML(){
 
 /* ---------- Offers: what you sent and what came back ---------- */
 const OF_STATUS = [["sent","Waiting"],["countered","Countered"],["accepted","Accepted"],["declined","Declined"]];
-function viewOffers(){
-  const o = offerStats();
-  let h = `<section class="pagehead">${backBtn("trades","Trades")}<h1 class="h1">Offers</h1><div class="sub">Every trade message you copy is saved here. Mark the answer when it comes back so you know who to nudge.</div></section>`;
-  if(!o.all.length) return h + `<div class="empty">No offers yet. Open a team's trade recs and tap <b>Copy message</b>: the offer lands here.<div style="margin-top:12px"><button class="ghost go" data-go="trades">Find trades →</button></div></div>`;
-  h += `<section class="stats"><div><b>${o.waiting}</b><span>waiting on an answer</span></div><div><b style="color:var(--warn)">${o.nudge}</b><span>need a nudge (2+ days)</span></div><div><b style="color:var(--ok)">${o.rate == null ? "—" : pct(o.rate)}</b><span>accepted, of answered</span></div></section>`;
-  for(const [st, label] of OF_STATUS){
-    const list = o.all.filter(x=>x.status === st); if(!list.length) continue;
-    h += `<section style="display:flex;flex-direction:column;gap:10px"><div class="sec"><h2 class="h2">${label}</h2><span class="sub">${list.length}</span></div>${list.map(x=>{
-      const old = st === "sent" && Date.now() - x.ts > 2*864e5;
-      const nudge = `Hey ${x.partner}, circling back on ${x.give.join(" + ")} for ${x.get.join(" + ")}. Still open to it, and happy to hear a counter.`;
-      return `<article class="offer glass${old ? " old" : ""}"><div class="oh"><span class="t"><b>${esc(x.partner)}</b><small>${esc(x.league)} · ${st === "sent" ? "sent" : "updated"} ${esc(ago(x.ts))}</small></span>${old ? `<span class="pill p-warn">Nudge</span>` : ""}</div>
-        <div class="gs"><span class="k in">Get</span><span>${x.get.map(esc).join("<br>")}</span><span class="k out">Send</span><span>${x.give.map(esc).join("<br>")}</span></div>
-        <div class="seg sm" role="radiogroup" aria-label="Answer" style="--n:4;--i:${OF_STATUS.findIndex(s=>s[0] === st)}">${OF_STATUS.map(([k,l])=>`<button role="radio" aria-checked="${k === st}" data-ofs="${esc(x.key)}|${k}">${l}</button>`).join("")}<i aria-hidden="true"></i></div>
-        <div class="cfoot" style="padding:0">${old ? `<button class="ghost tint" data-copy="${esc(nudge)}" data-label="Copy nudge">Copy nudge</button>` : ""}${x.cb ? `<button class="ghost" data-cbt="${esc(JSON.stringify(x.cb))}">Re-check</button>` : ""}<a class="ghost" href="${leagueLink(x.lid)}" target="_blank" rel="noopener">Sleeper ${ICON.ext}</a><button class="ghost" data-ofrm="${esc(x.key)}" aria-label="Remove this offer">Remove</button></div></article>`; }).join("")}</section>`;
-  }
-  return h;
-}
-
 /* ---------- Home: what can't wait, then the plan ---------- */
 function nowCardHTML(){
   const b = bulletinHTML(); if(b) return b;
@@ -245,7 +227,9 @@ function weekItems(){
   items.push(wv.badge ? {go:"waivers", icon:"waivers", tone:"warn", hot:true, title:"Waivers run tonight", line:"Most leagues process claims overnight. Fill holes and set bids before bed", badge:"!"}
     : {go:"waivers", icon:"waivers", calm:true, title:"Waivers", line:"Lineup holes to fill, stashes worth adding, and what to bid"});
   if(dir.badge) items.push({go:"direction", nav:"teams:odds", icon:"diagnose", tone:"warn", title:`Diagnose ${dir.badge} team${dir.badge>1?"s":""} with no lane`, line:"Undecided teams lose value every season. Simulate the year and pick contend or rebuild", badge:dir.badge});
-  if(o.waiting) items.push({go:"offers", icon:"offers", tone: o.nudge ? "warn" : "up", title:`${o.waiting} trade offer${o.waiting>1?"s":""} waiting`, line: o.nudge ? `${o.nudge} sent 2+ days ago: time for a nudge` : "Mark the answer when it comes back", badge:o.waiting});
+  const rcv = INBOX.all().filter(x=>x.status === "open");
+  if(rcv.length) items.push({go:"offers", icon:"offers", tone:"warn", title:`Answer ${rcv.length} trade offer${rcv.length>1?"s":""}`, line:`${rcv.filter(x=>x.rev && x.rev.band === "smash").length} smash · ${rcv.filter(x=>x.rev && x.rev.band === "close").length} close · ${rcv.filter(x=>x.rev && x.rev.band === "lowball").length} lowball`, badge:rcv.length});
+  if(o.waiting) items.push({go:"offers", icon:"offers", tone: o.nudge ? "warn" : "up", title:`${o.waiting} sent offer${o.waiting>1?"s":""} waiting`, line: o.nudge ? `${o.nudge} sent 2+ days ago: time for a nudge` : "Mark the answer when it comes back", badge:o.waiting});
   items.push({go:"brief", icon:"brief", calm:true, title:`Week ${S.week} brief`, line:"Your whole week in a two-minute read", cta: S.brief[S.week] ? "Open" : "Generate"});
   return items;
 }

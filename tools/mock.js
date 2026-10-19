@@ -12,6 +12,9 @@ const players = POS.map((pos, i) => {
 });
 const DEFS = TEAMS.map(t => ({id:t, pos:"DEF", team:t, inj:null, first:t, last:"Defense", age:null, pts: 6 + rnd()*4}));
 const ALL = players.concat(DEFS);
+// week 6 is always the coming Thu/Sun/Mon, so lock times stay in the future whenever the tests run
+const WK6 = (()=>{ const d = new Date(); d.setUTCHours(12,0,0,0); d.setUTCDate(d.getUTCDate() + 1); while(d.getUTCDay() !== 4) d.setUTCDate(d.getUTCDate() + 1);
+  const f = x => x.toISOString().slice(0,10), sun = new Date(d.getTime() + 3*864e5), mon = new Date(d.getTime() + 4*864e5); return {thu:f(d), sun:f(sun), mon:f(mon)}; })();
 const BYE = new Set(["MIA","KC"]); // week 6 byes
 function projections(week){
   return ALL.map(p => {
@@ -30,7 +33,7 @@ function schedule(){
   for(let w = 1; w <= 18; w++){
     const ts = TEAMS.filter(t => !(w === 6 && BYE.has(t)));
     for(let i = 0; i + 1 < ts.length; i += 2){
-      const day = w === 6 ? (i === 0 ? "2026-10-15" : i < 24 ? "2026-10-18" : "2026-10-19") : `2026-${String(9 + Math.floor((w+5)/5)).padStart(2,"0")}-${String(((w*7)%28)+1).padStart(2,"0")}`;
+      const day = w === 6 ? (i === 0 ? WK6.thu : i < 24 ? WK6.sun : WK6.mon) : `2026-${String(9 + Math.floor((w+5)/5)).padStart(2,"0")}-${String(((w*7)%28)+1).padStart(2,"0")}`;
       g.push({week:w, home:ts[i], away:ts[(i + w) % ts.length === i ? i+1 : i+1], date:day, status: w < 6 ? "complete" : "pre_game"});
     }
   }

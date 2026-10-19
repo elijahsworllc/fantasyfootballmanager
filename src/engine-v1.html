@@ -952,7 +952,8 @@ async function answerTrade(){
   const flip = diff < -0.03 && fit > 0.02 ? "You're overpaying in value. Worth it only if this is the piece that wins you a title this year."
     : diff > 0.03 && fit < -0.02 ? "You win on value but it moves you away from your plan. Fine if you can flip a piece later."
     : Math.abs(score) < 0.03 ? "A small add on either side (a 3rd-round pick) would settle it." : "A big injury to a player in the deal would change the math.";
-  return {q:`Give ${CB.a.map(o=>o.name).join(" + ")} for ${CB.b.map(o=>o.name).join(" + ")} in ${x.lg.name}?`, v, conf, reasons, flip};
+  return {q:`Give ${CB.a.map(o=>o.name).join(" + ")} for ${CB.b.map(o=>o.name).join(" + ")} in ${x.lg.name}?`, v, conf, reasons, flip,
+    m:{diff, fit, score, nowChg, futChg, now0:me.nowRank, nowR, fut0:me.futRank, futR, N:b.N, gradeMoves, plan:ARCH[me.arch].label, mode: w[0] > .5 ? "contend" : w[1] > .5 ? "rebuild" : "balanced", rawGive, rawGet}};
 }
 
 /* ---------- transactions: waiver bids, trades, activity ---------- */

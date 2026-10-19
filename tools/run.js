@@ -82,6 +82,17 @@ const OUT = process.argv[2] || "/tmp/shots";
   await page.evaluate(() => window.scrollTo(0, 0)); await shot("16b-team-ready");
   await page.evaluate(() => window.scrollTo(0, 900)); await shot("16c-roster");
   await step("home tools", async () => { await page.click('.navb[data-go="home"]'); await page.waitForTimeout(600); await page.evaluate(() => window.scrollTo(0, 420)); }); await shot("17-home-tools");
+  await step("run entry", async () => { await page.evaluate(() => go("fix")); await page.waitForTimeout(600); }); await shot("18-lineups-run");
+  await step("run start", async () => { await page.click("[data-runstart]"); await page.waitForSelector("#runner .mvr, #runner .empty", {timeout: 5000}); }); await shot("18b-runner");
+  await step("run done", async () => { await page.click("[data-rundone]"); await page.waitForTimeout(300); }); await shot("18c-runner-next");
+  await step("run back", async () => { await page.evaluate(() => { RUN.back = true; renderRun(); }); }); await shot("18d-runner-back");
+  await step("run exit", async () => { await page.click("[data-runx]"); await page.waitForTimeout(300); });
+  await step("link test", async () => { await page.click('[data-linkmode="app"]'); await page.waitForTimeout(300); const h = await page.evaluate(() => leagueLink("123")); if(!h.includes("/channels/123")) throw new Error("link mode not applied: " + h); });
+  await step("offers empty", async () => { await page.evaluate(() => go("offers")); await page.waitForTimeout(500); }); await shot("19-offers-empty");
+  await step("offer log", async () => { await page.click("[data-oflog]"); await page.waitForSelector("[data-partner]", {timeout: 20000}); await page.click("[data-partner]"); await page.waitForTimeout(300);
+    await page.click("[data-tradd]"); await page.click('[data-tside="give"]'); await page.waitForTimeout(200); await page.click("[data-tradd]"); await page.waitForTimeout(300); }); await shot("19b-offer-builder");
+  await step("offer save", async () => { await page.click("#trSave"); await page.waitForSelector(".offer.inbox", {timeout: 30000}); }); await page.waitForTimeout(600); await shot("19c-offer-card");
+  await page.evaluate(() => window.scrollTo(0, 420)); await shot("19d-offer-counters");
   await step("orb ask", async () => { await page.click("#orbBtn", {force:true}); }); await page.waitForTimeout(2200);
   // drag across the ball
   await step("drag", async () => { const b = await page.locator("#orb").boundingBox(); await page.mouse.move(b.x + b.width*0.3, b.y + b.height*0.45); await page.mouse.down(); await page.mouse.move(b.x + b.width*0.7, b.y + b.height*0.5, { steps: 6 }); await page.mouse.up(); });

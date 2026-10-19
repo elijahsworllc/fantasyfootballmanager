@@ -178,7 +178,7 @@ function tradeHTML(){
   const lgs = cbLeagues();
   if(!TR.lid && lgs.length) TR.lid = (lgs.find(y=>y.lg.settings && y.lg.settings.type === 2) || lgs[0]).lg.league_id;
   const b = trBp();
-  let h = `<div class="cbbox"><label for="trLeague">League</label><select id="trLeague">${lgs.map(y=>`<option value="${y.lg.league_id}" ${TR.lid===y.lg.league_id?"selected":""}>${esc(y.lg.name)}</option>`).join("")}</select></div>`;
+  let h = (TR.inbox ? `<div class="inboxnote glass"><b>Logging an offer you received.</b> Pick the league and who sent it. <i>You send</i> is what they asked for, <i>You get</i> is what they're offering. Then save it.</div>` : "") + `<div class="cbbox"><label for="trLeague">League</label><select id="trLeague">${lgs.map(y=>`<option value="${y.lg.league_id}" ${TR.lid===y.lg.league_id?"selected":""}>${esc(y.lg.name)}</option>`).join("")}</select></div>`;
   if(!b || !TR.fc){ if(TR.lid) setTimeout(trEnsure, 0); return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading rosters and values for this league…</div>`; }
   const me = b.me, partner = TR.partner != null ? b.teams.find(t=>t.rid === TR.partner) : null;
   h += `<div class="lab" style="margin-top:2px">Trading with</div><div class="chips partners">${b.teams.filter(t=>t.rid !== me.rid).map(t=>`<button class="chip${TR.partner===t.rid?" sel":""}" data-partner="${t.rid}" aria-pressed="${TR.partner===t.rid}">${esc(t.name)} <small>${t.rec} · ${ARCH[t.arch].short}</small></button>`).join("")}</div>`;
@@ -202,6 +202,7 @@ function tradeHTML(){
     <div class="plist2">${assets.slice(0, 40).map(a=>`<button class="prow-btn" data-tradd="${esc(a.id)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
     <button class="askbtn" id="trCheck" ${TR.give.length && TR.get.length && !TR.busy ? "" : "disabled"}>${TR.busy ? "Reading the league…" : "Run the full trade check"}</button>
     ${TR.answer ? answerHTML(TR.answer) : ""}
+    ${TR.give.length && TR.get.length ? `<button class="ghost tint" id="trSave" style="align-self:flex-start"${TR.saving ? " disabled" : ""}>${svgI("offers",16)} ${TR.saving ? "Grading the offer…" : TR.inbox ? "Save to my offers inbox" : "They offered me this: save to Offers"}</button>` : ""}
     <p class="src">Values: FantasyCalc dynasty values matched to this league's QB, size and PPR settings (built from real trades). The bar applies a stud premium so two halves don't equal a whole. The full check adds win-now and future rank changes and position grades for your roster.</p>`;
   return h;
 }

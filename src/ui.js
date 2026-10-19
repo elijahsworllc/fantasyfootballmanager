@@ -449,6 +449,7 @@ function viewHome(){
       <button class="tile glass crit" data-go="fix" data-tab="fix"><b data-count="${c.fix}">${S.counted ? c.fix : 0}</b><span>Must fix</span></button>
       <button class="tile glass warn" data-go="fix" data-tab="monitor"><b data-count="${c.monitor}">${S.counted ? c.monitor : 0}</b><span>Game-time</span></button>
       <button class="tile glass up" data-go="fix" data-tab="startsit"><b data-count="${c.startsit}">${S.counted ? c.startsit : 0}</b><span>Upgrades</span></button></section>
+    ${runEntryHTML()}
     ${planHTML()}
     <div class="statusline" id="statusline"></div>`;
   h += teamsSectionHTML(locks);
@@ -522,7 +523,7 @@ function viewFix(){
   let h = `<section class="pagehead"><h1 class="h1">Lineups</h1>
     <div class="sub">${{fix:"Must fix: starters who can't play (out, bye or an empty slot), soonest lock first. Open jumps straight to that team in Sleeper.", monitor:"Game-time: Questionable starters and healthy players stuck in IR slots, soonest lock first.", startsit:"Upgrades: a bench player projects more than a starter in that league's own scoring, soonest lock first."}[S.fixTab]}</div></section>
     <div class="seg" role="tablist" style="--n:3;--i:${ti}">${tabs.map(([k,l,n])=>`<button role="tab" data-fixtab="${k}" aria-selected="${S.fixTab===k}">${l}<span class="ct">${n}</span></button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="statusline" id="statusline"></div>`;
+    <div class="statusline" id="statusline"></div>${linkTestHTML()}${runEntryHTML()}`;
   if(S.fixTab === "fix"){
     const groups = outGroups(), lids = [...new Set(groups.flatMap(g=>g.rows.map(x=>x.r.league.league_id)))], left = lids.filter(id=>!isDone(id)).length;
     if(!groups.length) return h + `<div class="empty">No starter is out, on bye or empty. Every lineup can play.</div>`;
