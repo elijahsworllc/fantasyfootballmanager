@@ -135,6 +135,13 @@ Review found the features solid but the way around them scattered: four overlapp
 - **Naming:** Must fix · Game-time · Upgrades everywhere. No more "Step X of 5".
 - **Header:** Sign in moved to the menu (header shows your initial once signed in). While scrolling down, the top row slides away and the search stays pinned, without shifting the page. The account banner is now one line.
 
+## V2.3 · offers inbox, game-day run, links that land (Oct 19, 2026)
+**Verified first:** Sleeper's public API never returns pending trade offers. In 401 recent transactions across 40 leagues, every trade listed was already completed. Sleeper's app-link file (sleeper.com/.well-known/apple-app-site-association) only hands /topics, /channels, /topic and /message to the app, so /leagues/... links open the mobile website, which asks you to log in.
+- **Offers inbox (Offers → Received):** log a received offer in the trade builder (about 20 s). It's graded **Lowball / Close / Smash accept** from the full trade check: value change, win-now rank before and after, future rank before and after, and whether it fits your contend or rebuild plan. Up to 3 counters built from the real rosters (ask for a player at your weakest spot, add a pick, keep a piece, or swap down), each with the new value gap, a ready-to-copy message and a "Check" button that runs it through the full trade check. Work through them one at a time or as a list. Accept, Decline, Re-grade.
+- **Game-day run:** every league with a decision before its lock, soonest first. Each league shows only the real moves ("WR: Start Ladd Henry for Caleb Legette"), what to check before kickoff, and projected points before and after. Open in Sleeper; when you come back it asks "Done?" and goes to the next league. Any Open button elsewhere also offers "Done ✓" when you return.
+- **Link test:** a one-time card on Lineups lets you try the app link (league chat, /channels/{id}) and the website (/leagues/{id}/team) on your phone and keep whichever works. You can switch later in Settings.
+- Build: the engine slice in tools/assemble.py now ends at a marker instead of a fixed line number, and mock game dates follow the calendar so the tests never go stale.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

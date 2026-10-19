@@ -815,8 +815,8 @@ section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
 .mvlist > .lab{margin-bottom:4px}
 .mvr{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--hair)}
 .mvlist > .lab + .mvr{border-top:0}
-.mvr .slot{flex:none;min-width:48px;text-align:center;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:4px 6px;border-radius:8px;background:rgba(95,214,230,.14);color:var(--cyan-2)}
-.mvr .slot.w{background:rgba(233,169,58,.18);color:#F3C46B;min-width:28px}
+.mvr .mslot{flex:none;min-width:48px;text-align:center;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:4px 6px;border-radius:8px;background:rgba(95,214,230,.14);color:var(--cyan-2)}
+.mvr .mslot.w{background:rgba(233,169,58,.18);color:#F3C46B;min-width:28px}
 .mvr .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:14.5px;line-height:1.35}
 .mvr .t small{color:var(--ink-2);font-size:12px}
 .mvr .out{font-size:12.5px;color:var(--ink-3)}.mvr .out i{font-style:normal;font-weight:700;color:#FF9A9D;font-size:11px}
@@ -4748,14 +4748,18 @@ function linkTestHTML(){
 
 /* ---------- the exact moves for one league, slot by slot ---------- */
 function movesFor(r){
+  // only real changes: who goes into the lineup, who comes out, and the slot he lands in
+  if(!r.moves || !r.slots || !r.opt) return [];
   const info = p => p && p !== "0" ? (r._c[p] ||= pinfo(p, r.league)) : null, out = [];
-  if(r.slots && r.opt) r.slots.forEach((s, i)=>{ const cur = r.current[i] || "0", opt = r.opt[i] || "0"; if(cur === opt) return;
-    const a = info(opt), b = info(cur); out.push({slot: SLOT_LABEL[s] || s, a, b}); });
+  const ins = r.moves.ins || [], outs = r.moves.outs || [];
+  ins.forEach((x, i)=>{ const a = info(x.pid) || x, b = outs[i] ? (info(outs[i].pid) || outs[i]) : null, k = r.opt.indexOf(x.pid);
+    out.push({slot: k >= 0 ? (SLOT_LABEL[r.slots[k]] || r.slots[k]) : "", a, b}); });
+  outs.slice(ins.length).forEach(x=>{ const b = info(x.pid) || x; out.push({slot:"Bench", a:null, b}); });
   return out;
 }
 function moveLine(m){
   const tag = f => f ? (f.reason ? (f.reason === "Bye week" ? "BYE" : f.reason) : f.status ? f.status.toUpperCase() : "") : "";
-  return `<div class="mvr"><span class="slot">${esc(m.slot)}</span><span class="t">${m.a ? `<b>Start ${esc(m.a.full)}</b> <small>${m.a.pos} · ${esc(m.a.team || "FA")} · ${fmt(m.a.eff)}</small>` : `<b>Leave empty</b>`}
+  return `<div class="mvr"><span class="mslot">${esc(m.slot)}</span><span class="t">${m.a ? `<b>Start ${esc(m.a.full)}</b> <small>${m.a.pos} · ${esc(m.a.team || "FA")} · ${fmt(m.a.eff)}</small>` : `<b>Bench ${esc(m.b ? m.b.full : "")}</b>`}
     ${m.b ? `<span class="out">for ${esc(m.b.full)}${tag(m.b) ? ` <i>${esc(tag(m.b))}</i>` : ""} · ${fmt(m.b.eff)}</span>` : `<span class="out">empty slot</span>`}</span></div>`;
 }
 function movesText(r){ return `${r.league.name}: ` + movesFor(r).map(m=>`${m.slot} ${m.a ? m.a.full : "empty"}${m.b ? ` (for ${m.b.full})` : ""}`).join("; "); }
@@ -4808,7 +4812,7 @@ function renderRun(){
       <h2 class="h1">${esc(r.league.name)}</h2>
       ${m ? `<div class="sub">Projected ${fmt(m.me)}${r.moves ? ` → <b style="color:var(--ok)">${fmt(m.meOpt)}</b>` : ""} vs ${fmt(m.opp)}</div>` : ""}</div>
     ${mv.length ? `<section class="mvlist glass"><div class="lab">Make these moves</div>${mv.map(moveLine).join("")}</section>` : ""}
-    ${checks.length ? `<section class="mvlist glass"><div class="lab">Check before kickoff</div>${checks.map(x=>`<div class="mvr"><span class="slot w">!</span><span class="t">${esc(x.text)}</span></div>`).join("")}</section>` : ""}
+    ${checks.length ? `<section class="mvlist glass"><div class="lab">Check before kickoff</div>${checks.map(x=>`<div class="mvr"><span class="mslot w">!</span><span class="t">${esc(x.text)}</span></div>`).join("")}</section>` : ""}
     ${!mv.length && !checks.length ? `<div class="empty">Nothing to change here anymore.</div>` : ""}
     <div class="ractions">
       ${RUN.back ? `<div class="backq">Back from Sleeper. Is this one set?</div>` : ""}
@@ -4821,7 +4825,7 @@ function renderRun(){
 /* ---------- offers inbox: offers you received, graded, with counters ---------- */
 const INBOX = { all(){ return store.get("inbox", []); }, save(a){ store.set("inbox", a.slice(0, 80)); } };
 const BAND = {lowball:{label:"Lowball", cls:"p-crit"}, close:{label:"Close", cls:"p-warn"}, smash:{label:"Smash accept", cls:"p-ok"}};
-function assetsOf(team, fc){
+function offerAssets(team, fc){
   const pl = (team.roster.players || []).map(id=>{ const v = fc.players[id] || {}; return {id, name:pname(id), pos:(S.proj[id] && S.proj[id].player || {}).position || v.pos || "?", age:v.age, v:v.v || 0}; });
   const picks = team.picks.filter(p=>p.round <= 4).map(p=>{ const nm = pickName(p, fc); return {id:"PICK:"+(nm||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : " (via trade)"), pos:"PICK", v:p.val, pk:true}; });
   return pl.concat(picks).sort((a,b)=>b.v-a.v);
@@ -4830,7 +4834,7 @@ const evenness = (G, R) => (tradeValue(R) - tradeValue(G))/Math.max(tradeValue(G
 function countersFor(b, partner, give, get, band, fc){
   if(band === "smash") return [];
   const me = b.me, out = [], used = new Set(give.concat(get).map(a=>a.id));
-  const mine = assetsOf(me, fc).filter(a=>!used.has(a.id) && a.v > 0), theirs = assetsOf(partner, fc).filter(a=>!used.has(a.id) && a.v > 0);
+  const mine = offerAssets(me, fc).filter(a=>!used.has(a.id) && a.v > 0), theirs = offerAssets(partner, fc).filter(a=>!used.has(a.id) && a.v > 0);
   const weak = ["QB","RB","WR","TE"].filter(p=>["D","F"].includes(me.grades[p]));
   const best = list => list.filter(z=>z.d >= -0.04).sort((x,y)=>Math.abs(x.d) - Math.abs(y.d))[0];
   // 1. ask for a player, ideally at a weak spot
@@ -4889,7 +4893,7 @@ function offerCardHTML(o, step){
   return `<article class="offer inbox glass" data-ofkey="${esc(o.key)}">
     <div class="oh"><span class="t"><b>${esc(o.partner)}</b><small>${esc(o.league)} · logged ${esc(ago(o.ts))}${o.status !== "open" ? ` · ${o.status}` : ""}</small></span><span class="pill ${band.cls}">${band.label}</span></div>
     <div class="og"><div><span class="k out">You send</span>${list(o.give)}</div><div><span class="k in">You get</span>${list(o.get)}</div></div>
-    <div class="impact">${cell("Value", m.diff == null ? "–" : `${m.diff >= 0 ? "+" : ""}${Math.round(m.diff*100)}%`, valTone)}${cell("Win-now", rk(m.now0, m.nowR), nowTone)}${cell("Future", rk(m.fut0, m.futR), futTone)}${cell(m.plan ? `${m.plan} plan` : "Plan", fitTxt, m.fit > 0.01 ? "up" : m.fit < -0.01 ? "down" : "")}</div>
+    <div class="impact">${cell("Value", m.diff == null ? "–" : `${m.diff >= 0 ? "+" : ""}${Math.round(m.diff*100)}%`, valTone)}${cell("Win-now", rk(m.now0, m.nowR), nowTone)}${cell("Future", rk(m.fut0, m.futR), futTone)}${cell("Plan fit", fitTxt, m.fit > 0.01 ? "up" : m.fit < -0.01 ? "down" : "")}</div>
     <div class="ov"><b>${esc(r.v || "")}</b>${m.gradeMoves && m.gradeMoves.length ? ` · ${esc(m.gradeMoves.join(", "))}` : ""}${r.flip ? `<small>${esc(r.flip)}</small>` : ""}</div>
     ${r.band === "smash" ? `<div class="cnote">Don't counter: it's a win for you and fits the plan. Accept before they rethink it.</div>`
       : r.counters && r.counters.length ? `<div class="counters"><div class="lab">${r.band === "lowball" ? "Counter to make it fair" : "Small asks that tip it your way"}</div>${r.counters.map(c=>`<div class="ctr"><span class="t"><b>${esc(c.label)}</b><small>${esc(c.why)} · new gap ${c.d >= 0 ? "+" : ""}${Math.round(c.d*100)}%</small></span>

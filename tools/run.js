@@ -76,7 +76,7 @@ const OUT = process.argv[2] || "/tmp/shots";
   await page.waitForTimeout(500); await shot("15c-after-drag");
   await step("rk wr ros", async () => { await page.click('[data-rkmode="ros"]'); await page.waitForTimeout(400); await page.click('[data-rkpos="WR"]'); });
   await page.waitForTimeout(800); await shot("15d-ros-wr");
-  await step("team review", async () => { await page.click('.navb[data-go="home"]'); await page.waitForTimeout(500); await page.click('.trow:nth-child(3)'); await page.waitForSelector(".decide", {timeout: 20000}); });
+  await step("team review", async () => { await page.click('.navb[data-go="home"]'); await page.waitForTimeout(500); await page.evaluate(() => { const x = teamList().find(z=>z.b && !z.r.bestBall && z.dir !== "none") || teamList()[0]; go("team", {lid: x.id}); }); await page.waitForSelector(".decide", {timeout: 20000}); });
   await page.waitForTimeout(800); await shot("16-team");
   await step("team recs", async () => { await page.waitForSelector(".rec", {timeout: 40000}); }); await page.waitForTimeout(800);
   await page.evaluate(() => window.scrollTo(0, 0)); await shot("16b-team-ready");
