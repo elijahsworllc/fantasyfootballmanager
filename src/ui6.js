@@ -193,6 +193,7 @@ function viewTrades(){
         const tag = z ? `<span class="dtag d-${DIR[z.dir].mode === "buy" ? "contend" : "rebuild"}">${DIR[z.dir].short}</span>` : `<span class="dtag d-${x.dir}">${DIR3[x.dir]}</span>`;
         return `<button class="trow" data-team="${x.id}" data-anchor="trades" data-from="trades"><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.rec)}${z ? ` · ${pct(z.odds.po)} playoff odds` : ""} · ${x.dir === "none" ? "no direction set" : DIR3[x.dir].toLowerCase()}</span></span>${tag}<span class="chev" aria-hidden="true">›</span></button>`; }).join("") || `<div class="empty" style="margin:0">${S.bpLoading ? "Scoring your teams…" : "No dynasty teams with enough data yet."}</div>`}</div>
       ${!L ? `<button class="ghost tint" data-go="direction" style="align-self:flex-start">${svgI("diagnose",16)} Simulate every season to sort by playoff odds</button>` : ""}</section>`;
+  h += recentTradesHTML();
   h += marketHTML();
   return h;
 }

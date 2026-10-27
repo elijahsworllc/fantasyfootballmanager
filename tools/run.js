@@ -93,6 +93,8 @@ const OUT = process.argv[2] || "/tmp/shots";
     await page.click("[data-tradd]"); await page.click('[data-tside="give"]'); await page.waitForTimeout(200); await page.click("[data-tradd]"); await page.waitForTimeout(300); }); await shot("19b-offer-builder");
   await step("offer save", async () => { await page.click("#trSave"); await page.waitForSelector(".offer.inbox", {timeout: 30000}); }); await page.waitForTimeout(600); await shot("19c-offer-card");
   await page.evaluate(() => window.scrollTo(0, 420)); await shot("19d-offer-counters");
+  await step("recent trades", async () => { await page.evaluate(() => go("trades")); await page.waitForSelector(".rtrade", {timeout: 30000}); await page.evaluate(() => document.getElementById("recenttrades").scrollIntoView()); }); await shot("20-recent-trades");
+  await step("recent impact", async () => { const b = await page.$("[data-rtsim]"); if(b) await b.click(); await page.waitForSelector(".rtimp", {timeout: 60000}); await page.evaluate(() => document.getElementById("recenttrades").scrollIntoView()); }); await page.waitForTimeout(500); await shot("20b-recent-impact");
   await step("orb ask", async () => { await page.click("#orbBtn", {force:true}); }); await page.waitForTimeout(2200);
   // drag across the ball
   await step("drag", async () => { const b = await page.locator("#orb").boundingBox(); await page.mouse.move(b.x + b.width*0.3, b.y + b.height*0.45); await page.mouse.down(); await page.mouse.move(b.x + b.width*0.7, b.y + b.height*0.5, { steps: 6 }); await page.mouse.up(); });

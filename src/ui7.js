@@ -241,3 +241,79 @@ document.addEventListener("click", e=>{
 });
 document.addEventListener("change", e=>{ if(e.target.id === "lkm"){ store.set("linkMode", e.target.value); store.set("linkTested", true); render(); } });
 document.addEventListener("click", e=>{ if(e.target.closest("[data-linkretest]")){ store.set("linkTested", false); go("fix"); } });
+
+/* ---------- recent trades across every league, and what each one did ----------
+   Rosters today already include the trade, so "after" is the current state and
+   "before" is rebuilt by undoing the swap: lineup points, playoff odds (same
+   simulation as the Teams screen), rest-of-season rank and future-value rank. */
+const RT = {f:"all", cache:{}};
+function recentTrades(days = 21){
+  if(!S.tx) return null;
+  const lgName = {}; for(const r of S.results) if(r.league) lgName[r.league.league_id] = r.league.name;
+  const out = [];
+  for(const [lid, arr] of Object.entries(S.tx.byLeague)) for(const t of arr)
+    if(t.type === "trade" && t.status === "complete" && Date.now() - t.ts < days*864e5 && lgName[lid]) out.push({...t, lid, league:lgName[lid]});
+  return out.sort((a,b)=>b.ts - a.ts);
+}
+function tradeImpact(t){
+  if(RT.cache[t.id]) return RT.cache[t.id];
+  const L = S.dir && S.dir.leagues && S.dir.leagues[t.lid]; if(!L) return null;
+  const T = t.rids.map(rid=>L.teams.find(x=>x.rid === rid)).filter(Boolean); if(T.length < 2) return null;
+  const plOf = id => { for(const x of L.teams){ const p = x.bp.pl.find(q=>q.id === id); if(p) return p; } return null; };
+  const pkVal = k => { for(const x of L.teams){ const p = x.bp.picks.find(q=>q.season === k.season && q.round === k.round && q.orig === k.orig); if(p) return p.val || 0; } return 0; };
+  const yv = ids => ids.reduce((s,id)=>{ const p = plOf(id); return s + (p && isYoung(p) ? p.v : 0); }, 0);
+  const proj = {}, young = {}, adj = {};
+  for(const x of L.teams){ proj[x.rid] = x.proj; young[x.rid] = x.bp.young; }
+  const side = {};
+  for(const x of T){
+    const recv = Object.keys(t.adds).filter(id=>t.adds[id] === x.rid), sent = Object.keys(t.drops).filter(id=>t.drops[id] === x.rid);
+    const pIn = t.picks.filter(p=>p.to === x.rid), pOut = t.picks.filter(p=>p.from === x.rid);
+    const before = x.ids.filter(id=>!recv.includes(id)).concat(sent);
+    const pb = lineupPts(L.lg, before, L.cache).pts;
+    adj[x.i] = pb - x.proj; proj[x.rid] = pb;
+    young[x.rid] = x.bp.young - yv(recv) + yv(sent) - pIn.reduce((s,k)=>s+pkVal(k),0) + pOut.reduce((s,k)=>s+pkVal(k),0);
+    side[x.rid] = {recv, pIn};
+  }
+  const base = L.base800 ||= simulate(L, null, 800, 11), bef = simulate(L, adj, 800, 11);
+  const clamp = v => Math.max(0, Math.min(1, v));
+  const rankIn = (map, rid) => 1 + Object.entries(map).filter(([k,v])=>+k !== rid && v > map[rid]).length;
+  const nowProj = {}, nowYoung = {}; for(const x of L.teams){ nowProj[x.rid] = x.proj; nowYoung[x.rid] = x.bp.young; }
+  const res = T.map(x=>({rid:x.rid, name:x.bp.name, mine:x.bp.rid === L.me.bp.rid, recv:side[x.rid].recv, pIn:side[x.rid].pIn,
+    po0:clamp(x.odds.po + bef[x.i].po - base[x.i].po), po1:x.odds.po,
+    r0:rankIn(proj, x.rid), r1:rankIn(nowProj, x.rid), f0:rankIn(young, x.rid), f1:rankIn(nowYoung, x.rid), N:L.teams.length,
+    dPts:x.proj - proj[x.rid]}));
+  return RT.cache[t.id] = res;
+}
+function recentTradesHTML(){
+  let h = `<section id="recenttrades" style="display:flex;flex-direction:column;gap:10px;scroll-margin-top:120px"><div class="sec"><h2 class="h2">Recent trades</h2><span class="sub">Last 3 weeks, every league</span></div>`;
+  if(!S.tx){ if(!S.txP) loadTx().then(()=>render()).catch(()=>{}); return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Reading this season's trades…</div></section>`; }
+  let list = recentTrades() || [];
+  const mineLids = new Set(), myRid = {}; for(const b of S.bp||[]) if(b.me){ myRid[b.lg.league_id] = b.me.rid; }
+  const isMine = t => t.rids.includes(myRid[t.lid]);
+  const nMine = list.filter(isMine).length;
+  h += `<div class="chips"><button class="chip" data-rtf="all" aria-pressed="${RT.f==="all"}">All · ${list.length}</button><button class="chip" data-rtf="mine" aria-pressed="${RT.f==="mine"}">My trades · ${nMine}</button></div>`;
+  if(RT.f === "mine") list = list.filter(isMine);
+  if(!list.length) return h + `<div class="empty">No completed trades in the last 3 weeks${RT.f === "mine" ? " involving you" : ""}.</div></section>`;
+  const sim = !!S.dir;
+  if(!sim) h += `<div class="inboxnote glass"><b>See what each trade did.</b> Playoff odds and ranks before and after need the season simulation (the same one as Teams → Playoff odds). <button class="ghost tint" data-rtsim="1" style="margin-top:8px"${S.dirLoading ? " disabled" : ""}>${S.dirLoading ? "Simulating…" : "Run it"}</button></div>`;
+  const nameOf = (lid, rid) => { const b = (S.bp||[]).find(z=>z.lg.league_id === lid); const t = b && b.teams.find(z=>z.rid === rid); return t ? t.name : `Team ${rid}`; };
+  const pk = p => `${p.season} ${["1st","2nd","3rd","4th","5th"][p.round-1] || "R"+p.round}${p.orig !== p.to ? ` (${nameOf(currentLid, p.orig)})` : ""}`;
+  let currentLid = null;
+  const show = list.slice(0, RT.more ? 40 : 12);
+  h += show.map(t=>{ currentLid = t.lid; const imp = sim ? tradeImpact(t) : null;
+    const sides = t.rids.map(rid=>({rid, name:nameOf(t.lid, rid), recv:Object.keys(t.adds).filter(id=>t.adds[id] === rid), pIn:t.picks.filter(p=>p.to === rid)}));
+    const dl = (a, b, f, better) => a == null ? "–" : f(a) === f(b) ? `<span>${f(a)} → ${f(b)}</span>` : `<span class="${better(b, a) ? "up" : "down"}">${f(a)} → ${f(b)}</span>`;
+    return `<article class="rtrade glass${isMine(t) ? " mine" : ""}"><div class="oh"><span class="t"><b>${esc(t.league)}</b><small>${new Date(t.ts).toLocaleDateString([], {month:"short", day:"numeric"})}${isMine(t) ? " · your trade" : ""}</small></span><button class="ghost" data-team="${t.lid}" data-from="trades">Team ›</button></div>
+      ${sides.map(s=>{ const z = imp && imp.find(q=>q.rid === s.rid);
+        return `<div class="rtside${z && z.mine ? " me" : ""}"><div class="rtname"><b>${esc(s.name)}${z && z.mine ? " (you)" : ""}</b> gets <span>${s.recv.map(id=>esc(pname(id))).concat(s.pIn.map(p=>esc(pk(p)))).join(", ") || "nothing listed"}</span></div>
+          ${z ? `<div class="rtimp"><span>Playoffs ${dl(z.po0, z.po1, pct, (b,a)=>b>a)}</span><span>Rest of season ${dl(z.r0, z.r1, ord, (b,a)=>b<a)}</span><span>Future ${dl(z.f0, z.f1, ord, (b,a)=>b<a)}</span><span>Lineup <b class="${z.dPts >= 0.05 ? "up" : z.dPts <= -0.05 ? "down" : ""}">${sgn(z.dPts)}</b> pts/wk</span></div>` : ""}</div>`; }).join("")}
+    </article>`; }).join("");
+  if(list.length > show.length) h += `<button class="ghost" data-rtmore="1" style="align-self:flex-start">Show ${Math.min(40, list.length) - show.length} more</button>`;
+  return h + `<p class="src">Ranks are among the ${"teams"} in that league: rest of season by projected weekly lineup in that league's scoring, future by young players and picks (FantasyCalc). "Before" undoes the trade on today's rosters, so later moves by either team are counted on both sides. Playoff odds from 1,000 simulated seasons.</p></section>`;
+}
+document.addEventListener("click", e=>{
+  const el = e.target.closest("[data-rtf],[data-rtsim],[data-rtmore]"); if(!el) return;
+  if(el.dataset.rtf){ RT.f = el.dataset.rtf; render(); return; }
+  if(el.dataset.rtsim){ loadDirection(); render(); return; }
+  if(el.dataset.rtmore){ RT.more = true; render(); return; }
+});
