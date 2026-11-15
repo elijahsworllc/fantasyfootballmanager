@@ -1,0 +1,59 @@
+name: Market prices
+# Records Kalshi and Polymarket NFL prices to the `history` branch (see backend/prices.mjs).
+on:
+  schedule:
+    - cron: "7 * * * *"           # every hour
+    - cron: "37 * * * 0,1,4,5"    # plus every half hour Sun, Mon, Thu (and Fri UTC, for Thu/Mon night games)
+  workflow_dispatch:
+  push:
+    paths: ["backend/prices.mjs", ".github/workflows/prices.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: prices
+  cancel-in-progress: false
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare history branch
+        env:
+          REPO_URL: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+        run: |
+          if git ls-remote --exit-code --heads "$REPO_URL" history >/dev/null; then
+            git clone --quiet --depth 1 --branch history "$REPO_URL" history-branch
+          else
+            mkdir history-branch && cd history-branch
+            git init --quiet -b history && git remote add origin "$REPO_URL"
+            printf '%s\n' '{ "git": { "deploymentEnabled": false } }' > vercel.json
+            printf '%s\n' '# Market price history' '' 'Written by .github/workflows/prices.yml on main. See backend/prices.mjs for the file format.' > README.md
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Restore last prices
+        uses: actions/cache/restore@v4
+        with:
+          path: .prices-state.json
+          key: prices-state-${{ github.run_id }}
+          restore-keys: prices-state-
+      - name: Record prices
+        env:
+          OUT_DIR: history-branch
+          STATE_FILE: .prices-state.json
+        run: node backend/prices.mjs
+      - name: Save last prices
+        if: always() && hashFiles('.prices-state.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .prices-state.json
+          key: prices-state-${{ github.run_id }}
+      - name: Publish
+        run: |
+          cd history-branch
+          git config user.name "ffu-price-recorder"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit --quiet -m "Prices $(date -u +%FT%H:%MZ)" && git push --quiet origin history)

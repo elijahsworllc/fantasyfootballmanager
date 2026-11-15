@@ -1,0 +1,31 @@
+name: Trade crawl
+# Snowball crawl of Sleeper leagues into private Supabase tables (see backend/crawl.mjs, backend/crawl.sql).
+# Needs repo secrets SUPABASE_URL and SUPABASE_SERVICE_KEY; without them the job exits without doing anything.
+on:
+  schedule:
+    - cron: "23 */2 * * *"   # every 2 hours
+  workflow_dispatch:
+  push:
+    paths: ["backend/crawl.mjs", ".github/workflows/crawl.yml"]
+permissions:
+  contents: read
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Crawl
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SLEEPER_USERNAME: jahswor
+          BUDGET_MIN: "18"
+          RATE: "5"
+        run: node backend/crawl.mjs
