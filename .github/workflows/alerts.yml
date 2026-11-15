@@ -33,7 +33,7 @@ jobs:
         env:
           SLEEPER_USERNAME: jahswor
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          APP_URL: https://elijahsworllc.github.io/fantasyfootballmanager/
+          APP_URL: https://fantasyfootballuniverse.com/
           STATE_FILE: data-branch/alert-state.json
           FORCE: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.test) }}
         run: node backend/alerts.mjs

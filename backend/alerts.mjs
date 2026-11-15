@@ -4,7 +4,7 @@ import { getJSON, pool, leagueScore, loadContext, nyNow, SLOT_ELIG, OUT } from "
 
 const USER = process.env.SLEEPER_USERNAME || "jahswor";
 const TOPIC = process.env.NTFY_TOPIC || "";
-const APP_URL = process.env.APP_URL || "https://elijahsworllc.github.io/fantasyfootballmanager/";
+const APP_URL = process.env.APP_URL || "https://fantasyfootballuniverse.com/";
 const STATE_FILE = process.env.STATE_FILE || "alert-state.json";
 const FORCE = process.env.FORCE === "true";
 

@@ -145,6 +145,12 @@ Review found the features solid but the way around them scattered: four overlapp
 ## V2.4 · recent trades feed (Oct 27, 2026)
 Trades screen → **Recent trades**: every completed trade from the last 3 weeks across all leagues (All / My trades). Each shows the league, the date, what each team got, and, once the season sim has run, each team's **playoff odds, rest-of-season rank (projected weekly lineup in that league's scoring) and future-value rank before → after**, plus lineup points per week. "Before" undoes the trade on today's rosters and re-runs the same simulation used on Teams → Playoff odds. PC link: https://elijahsworllc.github.io/fantasyfootballmanager/
 
+## Domain live: fantasyfootballuniverse.com (Nov 14, 2026)
+- Hosted on Vercel (project `fantasyfootballuniverse`, team Elijah), deployed from `main` on every push. Builds from other branches, including `data`, are skipped by the project's ignored-build-step setting.
+- DNS at Porkbun: A @ 216.198.79.1 and 64.29.17.1, CNAME www 3701dc8043c48dad.vercel-dns-017.com; www redirects (308) to the bare domain. TLS certificate auto-renews.
+- Push alerts now link to https://fantasyfootballuniverse.com/. GitHub Pages stays up as a fallback.
+- Supabase: Site URL should be the new domain, with redirect URLs for both domains.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
