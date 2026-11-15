@@ -151,6 +151,12 @@ Trades screen → **Recent trades**: every completed trade from the last 3 weeks
 - Push alerts now link to https://fantasyfootballuniverse.com/. GitHub Pages stays up as a fallback.
 - Supabase: Site URL should be the new domain, with redirect URLs for both domains.
 
+## Market history + trade crawl (Nov 14, 2026)
+Started mid-season so there is a full season of data to test against before launch.
+- **Price recorder** (`backend/prices.mjs`, `.github/workflows/prices.yml`): every hour, and every half hour on game days, snapshots every open NFL market on Kalshi (game lines, team totals, player yardage/receptions/TD ladders, fantasy-point lines, starter and "will he play" markets, season markets) and the fantasy-relevant Polymarket NFL game markets (lines, team totals, player props; quarter and half markets skipped). Only changed prices are written, gzipped, to the `history` branch; the last-seen prices live in the Actions cache. Public data, no secrets needed.
+- **Trade crawl** (`backend/crawl.mjs`, `backend/crawl.sql`, `.github/workflows/crawl.yml`): every 2 hours, ~18 minutes at 5 Sleeper requests/second. Snowball from jahswor's leagues through their managers to more leagues, dynasty first. Stores each league's fingerprint (format, QBs, PPR, TEP, starters, IDP, taxi, FAAB) and every completed trade (players, picks, FAAB) in private Supabase tables. Leagues are revisited every 3 days for new trades. Logs print counts only. Needs secrets `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`.
+- Next: map Kalshi/Polymarket player names to Sleeper IDs; crawl last season through `previous_league_id`; fit our own trade values from the crawl.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
