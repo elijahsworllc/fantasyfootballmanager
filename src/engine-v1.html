@@ -657,6 +657,34 @@ function winNowValue(lg, pl){
     if(best){ used.add(best.id); t += best.r; } }
   return {value:t, starters:used};
 }
+/* ---------- league-scoring adjustment ----------
+   Market values assume standard scoring (4-pt pass TD, 0/0.5/1 PPR, no bonuses).
+   Each player's projected stat line is scored both ways; the ratio, relative to
+   the typical starter, says how much this league's rules favor him. Applied at
+   strength alpha (default 0.5) and clamped to x0.75..x1.35. Uses this week's
+   projections (one consistent snapshot for the bar and the full check); players
+   with no projection this week take their position's typical ratio. */
+const BASE_SC = ppr => ({pass_yd:0.04, pass_td:4, pass_int:-1, pass_2pt:2, rush_yd:0.1, rush_td:6, rush_2pt:2, rec:ppr, rec_yd:0.1, rec_td:6, rec_2pt:2, fum_lost:-2});
+function scoringAdj(lg, fc){
+  const on = store.get("adjOn", true), alpha = store.get("adjAlpha", 0.5), ppr = fc.meta ? fc.meta.ppr : 1;
+  const key = `${lg.league_id}|${ppr}|${on}|${alpha}`;
+  S.adjC ||= {}; if(S.adjC[key]) return S.adjC[key];
+  const sc = lg.scoring_settings || {}, base = BASE_SC(ppr), raw = {}, byPos = {QB:[], RB:[], WR:[], TE:[]};
+  for(const id in fc.players){ const pos = fc.players[id].pos; if(!byPos[pos]) continue;
+    let L = 0, B = 0;
+    const e = (S.proj || {})[id]; if(e && e.stats){ L = leagueScore(e.stats, sc, pos); B = leagueScore(e.stats, base, pos); }
+    if(B >= 4){ raw[id] = {r:L/B, L, B}; byPos[pos].push(raw[id]); } }
+  const med = arr => { const a = arr.slice().sort((x,y)=>x-y); return a.length ? a[Math.floor(a.length/2)] : 1; };
+  const typical = med(Object.values(byPos).flat().filter(x=>x.B >= 8).map(x=>x.r)) || 1;
+  const posRel = {}; for(const p in byPos) posRel[p] = byPos[p].length ? med(byPos[p].map(x=>x.r))/typical : 1;
+  const clamp = m => Math.max(0.75, Math.min(1.35, m));
+  return S.adjC[key] = {on, alpha, typical, posRel, ppr,
+    of(id, pos){ if(!on) return {mult:1, rel:1, src:"off"};
+      const x = raw[id], rel = x ? x.r/typical : (posRel[pos] ?? 1);
+      return {mult:clamp(1 + alpha*(rel - 1)), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B}; }};
+}
+function adjPlayer(lg, fc, id){ const v = fc.players[id]; if(!v) return null; const a = scoringAdj(lg, fc).of(id, v.pos);
+  return {...v, v:v.v*a.mult, r:(v.r||0)*a.mult, mv:v.v, mr:v.r||0, adj:a}; }
 function pickLabel(p){ return `${p.season} ${["1st","2nd","3rd","4th","5th","6th"][p.round-1]||("R"+p.round)}${p.tier?` (${p.tier})`:""}`; }
 function rankOf(arr, key, id){ const s = arr.slice().sort((a,b)=>b[key]-a[key]); return s.findIndex(x=>x.rid===id)+1; }
 const grade = (r, n) => { const q = n>1 ? (r-1)/(n-1) : 0; return q<=0.15?"A":q<=0.4?"B":q<=0.65?"C":q<=0.85?"D":"F"; };
@@ -674,7 +702,7 @@ function buildBlueprint(x, users, traded, fc){
   for(const t of traded||[]){ const k = `${t.season}|${t.round}|${t.roster_id}`; if(k in pickMap) pickMap[k] = t.owner_id; }
   // base profiles (players only) so next year's pick tiers can follow team strength
   const teams = x.rosters.map(r=>{
-    const pl = (r.players||[]).map(id=>{ const v = fc.players[id]; return v ? {id, ...v} : null; }).filter(Boolean);
+    const pl = (r.players||[]).map(id=>{ const v = adjPlayer(lg, fc, id); return v ? {id, ...v} : null; }).filter(Boolean);
     const wn = winNowValue(lg, pl);
     return {rid:r.roster_id, owner:r.owner_id, name: names[r.owner_id] || `Team ${r.roster_id}`, roster:r, pl, now:wn.value, nowStarters:wn.starters,
             rec: r.settings ? `${r.settings.wins}-${r.settings.losses}${r.settings.ties?"-"+r.settings.ties:""}` : ""};
@@ -930,14 +958,14 @@ async function answerTrade(){
   const b = (S.bp||[]).find(z=>z.lg.league_id===x.lg.league_id); if(!b) throw new Error("No Blueprint for this league yet");
   const fc = await fcValues(fcKey(x.lg)); const me = b.me;
   // picks carry the value the builder showed (tiered by the original team's strength); players use FantasyCalc
-  const val = o => o.id.startsWith("PICK:") ? (o.v != null ? o.v : (fc.picks[o.id.slice(5)]||0)) : ((fc.players[o.id]||{}).v||0);
+  const val = o => o.id.startsWith("PICK:") ? (o.v != null ? o.v : (fc.picks[o.id.slice(5)]||0)) : ((adjPlayer(x.lg, fc, o.id)||{}).v||0);
   const pmean = arr => Math.pow(arr.reduce((s,v)=>s+Math.pow(v,1.3),0), 1/1.3);
   const give = CB.a.map(val), get = CB.b.map(val);
   const giveV = pmean(give), getV = pmean(get), rawGive = give.reduce((s,v)=>s+v,0), rawGet = get.reduce((s,v)=>s+v,0);
   const diff = (getV-giveV)/Math.max(giveV, getV, 1);
   // roster after the trade
   const giveIds = new Set(CB.a.map(o=>o.id));
-  const newPl = me.pl.filter(p=>!giveIds.has(p.id)).concat(CB.b.filter(o=>!o.id.startsWith("PICK:") && fc.players[o.id]).map(o=>({id:o.id, ...fc.players[o.id]})));
+  const newPl = me.pl.filter(p=>!giveIds.has(p.id)).concat(CB.b.filter(o=>!o.id.startsWith("PICK:") && fc.players[o.id]).map(o=>({id:o.id, ...adjPlayer(x.lg, fc, o.id)})));
   const pickDelta = get.filter((v,i)=>CB.b[i].id.startsWith("PICK:")).reduce((s,v)=>s+v,0) - give.filter((v,i)=>CB.a[i].id.startsWith("PICK:")).reduce((s,v)=>s+v,0);
   const newNow = winNowValue(x.lg, newPl).value, newYoung = newPl.filter(isYoung).reduce((s,p)=>s+p.v,0) + me.pickVal + pickDelta;
   const others = b.teams.filter(t=>t.rid!==me.rid);

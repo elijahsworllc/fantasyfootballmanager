@@ -1219,6 +1219,34 @@ function winNowValue(lg, pl){
     if(best){ used.add(best.id); t += best.r; } }
   return {value:t, starters:used};
 }
+/* ---------- league-scoring adjustment ----------
+   Market values assume standard scoring (4-pt pass TD, 0/0.5/1 PPR, no bonuses).
+   Each player's projected stat line is scored both ways; the ratio, relative to
+   the typical starter, says how much this league's rules favor him. Applied at
+   strength alpha (default 0.5) and clamped to x0.75..x1.35. Uses this week's
+   projections (one consistent snapshot for the bar and the full check); players
+   with no projection this week take their position's typical ratio. */
+const BASE_SC = ppr => ({pass_yd:0.04, pass_td:4, pass_int:-1, pass_2pt:2, rush_yd:0.1, rush_td:6, rush_2pt:2, rec:ppr, rec_yd:0.1, rec_td:6, rec_2pt:2, fum_lost:-2});
+function scoringAdj(lg, fc){
+  const on = store.get("adjOn", true), alpha = store.get("adjAlpha", 0.5), ppr = fc.meta ? fc.meta.ppr : 1;
+  const key = `${lg.league_id}|${ppr}|${on}|${alpha}`;
+  S.adjC ||= {}; if(S.adjC[key]) return S.adjC[key];
+  const sc = lg.scoring_settings || {}, base = BASE_SC(ppr), raw = {}, byPos = {QB:[], RB:[], WR:[], TE:[]};
+  for(const id in fc.players){ const pos = fc.players[id].pos; if(!byPos[pos]) continue;
+    let L = 0, B = 0;
+    const e = (S.proj || {})[id]; if(e && e.stats){ L = leagueScore(e.stats, sc, pos); B = leagueScore(e.stats, base, pos); }
+    if(B >= 4){ raw[id] = {r:L/B, L, B}; byPos[pos].push(raw[id]); } }
+  const med = arr => { const a = arr.slice().sort((x,y)=>x-y); return a.length ? a[Math.floor(a.length/2)] : 1; };
+  const typical = med(Object.values(byPos).flat().filter(x=>x.B >= 8).map(x=>x.r)) || 1;
+  const posRel = {}; for(const p in byPos) posRel[p] = byPos[p].length ? med(byPos[p].map(x=>x.r))/typical : 1;
+  const clamp = m => Math.max(0.75, Math.min(1.35, m));
+  return S.adjC[key] = {on, alpha, typical, posRel, ppr,
+    of(id, pos){ if(!on) return {mult:1, rel:1, src:"off"};
+      const x = raw[id], rel = x ? x.r/typical : (posRel[pos] ?? 1);
+      return {mult:clamp(1 + alpha*(rel - 1)), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B}; }};
+}
+function adjPlayer(lg, fc, id){ const v = fc.players[id]; if(!v) return null; const a = scoringAdj(lg, fc).of(id, v.pos);
+  return {...v, v:v.v*a.mult, r:(v.r||0)*a.mult, mv:v.v, mr:v.r||0, adj:a}; }
 function pickLabel(p){ return `${p.season} ${["1st","2nd","3rd","4th","5th","6th"][p.round-1]||("R"+p.round)}${p.tier?` (${p.tier})`:""}`; }
 function rankOf(arr, key, id){ const s = arr.slice().sort((a,b)=>b[key]-a[key]); return s.findIndex(x=>x.rid===id)+1; }
 const grade = (r, n) => { const q = n>1 ? (r-1)/(n-1) : 0; return q<=0.15?"A":q<=0.4?"B":q<=0.65?"C":q<=0.85?"D":"F"; };
@@ -1236,7 +1264,7 @@ function buildBlueprint(x, users, traded, fc){
   for(const t of traded||[]){ const k = `${t.season}|${t.round}|${t.roster_id}`; if(k in pickMap) pickMap[k] = t.owner_id; }
   // base profiles (players only) so next year's pick tiers can follow team strength
   const teams = x.rosters.map(r=>{
-    const pl = (r.players||[]).map(id=>{ const v = fc.players[id]; return v ? {id, ...v} : null; }).filter(Boolean);
+    const pl = (r.players||[]).map(id=>{ const v = adjPlayer(lg, fc, id); return v ? {id, ...v} : null; }).filter(Boolean);
     const wn = winNowValue(lg, pl);
     return {rid:r.roster_id, owner:r.owner_id, name: names[r.owner_id] || `Team ${r.roster_id}`, roster:r, pl, now:wn.value, nowStarters:wn.starters,
             rec: r.settings ? `${r.settings.wins}-${r.settings.losses}${r.settings.ties?"-"+r.settings.ties:""}` : ""};
@@ -1492,14 +1520,14 @@ async function answerTrade(){
   const b = (S.bp||[]).find(z=>z.lg.league_id===x.lg.league_id); if(!b) throw new Error("No Blueprint for this league yet");
   const fc = await fcValues(fcKey(x.lg)); const me = b.me;
   // picks carry the value the builder showed (tiered by the original team's strength); players use FantasyCalc
-  const val = o => o.id.startsWith("PICK:") ? (o.v != null ? o.v : (fc.picks[o.id.slice(5)]||0)) : ((fc.players[o.id]||{}).v||0);
+  const val = o => o.id.startsWith("PICK:") ? (o.v != null ? o.v : (fc.picks[o.id.slice(5)]||0)) : ((adjPlayer(x.lg, fc, o.id)||{}).v||0);
   const pmean = arr => Math.pow(arr.reduce((s,v)=>s+Math.pow(v,1.3),0), 1/1.3);
   const give = CB.a.map(val), get = CB.b.map(val);
   const giveV = pmean(give), getV = pmean(get), rawGive = give.reduce((s,v)=>s+v,0), rawGet = get.reduce((s,v)=>s+v,0);
   const diff = (getV-giveV)/Math.max(giveV, getV, 1);
   // roster after the trade
   const giveIds = new Set(CB.a.map(o=>o.id));
-  const newPl = me.pl.filter(p=>!giveIds.has(p.id)).concat(CB.b.filter(o=>!o.id.startsWith("PICK:") && fc.players[o.id]).map(o=>({id:o.id, ...fc.players[o.id]})));
+  const newPl = me.pl.filter(p=>!giveIds.has(p.id)).concat(CB.b.filter(o=>!o.id.startsWith("PICK:") && fc.players[o.id]).map(o=>({id:o.id, ...adjPlayer(x.lg, fc, o.id)})));
   const pickDelta = get.filter((v,i)=>CB.b[i].id.startsWith("PICK:")).reduce((s,v)=>s+v,0) - give.filter((v,i)=>CB.a[i].id.startsWith("PICK:")).reduce((s,v)=>s+v,0);
   const newNow = winNowValue(x.lg, newPl).value, newYoung = newPl.filter(isYoung).reduce((s,p)=>s+p.v,0) + me.pickVal + pickDelta;
   const others = b.teams.filter(t=>t.rid!==me.rid);
@@ -3414,9 +3442,9 @@ function trAssets(team, fcIn){
   // uid is unique per asset: two "2027 2nd (Early)" picks are two different things
   const r = team.roster, ir = new Set(r.reserve || []), tx = new Set(r.taxi || []);
   const ids = [...new Set([...(r.players || []), ...(r.reserve || []), ...(r.taxi || [])])];
-  const pl = ids.map(id=>{ const v = fc.players[id] || {}, m = S.proj[id] && S.proj[id].player || {};
-    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
+  const pl = ids.map(id=>{ const v = (lgBp.lg ? adjPlayer(lgBp.lg, fc, id) : fc.players[id]) || {}, m = S.proj[id] && S.proj[id].player || {};
+    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const picks = team.picks.map(p=>{ const n = pickName(p, fc);
     return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round, p, origName:nm[p.orig]}; });
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
@@ -4195,6 +4223,7 @@ function renderSettings(){
   return `<details class="settings"><summary>Settings</summary>
     <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
     <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
+    <div class="srow"><label for="adjOn">Adjust trade values for each league's scoring</label><input type="checkbox" id="adjOn" ${store.get("adjOn", true) ? "checked" : ""}></div>
     <div class="srow"><label for="lkm">Open Sleeper links as</label><select id="lkm"><option value="web" ${LINK.mode()==="web"?"selected":""}>Website (team page)</option><option value="app" ${LINK.mode()==="app"?"selected":""}>App (league chat)</option></select></div>
     <div class="srow"><span>Not sure which works?</span><button class="ghost" data-linkretest="1">Test links again</button></div>
     <div class="srow"><span>Sleeper: <b>${esc(S.displayName||S.username)}</b></span><button class="ghost" id="switch">Switch user</button></div>
@@ -5125,7 +5154,12 @@ function whyPlayer(a, b){
   rows.push({k:"In this league", v: wk ? `${fmt(wk)} pts/wk` : "–", n: wk ? "Projected weekly points with this league's own scoring (Sleeper projections, this week and next, adjusted for injury status). Used for lineups and playoff odds, not for the trade value." : "No projection this week (bye, injury or no team)."});
   if(f.age) rows.push({k:"Age", v:Math.floor(f.age), n: isYoung({pos:f.pos, age:f.age}) ? `Counts toward future value (a ${f.pos} ${f.pos === "RB" ? "24" : f.pos === "QB" ? "27" : "25"} or younger).` : isOld({pos:f.pos, age:f.age}) ? "Past this position's usual peak: counts as a win-now piece only." : "Prime years: counts toward win-now, not future value."});
   if(a.slot) rows.push({k:"Roster spot", v:a.slot, n: a.slot === "Taxi" ? "On a taxi squad: no effect on this week's lineup, full value in the trade." : "On injured reserve: full market value, no effect on this week's lineup."});
-  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The market value as-is. Nothing is added or taken off for this player."});
+  const ad = a.adj;
+  if(ad && ad.src !== "off"){ const pctd = Math.round((ad.mult - 1)*100), sa = scoringAdj(lg, fc);
+    rows.push({k:"League scoring", v:`×${ad.mult.toFixed(2)}`, n: ad.src === "player"
+      ? `His projected stat line scores ${fmt(ad.L)} in ${esc(lg.name)}'s rules vs ${fmt(ad.B)} in the standard ${sa.ppr} PPR scoring the market assumes: ${Math.round((ad.rel - 1)*100) >= 0 ? "+" : ""}${Math.round((ad.rel - 1)*100)}% against the typical starter. Applied at ${Math.round(sa.alpha*100)}% strength (capped at −25% / +35%): ${pctd >= 0 ? "+" : ""}${pctd}%.`
+      : `No projection for him right now, so he gets the typical ${f.pos} adjustment for these rules: ${pctd >= 0 ? "+" : ""}${pctd}%.`}); }
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: ad && ad.src !== "off" && Math.abs(ad.mult - 1) >= 0.005 ? `Market value ${n0(f.v)} × ${ad.mult.toFixed(2)} for this league's scoring.` : "The market value, unchanged."});
   return rows;
 }
 function whyPick(a, b){
@@ -5158,14 +5192,15 @@ function openWhy(spec){
     title = a.name; sub = a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}`;
     body = whyRows(a.pk ? whyPick(a, b) : whyPlayer(a, b));
   }
-  const gaps = settingsGaps(b.lg, TR.fc.meta);
-  body += gaps.length ? `<div class="lab">Not priced in for ${esc(b.lg.name)}</div><p class="whyp">The market values above don't know about: ${gaps.map(esc).join(" · ")}. Players these settings favor are likely undervalued here, and the opposite for the rest.</p>` : "";
+  const gaps = settingsGaps(b.lg, TR.fc.meta), on = store.get("adjOn", true);
+  body += gaps.length ? `<div class="lab">${esc(b.lg.name)}'s settings</div><p class="whyp">${on ? "Scoring rules (TE premium, completions, TD points, first downs, catch points) are priced in by the league-scoring line above. Still not priced in:" : "League-scoring adjustment is off (Settings). Not priced in:"} ${gaps.filter(g=>on ? /teams|starters|flex|IDP/.test(g) : true).map(esc).join(" · ") || "nothing else"}.</p>` : "";
   let el = $("whysheet"); if(!el){ el = document.createElement("div"); el.id = "whysheet"; el.className = "runner"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); document.body.appendChild(el); }
   el.innerHTML = `<div class="rwrap"><div class="rtop"><span class="lab">Show the math</span><button class="iconbtn" data-whyx="1" aria-label="Close">✕</button></div><div class="rhead"><h2 class="h1">${esc(title)}</h2>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>${body}</div>`;
   el.hidden = false; el.setAttribute("aria-label", title); document.body.style.overflow = "hidden";
 }
 document.addEventListener("click", e=>{ if(e.target.closest("[data-whyx]")){ const el = $("whysheet"); if(el) el.hidden = true; document.body.style.overflow = ""; } });
 document.addEventListener("keydown", e=>{ if(e.key === "Escape"){ const el = $("whysheet"); if(el && !el.hidden){ el.hidden = true; document.body.style.overflow = ""; } } });
+document.addEventListener("change", e=>{ if(e.target.id === "adjOn"){ store.set("adjOn", e.target.checked); S.adjC = {}; S.bp = null; TR.fc = null; for(const b of S.results||[]) if(b.league) delete b._bp; showToast(e.target.checked ? "Values now follow each league's scoring" : "Showing raw market values"); loadBlueprints && loadBlueprints().then(()=>render()); render(); } });
 
 SPACE.init();
 ORB.init();

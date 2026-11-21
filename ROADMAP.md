@@ -163,6 +163,9 @@ Trades screen → **Recent trades**: every completed trade from the last 3 weeks
 - Pick provenance is stored on each pick (how its value was found).
 - Full value-model audit and plan: `command-center/value-model-audit.md` in the project.
 
+## Value model A: league-scoring adjustment (Nov 21, 2026)
+Each player's projected stat line (this week's Sleeper projection) is scored twice: in the league's own rules and in the standard scoring the market value assumes (4-pt pass TD, the priced PPR, no bonuses). The ratio, relative to the typical starter (so a rule that lifts everyone equally changes nothing), is applied at 50% strength and capped at −25% / +35%. Players with no projection this week get their position's typical ratio. It flows through everything that uses values: the trade bar, the full check, team values and ranks, the trade finder, counters. It's a "League scoring" row in each player's "?" ledger (market value × multiplier, with both point totals). It can be turned off in Settings. Test leagues with TE premium +0.5: TEs ≈ +10%, other positions unchanged. The strength (alpha) will be calibrated against real trades in step B.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

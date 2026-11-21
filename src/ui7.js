@@ -352,7 +352,12 @@ function whyPlayer(a, b){
   rows.push({k:"In this league", v: wk ? `${fmt(wk)} pts/wk` : "–", n: wk ? "Projected weekly points with this league's own scoring (Sleeper projections, this week and next, adjusted for injury status). Used for lineups and playoff odds, not for the trade value." : "No projection this week (bye, injury or no team)."});
   if(f.age) rows.push({k:"Age", v:Math.floor(f.age), n: isYoung({pos:f.pos, age:f.age}) ? `Counts toward future value (a ${f.pos} ${f.pos === "RB" ? "24" : f.pos === "QB" ? "27" : "25"} or younger).` : isOld({pos:f.pos, age:f.age}) ? "Past this position's usual peak: counts as a win-now piece only." : "Prime years: counts toward win-now, not future value."});
   if(a.slot) rows.push({k:"Roster spot", v:a.slot, n: a.slot === "Taxi" ? "On a taxi squad: no effect on this week's lineup, full value in the trade." : "On injured reserve: full market value, no effect on this week's lineup."});
-  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The market value as-is. Nothing is added or taken off for this player."});
+  const ad = a.adj;
+  if(ad && ad.src !== "off"){ const pctd = Math.round((ad.mult - 1)*100), sa = scoringAdj(lg, fc);
+    rows.push({k:"League scoring", v:`×${ad.mult.toFixed(2)}`, n: ad.src === "player"
+      ? `His projected stat line scores ${fmt(ad.L)} in ${esc(lg.name)}'s rules vs ${fmt(ad.B)} in the standard ${sa.ppr} PPR scoring the market assumes: ${Math.round((ad.rel - 1)*100) >= 0 ? "+" : ""}${Math.round((ad.rel - 1)*100)}% against the typical starter. Applied at ${Math.round(sa.alpha*100)}% strength (capped at −25% / +35%): ${pctd >= 0 ? "+" : ""}${pctd}%.`
+      : `No projection for him right now, so he gets the typical ${f.pos} adjustment for these rules: ${pctd >= 0 ? "+" : ""}${pctd}%.`}); }
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: ad && ad.src !== "off" && Math.abs(ad.mult - 1) >= 0.005 ? `Market value ${n0(f.v)} × ${ad.mult.toFixed(2)} for this league's scoring.` : "The market value, unchanged."});
   return rows;
 }
 function whyPick(a, b){
@@ -385,11 +390,12 @@ function openWhy(spec){
     title = a.name; sub = a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}`;
     body = whyRows(a.pk ? whyPick(a, b) : whyPlayer(a, b));
   }
-  const gaps = settingsGaps(b.lg, TR.fc.meta);
-  body += gaps.length ? `<div class="lab">Not priced in for ${esc(b.lg.name)}</div><p class="whyp">The market values above don't know about: ${gaps.map(esc).join(" · ")}. Players these settings favor are likely undervalued here, and the opposite for the rest.</p>` : "";
+  const gaps = settingsGaps(b.lg, TR.fc.meta), on = store.get("adjOn", true);
+  body += gaps.length ? `<div class="lab">${esc(b.lg.name)}'s settings</div><p class="whyp">${on ? "Scoring rules (TE premium, completions, TD points, first downs, catch points) are priced in by the league-scoring line above. Still not priced in:" : "League-scoring adjustment is off (Settings). Not priced in:"} ${gaps.filter(g=>on ? /teams|starters|flex|IDP/.test(g) : true).map(esc).join(" · ") || "nothing else"}.</p>` : "";
   let el = $("whysheet"); if(!el){ el = document.createElement("div"); el.id = "whysheet"; el.className = "runner"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); document.body.appendChild(el); }
   el.innerHTML = `<div class="rwrap"><div class="rtop"><span class="lab">Show the math</span><button class="iconbtn" data-whyx="1" aria-label="Close">✕</button></div><div class="rhead"><h2 class="h1">${esc(title)}</h2>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>${body}</div>`;
   el.hidden = false; el.setAttribute("aria-label", title); document.body.style.overflow = "hidden";
 }
 document.addEventListener("click", e=>{ if(e.target.closest("[data-whyx]")){ const el = $("whysheet"); if(el) el.hidden = true; document.body.style.overflow = ""; } });
 document.addEventListener("keydown", e=>{ if(e.key === "Escape"){ const el = $("whysheet"); if(el && !el.hidden){ el.hidden = true; document.body.style.overflow = ""; } } });
+document.addEventListener("change", e=>{ if(e.target.id === "adjOn"){ store.set("adjOn", e.target.checked); S.adjC = {}; S.bp = null; TR.fc = null; for(const b of S.results||[]) if(b.league) delete b._bp; showToast(e.target.checked ? "Values now follow each league's scoring" : "Showing raw market values"); loadBlueprints && loadBlueprints().then(()=>render()); render(); } });
