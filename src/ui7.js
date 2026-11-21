@@ -353,11 +353,13 @@ function whyPlayer(a, b){
   if(f.age) rows.push({k:"Age", v:Math.floor(f.age), n: isYoung({pos:f.pos, age:f.age}) ? `Counts toward future value (a ${f.pos} ${f.pos === "RB" ? "24" : f.pos === "QB" ? "27" : "25"} or younger).` : isOld({pos:f.pos, age:f.age}) ? "Past this position's usual peak: counts as a win-now piece only." : "Prime years: counts toward win-now, not future value."});
   if(a.slot) rows.push({k:"Roster spot", v:a.slot, n: a.slot === "Taxi" ? "On a taxi squad: no effect on this week's lineup, full value in the trade." : "On injured reserve: full market value, no effect on this week's lineup."});
   const ad = a.adj;
-  if(ad && ad.src !== "off"){ const pctd = Math.round((ad.mult - 1)*100), sa = scoringAdj(lg, fc);
-    rows.push({k:"League scoring", v:`×${ad.mult.toFixed(2)}`, n: ad.src === "player"
-      ? `His projected stat line scores ${fmt(ad.L)} in ${esc(lg.name)}'s rules vs ${fmt(ad.B)} in the standard ${sa.ppr} PPR scoring the market assumes: ${Math.round((ad.rel - 1)*100) >= 0 ? "+" : ""}${Math.round((ad.rel - 1)*100)}% against the typical starter. Applied at ${Math.round(sa.alpha*100)}% strength (capped at −25% / +35%): ${pctd >= 0 ? "+" : ""}${pctd}%.`
-      : `No projection for him right now, so he gets the typical ${f.pos} adjustment for these rules: ${pctd >= 0 ? "+" : ""}${pctd}%.`}); }
-  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: ad && ad.src !== "off" && Math.abs(ad.mult - 1) >= 0.005 ? `Market value ${n0(f.v)} × ${ad.mult.toFixed(2)} for this league's scoring.` : "The market value, unchanged."});
+  if(ad){ const e = Math.round((ad.rel - 1)*100), sa = scoringAdj(lg, fc);
+    rows.push({k:"League scoring edge", v:`${e >= 0 ? "+" : ""}${e}%`, n: (ad.src === "player"
+      ? `His projected stat line scores ${fmt(ad.L)} in ${esc(lg.name)}'s rules vs ${fmt(ad.B)} in the standard ${sa.ppr} PPR scoring the market assumes: ${e >= 0 ? "+" : ""}${e}% against the typical starter.`
+      : `No projection for him right now, so this is the typical ${f.pos} difference under these rules.`)
+      + (ad.priced ? ` You've chosen to price trades by league scoring (Settings), so it's applied to his trade value.`
+      : ` Not added to his trade value: across ${CAL.n} trades in your leagues, managers paid market prices regardless of scoring rules (pricing it in made the fit worse). ${e >= 5 ? "So he's worth more to your lineup than he costs: a buy signal." : e <= -5 ? "So he's worth less to your lineup than the market pays: a sell signal." : ""} It does count toward your win-now lineup strength.`)}); }
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: ad && ad.priced && Math.abs(ad.mult - 1) >= 0.005 ? `Market value ${n0(f.v)} × ${ad.mult.toFixed(2)} for this league's scoring.` : "The market value, unchanged."});
   return rows;
 }
 function whyPick(a, b){
@@ -375,8 +377,8 @@ function whyPackage(){
   const sv = pm(TR.give), gv = pm(TR.get), diff = (gv - sv)/Math.max(sv, gv, 1);
   const side = (lab, list) => `<div class="lab">${lab}</div>` + whyRows(list.map(a=>({k:esc(a.name), v:n0(a.v)})).concat([{k:"Added up", v:n0(raw(list))}, {k:"After the stud premium", v:n0(pm(list)), total:true}]));
   return side("You send", TR.give) + side("You get", TR.get) +
-    `<div class="lab">How the stud premium works</div><p class="whyp">Each value is raised to the 1.3 power, the results are added, then the 1.3th root is taken. One great player keeps his full value; several good ones lose a little, because a roster spot and a starting slot are worth something. Example: two 3,000 players add up to 6,000 but count as ${n0(pm([{v:3000},{v:3000}]))}; one 6,000 player counts as 6,000.</p>
-    <div class="lab">The gap</div>${whyRows([{k:"You get − you send", v:n0(gv - sv)}, {k:"As a share of the bigger side", v:`${diff >= 0 ? "+" : ""}${Math.round(diff*100)}%`, total:true, n:"Within ±5% reads as even."}])}
+    `<div class="lab">How the stud premium works</div><p class="whyp">Each value is raised to the ${STUD_P} power, the results are added, then the ${STUD_P}th root is taken. One great player keeps his full value; several good ones lose some, because a roster spot and a starting slot are worth something. Example: two 3,000 players add up to 6,000 but count as ${n0(pm([{v:3000},{v:3000}]))}; one 6,000 player counts as 6,000. The ${STUD_P} was fit to ${CAL.n} real trades in your leagues (${CAL.built}): it's the setting where the side giving more pieces neither wins nor loses on average.</p>
+    <div class="lab">The gap</div>${whyRows([{k:"You get − you send", v:n0(gv - sv)}, {k:"As a share of the bigger side", v:`${diff >= 0 ? "+" : ""}${Math.round(diff*100)}%`, total:true, n:`Within ±5% reads as even. For context, the median trade in your leagues this season had a ${Math.round(CAL.q[10]*100)}% gap; this one is closer to even than ${Math.round(fairerThan(Math.abs(diff))*100)}% of them.`}])}
     <div class="lab">What the full check adds</div><p class="whyp">The verdict is half this value gap and half plan fit: how the trade moves your win-now lineup (redraft values) and future value (young players and picks), weighted by your team's lane (contenders 70/30 now/future, rebuilders 20/80, everyone else 50/50).</p>`;
 }
 function openWhy(spec){
@@ -390,12 +392,12 @@ function openWhy(spec){
     title = a.name; sub = a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}`;
     body = whyRows(a.pk ? whyPick(a, b) : whyPlayer(a, b));
   }
-  const gaps = settingsGaps(b.lg, TR.fc.meta), on = store.get("adjOn", true);
-  body += gaps.length ? `<div class="lab">${esc(b.lg.name)}'s settings</div><p class="whyp">${on ? "Scoring rules (TE premium, completions, TD points, first downs, catch points) are priced in by the league-scoring line above. Still not priced in:" : "League-scoring adjustment is off (Settings). Not priced in:"} ${gaps.filter(g=>on ? /teams|starters|flex|IDP/.test(g) : true).map(esc).join(" · ") || "nothing else"}.</p>` : "";
+  const gaps = settingsGaps(b.lg, TR.fc.meta);
+  body += gaps.length ? `<div class="lab">${esc(b.lg.name)}'s settings</div><p class="whyp">Scoring rules (TE premium, completions, TD points, first downs, catch points) show up in each player's league scoring edge and in lineup strength, but not in trade prices, because your leagues don't trade on them. Rules the model doesn't measure yet: ${gaps.filter(g=>/teams|starters|flex|IDP/.test(g)).map(esc).join(" · ") || "none"}.</p>` : "";
   let el = $("whysheet"); if(!el){ el = document.createElement("div"); el.id = "whysheet"; el.className = "runner"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); document.body.appendChild(el); }
   el.innerHTML = `<div class="rwrap"><div class="rtop"><span class="lab">Show the math</span><button class="iconbtn" data-whyx="1" aria-label="Close">✕</button></div><div class="rhead"><h2 class="h1">${esc(title)}</h2>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>${body}</div>`;
   el.hidden = false; el.setAttribute("aria-label", title); document.body.style.overflow = "hidden";
 }
 document.addEventListener("click", e=>{ if(e.target.closest("[data-whyx]")){ const el = $("whysheet"); if(el) el.hidden = true; document.body.style.overflow = ""; } });
 document.addEventListener("keydown", e=>{ if(e.key === "Escape"){ const el = $("whysheet"); if(el && !el.hidden){ el.hidden = true; document.body.style.overflow = ""; } } });
-document.addEventListener("change", e=>{ if(e.target.id === "adjOn"){ store.set("adjOn", e.target.checked); S.adjC = {}; S.bp = null; TR.fc = null; for(const b of S.results||[]) if(b.league) delete b._bp; showToast(e.target.checked ? "Values now follow each league's scoring" : "Showing raw market values"); loadBlueprints && loadBlueprints().then(()=>render()); render(); } });
+document.addEventListener("change", e=>{ if(e.target.id === "adjOn"){ store.set("adjPrice", e.target.checked); S.adjC = {}; S.bp = null; TR.fc = null; for(const b of S.results||[]) if(b.league) delete b._bp; showToast(e.target.checked ? "Values now follow each league's scoring" : "Showing raw market values"); loadBlueprints && loadBlueprints().then(()=>render()); render(); } });

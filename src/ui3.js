@@ -181,7 +181,8 @@ function trAssets(team, fcIn){
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
   team._tra = {fc, list}; return list;
 }
-const trTag = a => a.pk ? "" : [a.slot, a.inj && a.inj !== "Healthy" ? a.inj : ""].filter(Boolean).map(x=>`<em class="ttag${x === "Taxi" ? " tx" : ""}">${esc(x === "Questionable" ? "Q" : x === "Doubtful" ? "D" : x)}</em>`).join("");
+const trTag = a => a.pk ? "" : [a.slot, a.inj && a.inj !== "Healthy" ? a.inj : ""].filter(Boolean).map(x=>`<em class="ttag${x === "Taxi" ? " tx" : ""}">${esc(x === "Questionable" ? "Q" : x === "Doubtful" ? "D" : x)}</em>`).join("")
+  + (a.adj && Math.abs(a.adj.rel - 1) >= 0.05 ? `<em class="ttag ${a.adj.rel > 1 ? "eup" : "edn"}" title="Scores this much more or less in this league's rules than the market assumes">${a.adj.rel > 1 ? "+" : ""}${Math.round((a.adj.rel - 1)*100)}% here</em>` : "");
 function trPick(team, list){
   const all = trAssets(team), taken = new Set(), out = [];
   for(const x of list){ const a = all.find(z=>!taken.has(z.uid) && (z.uid === x.uid || z.id === x.id)); if(a){ taken.add(a.uid); out.push(a); } }
@@ -199,12 +200,13 @@ function tradeHTML(){
   if(!partner) return h + `<div class="empty">Pick who you're trading with. Their roster and picks load as side 2.</div>`;
   const sv = tradeValue(TR.give), gv = tradeValue(TR.get), tot = Math.max(sv + gv, 1), diff = (gv - sv)/Math.max(sv, gv, 1);
   const verdict = !TR.give.length || !TR.get.length ? "Add players to both sides" : Math.abs(diff) < .05 ? "Even trade" : diff > 0 ? `You win by ${Math.round(diff*100)}%` : `You overpay by ${Math.round(-diff*100)}%`;
+  const ctx = TR.give.length && TR.get.length ? `Closer to even than ${Math.round(fairerThan(Math.abs(diff))*100)}% of the ${CAL.n} trades made in your leagues this season` : "";
   const side = (key, title, team) => { const list = TR[key];
     return `<button class="tside${TR.side===key?" act":""}" data-tside="${key}"><span class="lab">${title}</span><span class="tn">${esc(team.name)}</span>
       ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.uid || a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}${trTag(a)}</span><i>${Math.round(a.v).toLocaleString()}</i><b class="why" data-trwhy="${key}|${esc(a.uid || a.id)}" role="button" aria-label="How ${esc(a.name)}'s value is built">?</b></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
       <span class="tsum">${Math.round(TR[key].reduce((s,a)=>s+a.v,0)).toLocaleString()}</span></button>`; };
   h += `<div class="tsides">${side("give","You send", me)}${side("get","You get", partner)}</div>
-    <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div>${TR.give.length || TR.get.length ? `<button class="linkbtn" data-trwhy="pkg|">Show the math</button>` : ""}</div>`;
+    <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div>${ctx ? `<div class="tctx">${ctx}</div>` : ""}${TR.give.length || TR.get.length ? `<button class="linkbtn" data-trwhy="pkg|">Show the math</button>` : ""}</div>`;
   // roster picker for the active side
   const team = TR.side === "give" ? me : partner, chosen = new Set(TR[TR.side].map(a=>a.uid || a.id)), q = TR.q.trim().toLowerCase();
   let assets = trAssets(team).filter(a=>!chosen.has(a.uid));

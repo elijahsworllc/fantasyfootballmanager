@@ -664,9 +664,20 @@ function winNowValue(lg, pl){
    strength alpha (default 0.5) and clamped to x0.75..x1.35. Uses this week's
    projections (one consistent snapshot for the bar and the full check); players
    with no projection this week take their position's typical ratio. */
+/* Calibrated Nov 21, 2026 on 771 completed two-team trades across the user's leagues
+   (values from the daily FantasyCalc snapshot nearest each trade):
+   - stud premium exponent: the side giving more pieces breaks even at ~1.45 (1.3 left it +3.9%)
+   - league-scoring adjustment of the PRICE made the fit worse at every strength (TE-receiving
+     side got fair market value: median +0.5% on 143 trades), so prices stay at market and the
+     scoring difference is shown as an edge and used for lineup (win-now) strength
+   - q: |gap| at 0,5,...,100th percentile of real trades, to say how fair a trade is in context */
+const STUD_P = 1.45;
+const CAL = {n:771, built:"Nov 21, 2026", q:[0.0001,0.0201,0.0376,0.0543,0.0705,0.0909,0.1094,0.1268,0.152,0.1752,0.1929,0.2078,0.231,0.2582,0.2871,0.3112,0.3474,0.3876,0.4517,0.5674,0.9291]};
+function fairerThan(absGap){ const q = CAL.q; let i = 0; while(i < q.length - 1 && q[i+1] <= absGap) i++;
+  const lo = q[i], hi = q[Math.min(i+1, q.length-1)], f = hi > lo ? (absGap - lo)/(hi - lo) : 0; return Math.max(0, Math.min(1, 1 - (i + f)/20)); }
 const BASE_SC = ppr => ({pass_yd:0.04, pass_td:4, pass_int:-1, pass_2pt:2, rush_yd:0.1, rush_td:6, rush_2pt:2, rec:ppr, rec_yd:0.1, rec_td:6, rec_2pt:2, fum_lost:-2});
 function scoringAdj(lg, fc){
-  const on = store.get("adjOn", true), alpha = store.get("adjAlpha", 0.5), ppr = fc.meta ? fc.meta.ppr : 1;
+  const on = store.get("adjPrice", false), alpha = on ? store.get("adjAlpha", 0.5) : 0, ppr = fc.meta ? fc.meta.ppr : 1;
   const key = `${lg.league_id}|${ppr}|${on}|${alpha}`;
   S.adjC ||= {}; if(S.adjC[key]) return S.adjC[key];
   const sc = lg.scoring_settings || {}, base = BASE_SC(ppr), raw = {}, byPos = {QB:[], RB:[], WR:[], TE:[]};
@@ -679,12 +690,12 @@ function scoringAdj(lg, fc){
   const posRel = {}; for(const p in byPos) posRel[p] = byPos[p].length ? med(byPos[p].map(x=>x.r))/typical : 1;
   const clamp = m => Math.max(0.75, Math.min(1.35, m));
   return S.adjC[key] = {on, alpha, typical, posRel, ppr,
-    of(id, pos){ if(!on) return {mult:1, rel:1, src:"off"};
-      const x = raw[id], rel = x ? x.r/typical : (posRel[pos] ?? 1);
-      return {mult:clamp(1 + alpha*(rel - 1)), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B}; }};
+    of(id, pos){ const x = raw[id], rel = x ? x.r/typical : (posRel[pos] ?? 1);
+      // mult prices the trade (market unless the user opts in); prod scales lineup strength in this league's points
+      return {mult: on ? clamp(1 + alpha*(rel - 1)) : 1, prod: clamp(rel), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B, priced:on}; }};
 }
 function adjPlayer(lg, fc, id){ const v = fc.players[id]; if(!v) return null; const a = scoringAdj(lg, fc).of(id, v.pos);
-  return {...v, v:v.v*a.mult, r:(v.r||0)*a.mult, mv:v.v, mr:v.r||0, adj:a}; }
+  return {...v, v:v.v*a.mult, r:(v.r||0)*a.prod, mv:v.v, mr:v.r||0, adj:a}; }
 function pickLabel(p){ return `${p.season} ${["1st","2nd","3rd","4th","5th","6th"][p.round-1]||("R"+p.round)}${p.tier?` (${p.tier})`:""}`; }
 function rankOf(arr, key, id){ const s = arr.slice().sort((a,b)=>b[key]-a[key]); return s.findIndex(x=>x.rid===id)+1; }
 const grade = (r, n) => { const q = n>1 ? (r-1)/(n-1) : 0; return q<=0.15?"A":q<=0.4?"B":q<=0.65?"C":q<=0.85?"D":"F"; };
@@ -959,7 +970,7 @@ async function answerTrade(){
   const fc = await fcValues(fcKey(x.lg)); const me = b.me;
   // picks carry the value the builder showed (tiered by the original team's strength); players use FantasyCalc
   const val = o => o.id.startsWith("PICK:") ? (o.v != null ? o.v : (fc.picks[o.id.slice(5)]||0)) : ((adjPlayer(x.lg, fc, o.id)||{}).v||0);
-  const pmean = arr => Math.pow(arr.reduce((s,v)=>s+Math.pow(v,1.3),0), 1/1.3);
+  const pmean = arr => Math.pow(arr.reduce((s,v)=>s+Math.pow(v,STUD_P),0), 1/STUD_P);
   const give = CB.a.map(val), get = CB.b.map(val);
   const giveV = pmean(give), getV = pmean(get), rawGive = give.reduce((s,v)=>s+v,0), rawGet = get.reduce((s,v)=>s+v,0);
   const diff = (getV-giveV)/Math.max(giveV, getV, 1);
@@ -1348,7 +1359,7 @@ async function loadDirection(){
 }
 
 /* ---------- trade finder: offers that move your team in its direction ---------- */
-const pmOf = arr => Math.pow(arr.reduce((s,a)=>s + Math.pow(Math.max(a.v,0), 1.3), 0), 1/1.3);
+const pmOf = arr => Math.pow(arr.reduce((s,a)=>s + Math.pow(Math.max(a.v,0), STUD_P), 0), 1/STUD_P);
 const sumV = arr => arr.reduce((s,a)=>s+a.v, 0);
 function assetsOf(L, t){
   if(t._assets) return t._assets;
