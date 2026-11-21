@@ -177,7 +177,7 @@ function trAssets(team, fcIn){
     return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
   const picks = team.picks.map(p=>{ const n = pickName(p, fc);
-    return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round}; });
+    return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round, p, origName:nm[p.orig]}; });
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
   team._tra = {fc, list}; return list;
 }
@@ -201,10 +201,10 @@ function tradeHTML(){
   const verdict = !TR.give.length || !TR.get.length ? "Add players to both sides" : Math.abs(diff) < .05 ? "Even trade" : diff > 0 ? `You win by ${Math.round(diff*100)}%` : `You overpay by ${Math.round(-diff*100)}%`;
   const side = (key, title, team) => { const list = TR[key];
     return `<button class="tside${TR.side===key?" act":""}" data-tside="${key}"><span class="lab">${title}</span><span class="tn">${esc(team.name)}</span>
-      ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.uid || a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}${trTag(a)}</span><i>${Math.round(a.v).toLocaleString()}</i></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
+      ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.uid || a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}${trTag(a)}</span><i>${Math.round(a.v).toLocaleString()}</i><b class="why" data-trwhy="${key}|${esc(a.uid || a.id)}" role="button" aria-label="How ${esc(a.name)}'s value is built">?</b></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
       <span class="tsum">${Math.round(TR[key].reduce((s,a)=>s+a.v,0)).toLocaleString()}</span></button>`; };
   h += `<div class="tsides">${side("give","You send", me)}${side("get","You get", partner)}</div>
-    <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div></div>`;
+    <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div>${TR.give.length || TR.get.length ? `<button class="linkbtn" data-trwhy="pkg|">Show the math</button>` : ""}</div>`;
   // roster picker for the active side
   const team = TR.side === "give" ? me : partner, chosen = new Set(TR[TR.side].map(a=>a.uid || a.id)), q = TR.q.trim().toLowerCase();
   let assets = trAssets(team).filter(a=>!chosen.has(a.uid));
@@ -213,7 +213,7 @@ function tradeHTML(){
   h += `<section class="picker glass"><div class="sec"><b class="h2" style="font-size:16px">${TR.side === "give" ? "Your roster" : esc(partner.name) + "'s roster"}</b><span class="sub">tap to add</span></div>
     <div class="chips">${["ALL","QB","RB","WR","TE","PICK","STASH"].map(p=>`<button class="chip" data-trpos="${p}" aria-pressed="${TR.pos===p}">${p === "PICK" ? "Picks" : p === "ALL" ? "All" : p === "STASH" ? "IR / Taxi" : p}</button>`).join("")}</div>
     ${playerSearch("trq", TR.q, "Search this roster")}
-    <div class="plist2">${assets.map(a=>`<button class="prow-btn" data-tradd="${esc(a.uid)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}${trTag(a)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}${a.v ? "" : " · no market value"}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
+    <div class="plist2">${assets.map(a=>`<button class="prow-btn" data-tradd="${esc(a.uid)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}${trTag(a)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}${a.v ? "" : " · no market value"}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span><b class="why" data-trwhy="pool|${esc(a.uid)}" role="button" aria-label="How ${esc(a.name)}'s value is built">?</b></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
     <button class="askbtn" id="trCheck" ${TR.give.length && TR.get.length && !TR.busy ? "" : "disabled"}>${TR.busy ? "Reading the league…" : "Run the full trade check"}</button>
     ${TR.answer ? answerHTML(TR.answer) : ""}
     ${TR.give.length && TR.get.length ? `<button class="ghost tint" id="trSave" style="align-self:flex-start"${TR.saving ? " disabled" : ""}>${svgI("offers",16)} ${TR.saving ? "Grading the offer…" : TR.inbox ? "Save to my offers inbox" : "They offered me this: save to Offers"}</button>` : ""}
@@ -325,8 +325,9 @@ function cbPrefillTrade(d){
 
 /* ---------- events for the tools ---------- */
 document.addEventListener("click", e=>{
-  const el = e.target.closest("[data-tool],[data-sub],[data-partner],[data-tside],[data-trpos],[data-tradd],[data-trrm],[data-focus],#trCheck"); if(!el) return;
+  const el = e.target.closest("[data-trwhy],[data-tool],[data-sub],[data-partner],[data-tside],[data-trpos],[data-tradd],[data-trrm],[data-focus],#trCheck"); if(!el) return;
   const d = el.dataset;
+  if(d.trwhy != null){ e.stopPropagation(); e.preventDefault(); openWhy(d.trwhy); return; }
   if(d.tool){ TOOL.mode = d.tool; CB.mode = d.tool === "trade" ? "trade" : d.tool; CB.a = []; CB.b = []; CB.qa = ""; TOOL.sub = "matchup"; renderCB(); return; }
   if(d.sub){ TOOL.sub = d.sub; renderCB(); return; }
   if(d.partner){ TR.partner = +d.partner; TR.get = []; TR.answer = null; TR.side = "get"; TR.pos = "ALL"; TR.q = ""; renderCB(); return; }

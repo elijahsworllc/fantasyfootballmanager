@@ -157,6 +157,12 @@ Trades screen → **Recent trades**: every completed trade from the last 3 weeks
 - The full trade check now values picks exactly as the builder shows them (tiered by the original team's strength). Before, a pick could show 2,400 in the builder and count as 0 in the verdict when its name didn't match FantasyCalc's.
 - Offers inbox counters use the same asset list.
 
+## Trade values: show the math + redraft fix (Nov 21, 2026)
+- **"?" on every asset** in the trade calculator opens a ledger: market value and its source settings, overall and position rank, volatility range, 30-day trend, redraft value, this league's weekly projection, age rule, roster slot, and the exact number used. Picks show the tier rule (original team's win-now rank), the FantasyCalc key used and any fallback estimate. **Show the math** under the bar breaks down both sides, the stud premium and the gap. Every sheet lists the league settings the market value doesn't price in (TE premium, PPC, 6-pt pass TD, extra starters, IDP…).
+- **Fix:** redraft leagues were priced with dynasty values. The value key now carries the league format (redraft → FantasyCalc redraft market).
+- Pick provenance is stored on each pick (how its value was found).
+- Full value-model audit and plan: `command-center/value-model-audit.md` in the project.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

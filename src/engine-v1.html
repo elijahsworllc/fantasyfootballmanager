@@ -615,18 +615,20 @@ const nearest = (v, opts) => opts.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a)
 function fcKey(lg){
   const rp = lg.roster_positions||[];
   const q = (rp.includes("SUPER_FLEX") || rp.filter(p=>p==="QB").length>1) ? 2 : 1;
-  return `${q}|${nearest(lg.total_rosters||12,[8,10,12,14])}|${nearest((lg.scoring_settings||{}).rec||0,[0,0.5,1])}`;
+  const dyn = ((lg.settings||{}).type || 0) >= 1 ? 1 : 0;   // 0 redraft, 1 keeper, 2 dynasty
+  return `${q}|${nearest(lg.total_rosters||12,[8,10,12,14])}|${nearest((lg.scoring_settings||{}).rec||0,[0,0.5,1])}|${dyn}`;
 }
 function fcValues(key){
   if(S.fc[key]) return S.fc[key];
-  const [q,t,p] = key.split("|");
-  S.fc[key] = getJSON(`${FC_API}?isDynasty=true&numQbs=${q}&numTeams=${t}&ppr=${p}`).then(arr=>{
+  const [q,t,p,d] = key.split("|"), dyn = d !== "0";
+  S.fc[key] = getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`).then(arr=>{
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
-      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency};
+      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency,
+        rank:x.overallRank||null, prank:x.positionRank||null, team:pl.maybeTeam||null};
     }
-    return {players, picks};
+    return {players, picks, meta:{q:+q, teams:+t, ppr:+p, dyn, at:Date.now()}};
   });
   return S.fc[key];
 }
@@ -681,9 +683,15 @@ function buildBlueprint(x, users, traded, fc){
   const tierOf = rid => { const k = nowSorted.findIndex(t=>t.rid===rid); return k < N/3 ? "Late" : k >= 2*N/3 ? "Early" : "Mid"; };
   for(const k in pickMap){ const [s, rd, orig] = k.split("|"); const ownerRid = pickMap[k];
     const tier = +s===season+1 && +rd<=4 ? tierOf(+orig) : null;
-    const base = +rd<=4 ? (fc.picks[`${s} ${["1st","2nd","3rd","4th"][rd-1]}${tier?` (${tier})`:""}`] || fc.picks[`${s} ${["1st","2nd","3rd","4th"][rd-1]}`] || fc.picks[`${+s-1} ${["1st","2nd","3rd","4th"][rd-1]}`]*0.9 || 0)
-                       : (fc.picks[`${s} 4th`] || 600) * 0.6;
-    if(own[ownerRid]) own[ownerRid].push({season:+s, round:+rd, orig:+orig, tier, val:Math.round(base), mine:+orig===ownerRid});
+    const on = ["1st","2nd","3rd","4th"][rd-1], kT = `${s} ${on}${tier?` (${tier})`:""}`, kP = `${s} ${on}`, kY = `${+s-1} ${on}`;
+    let base, src;
+    if(+rd > 4){ base = (fc.picks[`${s} 4th`] || 600) * 0.6; src = {how:"deep", key:`${s} 4th`, note:`FantasyCalc doesn't price round ${rd}. Estimated at 60% of a ${s} 4th${fc.picks[`${s} 4th`] ? "" : " (assumed 600)"}.`}; }
+    else if(tier && fc.picks[kT]){ base = fc.picks[kT]; src = {how:"tier", key:kT}; }
+    else if(fc.picks[kP]){ base = fc.picks[kP]; src = {how:"plain", key:kP}; }
+    else if(fc.picks[kY]){ base = fc.picks[kY]*0.9; src = {how:"prev", key:kY, note:`FantasyCalc has no ${kP} yet. Estimated at 90% of a ${kY}.`}; }
+    else { base = 0; src = {how:"none", note:"No market price found for this pick."}; }
+    const nowRank = nowSorted.findIndex(t=>t.rid===+orig) + 1;
+    if(own[ownerRid]) own[ownerRid].push({season:+s, round:+rd, orig:+orig, tier, val:Math.round(base), mine:+orig===ownerRid, src, origNowRank:nowRank, N});
   }
   const need = posNeeds(lg);
   for(const t of teams){

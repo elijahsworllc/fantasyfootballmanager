@@ -859,6 +859,16 @@ section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
 .rtimp .up{color:var(--ok)}.rtimp .down{color:#FF9A9D}.rtimp b{font-weight:600}
 .ttag{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;margin-left:6px;padding:1px 5px;border-radius:5px;background:rgba(242,100,104,.18);color:#FF9A9D;vertical-align:1px}
 .ttag.tx{background:rgba(95,214,230,.16);color:var(--cyan-2)}
+.why{display:inline-grid;place-items:center;flex:none;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:800;font-style:normal;margin-left:6px;background:rgba(160,140,255,.18);color:var(--ink-2);cursor:pointer}
+.linkbtn{border:0;background:none;color:var(--cyan-2);font-weight:650;font-size:13px;padding:6px 0 0;align-self:center;text-decoration:underline;text-underline-offset:3px}
+.ledger{display:flex;flex-direction:column;border-radius:16px;background:var(--sunk);padding:4px 12px}
+.lrow{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-top:1px solid var(--hair)}
+.lrow:first-child{border-top:0}
+.lrow .k{font-weight:600;font-size:14px}.lrow .v{font-family:var(--mono);font-size:14px;text-align:right}
+.lrow .n{grid-column:1/-1;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.lrow.tot .k,.lrow.tot .v{color:var(--cyan-2)}
+.whyp{font-size:13.5px;color:var(--ink-2);line-height:1.5;margin:0}
+#whysheet .lab{margin-top:6px}
 </style>
 </head>
 <body>
@@ -1167,18 +1177,20 @@ const nearest = (v, opts) => opts.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a)
 function fcKey(lg){
   const rp = lg.roster_positions||[];
   const q = (rp.includes("SUPER_FLEX") || rp.filter(p=>p==="QB").length>1) ? 2 : 1;
-  return `${q}|${nearest(lg.total_rosters||12,[8,10,12,14])}|${nearest((lg.scoring_settings||{}).rec||0,[0,0.5,1])}`;
+  const dyn = ((lg.settings||{}).type || 0) >= 1 ? 1 : 0;   // 0 redraft, 1 keeper, 2 dynasty
+  return `${q}|${nearest(lg.total_rosters||12,[8,10,12,14])}|${nearest((lg.scoring_settings||{}).rec||0,[0,0.5,1])}|${dyn}`;
 }
 function fcValues(key){
   if(S.fc[key]) return S.fc[key];
-  const [q,t,p] = key.split("|");
-  S.fc[key] = getJSON(`${FC_API}?isDynasty=true&numQbs=${q}&numTeams=${t}&ppr=${p}`).then(arr=>{
+  const [q,t,p,d] = key.split("|"), dyn = d !== "0";
+  S.fc[key] = getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`).then(arr=>{
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
-      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency};
+      else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency,
+        rank:x.overallRank||null, prank:x.positionRank||null, team:pl.maybeTeam||null};
     }
-    return {players, picks};
+    return {players, picks, meta:{q:+q, teams:+t, ppr:+p, dyn, at:Date.now()}};
   });
   return S.fc[key];
 }
@@ -1233,9 +1245,15 @@ function buildBlueprint(x, users, traded, fc){
   const tierOf = rid => { const k = nowSorted.findIndex(t=>t.rid===rid); return k < N/3 ? "Late" : k >= 2*N/3 ? "Early" : "Mid"; };
   for(const k in pickMap){ const [s, rd, orig] = k.split("|"); const ownerRid = pickMap[k];
     const tier = +s===season+1 && +rd<=4 ? tierOf(+orig) : null;
-    const base = +rd<=4 ? (fc.picks[`${s} ${["1st","2nd","3rd","4th"][rd-1]}${tier?` (${tier})`:""}`] || fc.picks[`${s} ${["1st","2nd","3rd","4th"][rd-1]}`] || fc.picks[`${+s-1} ${["1st","2nd","3rd","4th"][rd-1]}`]*0.9 || 0)
-                       : (fc.picks[`${s} 4th`] || 600) * 0.6;
-    if(own[ownerRid]) own[ownerRid].push({season:+s, round:+rd, orig:+orig, tier, val:Math.round(base), mine:+orig===ownerRid});
+    const on = ["1st","2nd","3rd","4th"][rd-1], kT = `${s} ${on}${tier?` (${tier})`:""}`, kP = `${s} ${on}`, kY = `${+s-1} ${on}`;
+    let base, src;
+    if(+rd > 4){ base = (fc.picks[`${s} 4th`] || 600) * 0.6; src = {how:"deep", key:`${s} 4th`, note:`FantasyCalc doesn't price round ${rd}. Estimated at 60% of a ${s} 4th${fc.picks[`${s} 4th`] ? "" : " (assumed 600)"}.`}; }
+    else if(tier && fc.picks[kT]){ base = fc.picks[kT]; src = {how:"tier", key:kT}; }
+    else if(fc.picks[kP]){ base = fc.picks[kP]; src = {how:"plain", key:kP}; }
+    else if(fc.picks[kY]){ base = fc.picks[kY]*0.9; src = {how:"prev", key:kY, note:`FantasyCalc has no ${kP} yet. Estimated at 90% of a ${kY}.`}; }
+    else { base = 0; src = {how:"none", note:"No market price found for this pick."}; }
+    const nowRank = nowSorted.findIndex(t=>t.rid===+orig) + 1;
+    if(own[ownerRid]) own[ownerRid].push({season:+s, round:+rd, orig:+orig, tier, val:Math.round(base), mine:+orig===ownerRid, src, origNowRank:nowRank, N});
   }
   const need = posNeeds(lg);
   for(const t of teams){
@@ -3400,7 +3418,7 @@ function trAssets(team, fcIn){
     return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
   const picks = team.picks.map(p=>{ const n = pickName(p, fc);
-    return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round}; });
+    return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round, p, origName:nm[p.orig]}; });
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
   team._tra = {fc, list}; return list;
 }
@@ -3424,10 +3442,10 @@ function tradeHTML(){
   const verdict = !TR.give.length || !TR.get.length ? "Add players to both sides" : Math.abs(diff) < .05 ? "Even trade" : diff > 0 ? `You win by ${Math.round(diff*100)}%` : `You overpay by ${Math.round(-diff*100)}%`;
   const side = (key, title, team) => { const list = TR[key];
     return `<button class="tside${TR.side===key?" act":""}" data-tside="${key}"><span class="lab">${title}</span><span class="tn">${esc(team.name)}</span>
-      ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.uid || a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}${trTag(a)}</span><i>${Math.round(a.v).toLocaleString()}</i></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
+      ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.uid || a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}${trTag(a)}</span><i>${Math.round(a.v).toLocaleString()}</i><b class="why" data-trwhy="${key}|${esc(a.uid || a.id)}" role="button" aria-label="How ${esc(a.name)}'s value is built">?</b></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
       <span class="tsum">${Math.round(TR[key].reduce((s,a)=>s+a.v,0)).toLocaleString()}</span></button>`; };
   h += `<div class="tsides">${side("give","You send", me)}${side("get","You get", partner)}</div>
-    <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div></div>`;
+    <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div>${TR.give.length || TR.get.length ? `<button class="linkbtn" data-trwhy="pkg|">Show the math</button>` : ""}</div>`;
   // roster picker for the active side
   const team = TR.side === "give" ? me : partner, chosen = new Set(TR[TR.side].map(a=>a.uid || a.id)), q = TR.q.trim().toLowerCase();
   let assets = trAssets(team).filter(a=>!chosen.has(a.uid));
@@ -3436,7 +3454,7 @@ function tradeHTML(){
   h += `<section class="picker glass"><div class="sec"><b class="h2" style="font-size:16px">${TR.side === "give" ? "Your roster" : esc(partner.name) + "'s roster"}</b><span class="sub">tap to add</span></div>
     <div class="chips">${["ALL","QB","RB","WR","TE","PICK","STASH"].map(p=>`<button class="chip" data-trpos="${p}" aria-pressed="${TR.pos===p}">${p === "PICK" ? "Picks" : p === "ALL" ? "All" : p === "STASH" ? "IR / Taxi" : p}</button>`).join("")}</div>
     ${playerSearch("trq", TR.q, "Search this roster")}
-    <div class="plist2">${assets.map(a=>`<button class="prow-btn" data-tradd="${esc(a.uid)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}${trTag(a)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}${a.v ? "" : " · no market value"}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
+    <div class="plist2">${assets.map(a=>`<button class="prow-btn" data-tradd="${esc(a.uid)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}${trTag(a)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}${a.v ? "" : " · no market value"}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span><b class="why" data-trwhy="pool|${esc(a.uid)}" role="button" aria-label="How ${esc(a.name)}'s value is built">?</b></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
     <button class="askbtn" id="trCheck" ${TR.give.length && TR.get.length && !TR.busy ? "" : "disabled"}>${TR.busy ? "Reading the league…" : "Run the full trade check"}</button>
     ${TR.answer ? answerHTML(TR.answer) : ""}
     ${TR.give.length && TR.get.length ? `<button class="ghost tint" id="trSave" style="align-self:flex-start"${TR.saving ? " disabled" : ""}>${svgI("offers",16)} ${TR.saving ? "Grading the offer…" : TR.inbox ? "Save to my offers inbox" : "They offered me this: save to Offers"}</button>` : ""}
@@ -3548,8 +3566,9 @@ function cbPrefillTrade(d){
 
 /* ---------- events for the tools ---------- */
 document.addEventListener("click", e=>{
-  const el = e.target.closest("[data-tool],[data-sub],[data-partner],[data-tside],[data-trpos],[data-tradd],[data-trrm],[data-focus],#trCheck"); if(!el) return;
+  const el = e.target.closest("[data-trwhy],[data-tool],[data-sub],[data-partner],[data-tside],[data-trpos],[data-tradd],[data-trrm],[data-focus],#trCheck"); if(!el) return;
   const d = el.dataset;
+  if(d.trwhy != null){ e.stopPropagation(); e.preventDefault(); openWhy(d.trwhy); return; }
   if(d.tool){ TOOL.mode = d.tool; CB.mode = d.tool === "trade" ? "trade" : d.tool; CB.a = []; CB.b = []; CB.qa = ""; TOOL.sub = "matchup"; renderCB(); return; }
   if(d.sub){ TOOL.sub = d.sub; renderCB(); return; }
   if(d.partner){ TR.partner = +d.partner; TR.get = []; TR.answer = null; TR.side = "get"; TR.pos = "ALL"; TR.q = ""; renderCB(); return; }
@@ -5068,6 +5087,85 @@ document.addEventListener("click", e=>{
   if(el.dataset.rtsim){ loadDirection(); render(); return; }
   if(el.dataset.rtmore){ RT.more = true; render(); return; }
 });
+
+/* ---------- show the math: every value in the trade calculator, taken apart ----------
+   Nothing here is a new number: it reads the same inputs the calculator uses and
+   says where each came from, so any value can be defended or challenged. */
+function settingsGaps(lg, meta){
+  const ss = lg.scoring_settings || {}, rp = lg.roster_positions || [], out = [];
+  const N = lg.total_rosters || 12, rec = ss.rec || 0;
+  if(meta){
+    if(meta.teams !== N) out.push(`${N} teams, priced as ${meta.teams}`);
+    if(Math.abs(meta.ppr - rec) > 0.01) out.push(`${rec} per catch, priced as ${meta.ppr} PPR`);
+  }
+  if(ss.bonus_rec_te) out.push(`TE premium +${ss.bonus_rec_te} per catch`);
+  if(ss.bonus_rec_rb) out.push(`RB catch bonus +${ss.bonus_rec_rb}`);
+  if(ss.bonus_rec_wr) out.push(`WR catch bonus +${ss.bonus_rec_wr}`);
+  if(ss.pass_td != null && ss.pass_td !== 4) out.push(`${ss.pass_td}-point passing TDs`);
+  if(ss.pass_cmp) out.push(`+${ss.pass_cmp} per completion`);
+  if(ss.rush_fd || ss.rec_fd) out.push(`first-down points`);
+  if(ss.rush_att) out.push(`+${ss.rush_att} per carry`);
+  const c = k => rp.filter(p=>p === k).length;
+  if(c("WR") >= 3) out.push(`${c("WR")} WR starters`);
+  if(c("FLEX") + c("WRRB_FLEX") + c("REC_FLEX") >= 3) out.push(`${c("FLEX") + c("WRRB_FLEX") + c("REC_FLEX")} flex spots`);
+  if(c("TE") >= 2) out.push(`${c("TE")} TE starters`);
+  if(rp.some(p=>["DL","LB","DB","IDP_FLEX"].includes(p))) out.push("IDP starters (no market value)");
+  return out;
+}
+function whyRows(rows){ return `<div class="ledger">${rows.map(r=>`<div class="lrow${r.total ? " tot" : ""}"><span class="k">${r.k}</span><span class="v">${r.v}</span>${r.n ? `<span class="n">${r.n}</span>` : ""}</div>`).join("")}</div>`; }
+const n0 = v => Math.round(v || 0).toLocaleString();
+function whyPlayer(a, b){
+  const fc = TR.fc, f = fc.players[a.id] || {}, meta = fc.meta || {}, lg = b.lg;
+  const fmtName = `${meta.q === 2 ? "Superflex" : "1-QB"} · ${meta.teams} teams · ${meta.ppr} PPR · ${meta.dyn ? "dynasty" : "redraft"}`;
+  const rows = [{k:"Market value", v:n0(f.v), n:`FantasyCalc ${meta.dyn ? "dynasty" : "redraft"} value for ${fmtName}. FantasyCalc builds it from real trades made in fantasy leagues, then fits every player to one scale.${f.rank ? ` Overall #${f.rank}${f.prank ? `, ${f.pos} #${f.prank}` : ""}.` : ""}`}];
+  if(f.sd) rows.push({k:"How settled it is", v:`±${Math.round(f.sd)}%`, n:`How much this value has moved lately. A fair range today is ${n0(f.v*(1-f.sd/100))} to ${n0(f.v*(1+f.sd/100))}.${f.tf ? ` Traded often enough to trust (${typeof f.tf === "number" ? f.tf.toFixed(2) : f.tf} trade frequency).` : ""}`});
+  if(f.trend) rows.push({k:"Last 30 days", v:`${f.trend > 0 ? "+" : ""}${n0(f.trend)}`, n: f.trend > 0 ? "Rising: the market is paying more for him than a month ago." : "Falling: the market is paying less than a month ago."});
+  rows.push({k:"Redraft value", v:n0(f.r), n:"FantasyCalc's this-season value. The full trade check uses it to rebuild your best lineup (win-now rank)."});
+  const wk = ppw(a.id, lg, {});
+  rows.push({k:"In this league", v: wk ? `${fmt(wk)} pts/wk` : "–", n: wk ? "Projected weekly points with this league's own scoring (Sleeper projections, this week and next, adjusted for injury status). Used for lineups and playoff odds, not for the trade value." : "No projection this week (bye, injury or no team)."});
+  if(f.age) rows.push({k:"Age", v:Math.floor(f.age), n: isYoung({pos:f.pos, age:f.age}) ? `Counts toward future value (a ${f.pos} ${f.pos === "RB" ? "24" : f.pos === "QB" ? "27" : "25"} or younger).` : isOld({pos:f.pos, age:f.age}) ? "Past this position's usual peak: counts as a win-now piece only." : "Prime years: counts toward win-now, not future value."});
+  if(a.slot) rows.push({k:"Roster spot", v:a.slot, n: a.slot === "Taxi" ? "On a taxi squad: no effect on this week's lineup, full value in the trade." : "On injured reserve: full market value, no effect on this week's lineup."});
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The market value as-is. Nothing is added or taken off for this player."});
+  return rows;
+}
+function whyPick(a, b){
+  const p = a.p || {}, src = p.src || {}, fc = TR.fc, nm = a.origName || "its original team";
+  const rows = [];
+  if(p.tier) rows.push({k:"Where it may land", v:p.tier, n:`${p.season} picks are slotted by how strong ${esc(nm)} is today: ${ord(p.origNowRank)} of ${p.N} in win-now lineup value. Bottom third = Early, middle = Mid, top third = Late.`});
+  else rows.push({k:"Where it may land", v:"Unknown", n:`Too far out to slot. Priced as an average ${["1st","2nd","3rd","4th","5th","6th"][p.round-1] || "R"+p.round}.`});
+  const how = {tier:`FantasyCalc price for "${src.key}"`, plain:`FantasyCalc price for "${src.key}" (no tiered price available)`, prev:src.note, deep:src.note, none:src.note}[src.how] || "FantasyCalc pick price";
+  rows.push({k:"Market value", v:n0(p.val), n:how});
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The same number in the bar and in the full trade check."});
+  return rows;
+}
+function whyPackage(){
+  const pm = list => tradeValue(list), raw = list => list.reduce((s,a)=>s+(a.v||0),0);
+  const sv = pm(TR.give), gv = pm(TR.get), diff = (gv - sv)/Math.max(sv, gv, 1);
+  const side = (lab, list) => `<div class="lab">${lab}</div>` + whyRows(list.map(a=>({k:esc(a.name), v:n0(a.v)})).concat([{k:"Added up", v:n0(raw(list))}, {k:"After the stud premium", v:n0(pm(list)), total:true}]));
+  return side("You send", TR.give) + side("You get", TR.get) +
+    `<div class="lab">How the stud premium works</div><p class="whyp">Each value is raised to the 1.3 power, the results are added, then the 1.3th root is taken. One great player keeps his full value; several good ones lose a little, because a roster spot and a starting slot are worth something. Example: two 3,000 players add up to 6,000 but count as ${n0(pm([{v:3000},{v:3000}]))}; one 6,000 player counts as 6,000.</p>
+    <div class="lab">The gap</div>${whyRows([{k:"You get − you send", v:n0(gv - sv)}, {k:"As a share of the bigger side", v:`${diff >= 0 ? "+" : ""}${Math.round(diff*100)}%`, total:true, n:"Within ±5% reads as even."}])}
+    <div class="lab">What the full check adds</div><p class="whyp">The verdict is half this value gap and half plan fit: how the trade moves your win-now lineup (redraft values) and future value (young players and picks), weighted by your team's lane (contenders 70/30 now/future, rebuilders 20/80, everyone else 50/50).</p>`;
+}
+function openWhy(spec){
+  const i = spec.indexOf("|"), where = spec.slice(0, i), uid = spec.slice(i+1), b = trBp(); if(!b || !TR.fc) return;
+  let title = "Show the math", sub = "", body = "";
+  if(where === "pkg"){ title = "How this trade is scored"; body = whyPackage(); }
+  else {
+    const partner = b.teams.find(t=>t.rid === TR.partner);
+    const pools = where === "give" ? TR.give : where === "get" ? TR.get : trAssets(TR.side === "give" ? b.me : partner);
+    const a = pools.find(z=>(z.uid || z.id) === uid); if(!a) return;
+    title = a.name; sub = a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}`;
+    body = whyRows(a.pk ? whyPick(a, b) : whyPlayer(a, b));
+  }
+  const gaps = settingsGaps(b.lg, TR.fc.meta);
+  body += gaps.length ? `<div class="lab">Not priced in for ${esc(b.lg.name)}</div><p class="whyp">The market values above don't know about: ${gaps.map(esc).join(" · ")}. Players these settings favor are likely undervalued here, and the opposite for the rest.</p>` : "";
+  let el = $("whysheet"); if(!el){ el = document.createElement("div"); el.id = "whysheet"; el.className = "runner"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); document.body.appendChild(el); }
+  el.innerHTML = `<div class="rwrap"><div class="rtop"><span class="lab">Show the math</span><button class="iconbtn" data-whyx="1" aria-label="Close">✕</button></div><div class="rhead"><h2 class="h1">${esc(title)}</h2>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>${body}</div>`;
+  el.hidden = false; el.setAttribute("aria-label", title); document.body.style.overflow = "hidden";
+}
+document.addEventListener("click", e=>{ if(e.target.closest("[data-whyx]")){ const el = $("whysheet"); if(el) el.hidden = true; document.body.style.overflow = ""; } });
+document.addEventListener("keydown", e=>{ if(e.key === "Escape"){ const el = $("whysheet"); if(el && !el.hidden){ el.hidden = true; document.body.style.overflow = ""; } } });
 
 SPACE.init();
 ORB.init();
