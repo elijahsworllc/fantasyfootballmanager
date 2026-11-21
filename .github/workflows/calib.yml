@@ -1,0 +1,36 @@
+name: Value-model calibration inputs
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["backend/calib-inputs.mjs", ".github/workflows/calib.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: calib
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data-branch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Collect calibration inputs
+        env:
+          SLEEPER_USERNAME: jahswor
+          OUT_DIR: data-branch
+        run: node backend/calib-inputs.mjs
+      - name: Publish
+        run: |
+          cd data-branch
+          git config user.name "command-center-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit -m "Calibration inputs $(date -u +%F)" && git push)
