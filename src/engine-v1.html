@@ -921,7 +921,8 @@ async function answerTrade(){
   if(!S.bp) await loadBlueprints();
   const b = (S.bp||[]).find(z=>z.lg.league_id===x.lg.league_id); if(!b) throw new Error("No Blueprint for this league yet");
   const fc = await fcValues(fcKey(x.lg)); const me = b.me;
-  const val = o => o.id.startsWith("PICK:") ? (fc.picks[o.id.slice(5)]||0) : ((fc.players[o.id]||{}).v||0);
+  // picks carry the value the builder showed (tiered by the original team's strength); players use FantasyCalc
+  const val = o => o.id.startsWith("PICK:") ? (o.v != null ? o.v : (fc.picks[o.id.slice(5)]||0)) : ((fc.players[o.id]||{}).v||0);
   const pmean = arr => Math.pow(arr.reduce((s,v)=>s+Math.pow(v,1.3),0), 1/1.3);
   const give = CB.a.map(val), get = CB.b.map(val);
   const giveV = pmean(give), getV = pmean(get), rawGive = give.reduce((s,v)=>s+v,0), rawGet = get.reduce((s,v)=>s+v,0);

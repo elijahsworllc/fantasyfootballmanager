@@ -97,16 +97,13 @@ function renderRun(){
 /* ---------- offers inbox: offers you received, graded, with counters ---------- */
 const INBOX = { all(){ return store.get("inbox", []); }, save(a){ store.set("inbox", a.slice(0, 80)); } };
 const BAND = {lowball:{label:"Lowball", cls:"p-crit"}, close:{label:"Close", cls:"p-warn"}, smash:{label:"Smash accept", cls:"p-ok"}};
-function offerAssets(team, fc){
-  const pl = (team.roster.players || []).map(id=>{ const v = fc.players[id] || {}; return {id, name:pname(id), pos:(S.proj[id] && S.proj[id].player || {}).position || v.pos || "?", age:v.age, v:v.v || 0}; });
-  const picks = team.picks.filter(p=>p.round <= 4).map(p=>{ const nm = pickName(p, fc); return {id:"PICK:"+(nm||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : " (via trade)"), pos:"PICK", v:p.val, pk:true}; });
-  return pl.concat(picks).sort((a,b)=>b.v-a.v);
-}
+function offerAssets(team, fc){ return trAssets(team, fc); }
 const evenness = (G, R) => (tradeValue(R) - tradeValue(G))/Math.max(tradeValue(G), tradeValue(R), 1);
 function countersFor(b, partner, give, get, band, fc){
   if(band === "smash") return [];
-  const me = b.me, out = [], used = new Set(give.concat(get).map(a=>a.id));
-  const mine = offerAssets(me, fc).filter(a=>!used.has(a.id) && a.v > 0), theirs = offerAssets(partner, fc).filter(a=>!used.has(a.id) && a.v > 0);
+  const me = b.me, out = [];
+  const g0 = trPick(me, give), r0 = trPick(partner, get), used = new Set(g0.concat(r0).map(a=>a.uid));
+  const mine = offerAssets(me, fc).filter(a=>!used.has(a.uid) && a.v > 0), theirs = offerAssets(partner, fc).filter(a=>!used.has(a.uid) && a.v > 0);
   const weak = ["QB","RB","WR","TE"].filter(p=>["D","F"].includes(me.grades[p]));
   const best = list => list.filter(z=>z.d >= -0.04).sort((x,y)=>Math.abs(x.d) - Math.abs(y.d))[0];
   // 1. ask for a player, ideally at a weak spot
@@ -130,7 +127,7 @@ async function reviewOffer(lid, rid, give, get){
   const partner = b.teams.find(t=>t.rid === rid); if(!partner) throw new Error("That team isn't in this league");
   const fc = await fcValues(fcKey(b.lg));
   const prev = {mode:CB.mode, league:CB.league, a:CB.a, b:CB.b};
-  CB.mode = "trade"; CB.league = lid; CB.a = give.map(a=>({id:a.id, name:a.name.replace(" (via trade)","")})); CB.b = get.map(a=>({id:a.id, name:a.name.replace(" (via trade)","")}));
+  CB.mode = "trade"; CB.league = lid; CB.a = give.map(a=>({id:a.id, name:a.name, v:a.v})); CB.b = get.map(a=>({id:a.id, name:a.name, v:a.v}));
   let ans; try{ ans = await answerTrade(); } finally { Object.assign(CB, prev); }
   const m = ans.m || {};
   const band = m.score > 0.06 || (m.diff >= 0.10 && m.fit > -0.02) ? "smash" : m.score < -0.06 || m.diff <= -0.15 ? "lowball" : "close";
@@ -141,7 +138,7 @@ async function saveOffer(){
   TR.saving = true; renderCB();
   try{
     const b = trBp(), partner = b.teams.find(t=>t.rid === TR.partner);
-    const slim = a => ({id:a.id, name:a.name, pos:a.pos, v:Math.round(a.v||0), pk:!!a.pk});
+    const slim = a => ({uid:a.uid, id:a.id, name:a.name, pos:a.pos, v:Math.round(a.v||0), pk:!!a.pk});
     const give = TR.give.map(slim), get = TR.get.map(slim);
     const rev = await reviewOffer(TR.lid, TR.partner, give, get);
     const a = INBOX.all(), key = TR.lid + "|" + give.map(x=>x.id).join("+") + ">" + get.map(x=>x.id).join("+");
@@ -211,7 +208,7 @@ function loadIntoBuilder(d, run){
   TR.lid = d.lid; TR.partner = d.rid; TR.give = []; TR.get = []; TR.answer = null; TR.side = "get"; TOOL.mode = "trade"; CB.mode = "trade";
   go("ask");
   trEnsure().then(()=>{ const b = trBp(); if(!b) return; const p = b.teams.find(t=>t.rid === d.rid);
-    const pick = (team, list) => list.map(x=>trAssets(team).find(a=>a.id === x.id)).filter(Boolean);
+    const pick = (team, list) => trPick(team, list);
     TR.give = pick(b.me, d.give); TR.get = p ? pick(p, d.get) : []; renderCB(); if(run && TR.give.length && TR.get.length) trCheck(); });
 }
 

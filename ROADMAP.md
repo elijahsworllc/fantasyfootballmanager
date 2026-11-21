@@ -151,6 +151,12 @@ Trades screen → **Recent trades**: every completed trade from the last 3 weeks
 - Push alerts now link to https://fantasyfootballuniverse.com/. GitHub Pages stays up as a fallback.
 - Supabase: Site URL should be the new domain, with redirect URLs for both domains.
 
+## Fix: trade builder (Nov 21, 2026)
+- Identical picks (two "2027 2nd (Early)") are separate assets now: both can be added, and removing one keeps the other. Every asset has a unique id (picks: season-round-original team).
+- IR and taxi players are listed and tagged (new "IR / Taxi" filter), with injury tags. The roster list no longer stops at 40 assets, and picks from every round show (was rounds 1–4 only). Picks you own from another team say whose they were.
+- The full trade check now values picks exactly as the builder shows them (tiered by the original team's strength). Before, a pick could show 2,400 in the builder and count as 0 in the verdict when its name didn't match FantasyCalc's.
+- Offers inbox counters use the same asset list.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

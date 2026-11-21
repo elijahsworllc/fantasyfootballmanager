@@ -167,11 +167,25 @@ async function trEnsure(){
   if(!TR.fc || TR.fcFor !== TR.lid){ TR.fc = await fcValues(fcKey(b.lg)); TR.fcFor = TR.lid; renderCB(); }
 }
 function trBp(){ return (S.bp||[]).find(z=>z.lg.league_id === TR.lid) || null; }
-function trAssets(team){
-  const fc = TR.fc; if(!team || !fc) return [];
-  const pl = (team.roster.players || []).map(id=>{ const v = fc.players[id] || {}; return {id, name:pname(id), pos:(S.proj[id] && S.proj[id].player || {}).position || v.pos || "?", age:v.age, v:v.v || 0}; });
-  const picks = team.picks.filter(p=>p.round <= 4).map(p=>{ const n = pickName(p, fc); return {id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : " (via trade)"), pos:"PICK", v:p.val, pk:true}; });
-  return pl.concat(picks).sort((a,b)=>b.v-a.v);
+function trAssets(team, fcIn){
+  const fc = fcIn || TR.fc; if(!team || !fc) return [];
+  if(team._tra && team._tra.fc === fc) return team._tra.list;
+  // uid is unique per asset: two "2027 2nd (Early)" picks are two different things
+  const r = team.roster, ir = new Set(r.reserve || []), tx = new Set(r.taxi || []);
+  const ids = [...new Set([...(r.players || []), ...(r.reserve || []), ...(r.taxi || [])])];
+  const pl = ids.map(id=>{ const v = fc.players[id] || {}, m = S.proj[id] && S.proj[id].player || {};
+    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
+  const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
+  const picks = team.picks.map(p=>{ const n = pickName(p, fc);
+    return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round}; });
+  const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
+  team._tra = {fc, list}; return list;
+}
+const trTag = a => a.pk ? "" : [a.slot, a.inj && a.inj !== "Healthy" ? a.inj : ""].filter(Boolean).map(x=>`<em class="ttag${x === "Taxi" ? " tx" : ""}">${esc(x === "Questionable" ? "Q" : x === "Doubtful" ? "D" : x)}</em>`).join("");
+function trPick(team, list){
+  const all = trAssets(team), taken = new Set(), out = [];
+  for(const x of list){ const a = all.find(z=>!taken.has(z.uid) && (z.uid === x.uid || z.id === x.id)); if(a){ taken.add(a.uid); out.push(a); } }
+  return out;
 }
 function tradeValue(list){ return pmOf(list.map(a=>({v:Math.max(a.v||0, 0)}))); }
 function tradeHTML(){
@@ -187,19 +201,19 @@ function tradeHTML(){
   const verdict = !TR.give.length || !TR.get.length ? "Add players to both sides" : Math.abs(diff) < .05 ? "Even trade" : diff > 0 ? `You win by ${Math.round(diff*100)}%` : `You overpay by ${Math.round(-diff*100)}%`;
   const side = (key, title, team) => { const list = TR[key];
     return `<button class="tside${TR.side===key?" act":""}" data-tside="${key}"><span class="lab">${title}</span><span class="tn">${esc(team.name)}</span>
-      ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}</span><i>${Math.round(a.v).toLocaleString()}</i></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
+      ${list.length ? list.map(a=>`<span class="tchip" data-trrm="${key}:${esc(a.uid || a.id)}">${a.pk ? "" : headshot(a.id,"mini")}<span>${esc(a.name)}${trTag(a)}</span><i>${Math.round(a.v).toLocaleString()}</i></span>`).join("") : `<span class="hint">Tap to add from their roster</span>`}
       <span class="tsum">${Math.round(TR[key].reduce((s,a)=>s+a.v,0)).toLocaleString()}</span></button>`; };
   h += `<div class="tsides">${side("give","You send", me)}${side("get","You get", partner)}</div>
     <div class="tbar"><div class="tb"><i style="width:${sv/tot*100}%"></i><b style="width:${gv/tot*100}%"></b></div><div class="tv"><span>${Math.round(sv).toLocaleString()}</span><strong class="${!TR.give.length||!TR.get.length?"":Math.abs(diff)<.05?"even":diff>0?"good":"bad"}">${verdict}</strong><span>${Math.round(gv).toLocaleString()}</span></div></div>`;
   // roster picker for the active side
-  const team = TR.side === "give" ? me : partner, chosen = new Set(TR[TR.side].map(a=>a.id)), q = TR.q.trim().toLowerCase();
-  let assets = trAssets(team).filter(a=>!chosen.has(a.id));
-  if(TR.pos !== "ALL") assets = assets.filter(a=>TR.pos === "PICK" ? a.pk : a.pos === TR.pos);
+  const team = TR.side === "give" ? me : partner, chosen = new Set(TR[TR.side].map(a=>a.uid || a.id)), q = TR.q.trim().toLowerCase();
+  let assets = trAssets(team).filter(a=>!chosen.has(a.uid));
+  if(TR.pos !== "ALL") assets = assets.filter(a=>TR.pos === "PICK" ? a.pk : TR.pos === "STASH" ? !!a.slot : a.pos === TR.pos);
   if(q) assets = assets.filter(a=>a.name.toLowerCase().includes(q));
   h += `<section class="picker glass"><div class="sec"><b class="h2" style="font-size:16px">${TR.side === "give" ? "Your roster" : esc(partner.name) + "'s roster"}</b><span class="sub">tap to add</span></div>
-    <div class="chips">${["ALL","QB","RB","WR","TE","PICK"].map(p=>`<button class="chip" data-trpos="${p}" aria-pressed="${TR.pos===p}">${p === "PICK" ? "Picks" : p === "ALL" ? "All" : p}</button>`).join("")}</div>
+    <div class="chips">${["ALL","QB","RB","WR","TE","PICK","STASH"].map(p=>`<button class="chip" data-trpos="${p}" aria-pressed="${TR.pos===p}">${p === "PICK" ? "Picks" : p === "ALL" ? "All" : p === "STASH" ? "IR / Taxi" : p}</button>`).join("")}</div>
     ${playerSearch("trq", TR.q, "Search this roster")}
-    <div class="plist2">${assets.slice(0, 40).map(a=>`<button class="prow-btn" data-tradd="${esc(a.id)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
+    <div class="plist2">${assets.map(a=>`<button class="prow-btn" data-tradd="${esc(a.uid)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}${trTag(a)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}${a.v ? "" : " · no market value"}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
     <button class="askbtn" id="trCheck" ${TR.give.length && TR.get.length && !TR.busy ? "" : "disabled"}>${TR.busy ? "Reading the league…" : "Run the full trade check"}</button>
     ${TR.answer ? answerHTML(TR.answer) : ""}
     ${TR.give.length && TR.get.length ? `<button class="ghost tint" id="trSave" style="align-self:flex-start"${TR.saving ? " disabled" : ""}>${svgI("offers",16)} ${TR.saving ? "Grading the offer…" : TR.inbox ? "Save to my offers inbox" : "They offered me this: save to Offers"}</button>` : ""}
@@ -209,7 +223,7 @@ function tradeHTML(){
 async function trCheck(){
   if(TR.busy) return; TR.busy = true; TR.answer = null; ORB.mode = "think"; renderCB();
   const prev = {mode:CB.mode, league:CB.league, a:CB.a, b:CB.b};
-  CB.mode = "trade"; CB.league = TR.lid; CB.a = TR.give.map(a=>({id:a.id, name:a.name.replace(" (via trade)","")})); CB.b = TR.get.map(a=>({id:a.id, name:a.name.replace(" (via trade)","")}));
+  CB.mode = "trade"; CB.league = TR.lid; CB.a = TR.give.map(a=>({id:a.id, name:a.name, v:a.v})); CB.b = TR.get.map(a=>({id:a.id, name:a.name, v:a.v}));
   try{ TR.answer = await answerTrade(); }catch(e){ TR.answer = {q:"Trade check", v:"The ball is cloudy", conf:null, reasons:["Couldn't run the check: " + (e.message||e)], flip:null}; }
   Object.assign(CB, prev);
   if(!reduceMotion()){ await sleep(700); ORB.mode = "out"; await sleep(600); }
@@ -300,11 +314,11 @@ function cbPrefillTrade(d){
   go("ask");
   trEnsure().then(()=>{
     const b = trBp(); if(!b){ renderCB(); return; }
-    const findIn = (team, id) => trAssets(team).find(a=>a.id === id || (id.startsWith("PICK:") && a.id === id));
-    const partner = b.teams.find(t=>t.rid !== b.me.rid && d.get.some(g=>findIn(t, g.id)));
+    const pickAll = (team, list) => trPick(team, list);
+    const partner = b.teams.find(t=>t.rid !== b.me.rid && d.get.some(g=>trAssets(t).some(a=>a.id === g.id)));
     if(partner) TR.partner = partner.rid;
-    TR.give = d.give.map(g=>findIn(b.me, g.id)).filter(Boolean);
-    TR.get = partner ? d.get.map(g=>findIn(partner, g.id)).filter(Boolean) : [];
+    TR.give = pickAll(b.me, d.give);
+    TR.get = partner ? pickAll(partner, d.get) : [];
     TR.side = "get"; renderCB(); if(TR.give.length && TR.get.length) trCheck();
   });
 }
@@ -316,10 +330,10 @@ document.addEventListener("click", e=>{
   if(d.tool){ TOOL.mode = d.tool; CB.mode = d.tool === "trade" ? "trade" : d.tool; CB.a = []; CB.b = []; CB.qa = ""; TOOL.sub = "matchup"; renderCB(); return; }
   if(d.sub){ TOOL.sub = d.sub; renderCB(); return; }
   if(d.partner){ TR.partner = +d.partner; TR.get = []; TR.answer = null; TR.side = "get"; TR.pos = "ALL"; TR.q = ""; renderCB(); return; }
-  if(d.trrm){ e.stopPropagation(); const i = d.trrm.indexOf(":"), k = d.trrm.slice(0,i), id = d.trrm.slice(i+1); TR[k] = TR[k].filter(a=>a.id !== id); TR.answer = null; renderCB(); return; }
+  if(d.trrm){ e.stopPropagation(); const i = d.trrm.indexOf(":"), k = d.trrm.slice(0,i), id = d.trrm.slice(i+1); const j = TR[k].findIndex(a=>(a.uid || a.id) === id); if(j >= 0) TR[k].splice(j, 1); TR.answer = null; renderCB(); return; }
   if(d.tside){ TR.side = d.tside; TR.pos = "ALL"; TR.q = ""; renderCB(); return; }
   if(d.trpos){ TR.pos = d.trpos; renderCB(); return; }
-  if(d.tradd){ const b = trBp(), team = TR.side === "give" ? b.me : b.teams.find(t=>t.rid === TR.partner); const a = trAssets(team).find(z=>z.id === d.tradd); if(a){ TR[TR.side].push(a); TR.answer = null; } renderCB(); return; }
+  if(d.tradd){ const b = trBp(), team = TR.side === "give" ? b.me : b.teams.find(t=>t.rid === TR.partner); const a = trAssets(team).find(z=>z.uid === d.tradd); if(a && !TR[TR.side].some(z=>z.uid === a.uid)){ TR[TR.side].push(a); TR.answer = null; } renderCB(); return; }
   if(d.focus){ const f = $(d.focus); if(f){ f.focus(); f.scrollIntoView({behavior:"smooth", block:"center"}); } return; }
   if(el.id === "trCheck"){ trCheck(); return; }
 }, true);
