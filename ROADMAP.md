@@ -181,6 +181,11 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - **In the app:** values = market × FFU factor (dynasty leagues; players and pick classes). Ledger row "FFU in-house" shows the factor, the trade count and the database size. "Show the math" shows the held-out result. Settings: FFU in-house or market only.
 - Next: move the trade store to Supabase once it outgrows a JSON file; add platform users as seeds automatically; fit per league shape (SF/1QB, TEP) once there's enough data; drop the market anchor for players with deep trade history.
 
+## Value model C: second source, DynastyProcess (Nov 22, 2026)
+- `backend/dp.mjs` (nightly, in market.yml) writes `dp.json` to the data branch: DynastyProcess values (FantasyPros expert consensus) joined to Sleeper ids. Free; GPL-3 repo, FantasyPros terms underneath, so revisit before charging.
+- App: mapped onto each league shape's market scale by rank. Shown as "Experts' value" in every dynasty player's "Show the math", with how far the market sits from it. Players the market doesn't price get the expert value (tagged "expert value") instead of 0. Redraft leagues: unchanged.
+- Not in the price: on 2,890 trades, a 25% blend raised the median gap 15.1% to 16.0%, and expert-market gaps didn't predict market moves (`tools/calibration/dp_eval.py`, `dp_lead.py`).
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

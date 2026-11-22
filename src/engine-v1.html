@@ -624,18 +624,44 @@ const INHOUSE_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfoot
 let INHOUSE_P = null;
 function loadInhouse(){ return INHOUSE_P ||= fetch(INHOUSE_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.inhouse = x; return x; }); }
 const ffuOn = () => store.get("valSrc", "ffu") === "ffu" && S.inhouse;
+/* Second opinion: DynastyProcess expert values (FantasyPros consensus), nightly in data/dp.json (backend/dp.mjs).
+   Shown beside the market value and used for players the market doesn't price yet; never mixed into prices.
+   Tested Nov 22, 2026 on 2,890 dynasty trades (tools/calibration/dp_eval.py): blending 25% expert value made
+   real trades look less fair (median gap 15.1% -> 16.0%), and expert-vs-market gaps had ~0 correlation with
+   later market moves. Dynasty only (DynastyProcess has no redraft values). */
+const DP_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/dp.json";
+const DPCAL = {n:2890, built:"Nov 22, 2026", market:0.151, blend25:0.160, blend50:0.183};
+let DP_P = null;
+function loadDp(){ return DP_P ||= fetch(DP_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.dp = x; return x; }); }
+/* rank (quantile) map from expert values onto this league shape's market scale, fit on players both price */
+function dpScale(players, dp, j){
+  const both = []; for(const id in players){ const e = dp[id]; if(e && e[j] > 0 && players[id].v > 0) both.push([e[j], players[id].v]); }
+  if(both.length < 50) return null;
+  const xs = both.map(b=>b[0]).sort((a,b)=>a-b), ys = both.map(b=>b[1]).sort((a,b)=>a-b);
+  return d => { let lo = 0, hi = xs.length; while(lo < hi){ const m = (lo + hi) >> 1; if(xs[m] < d) lo = m + 1; else hi = m; }
+    if(lo <= 0) return ys[0] * d / xs[0]; if(lo >= xs.length) return ys[ys.length-1] * d / xs[xs.length-1];
+    const t = (d - xs[lo-1]) / ((xs[lo] - xs[lo-1]) || 1); return ys[lo-1] + t * (ys[lo] - ys[lo-1]); };
+}
 function ffuFactor(kind, key){ if(!ffuOn()) return null; const e = (kind === "pick" ? S.inhouse.picks : S.inhouse.players)[key]; return e || null; }
 function fcValues(key){
   if(S.fc[key]) return S.fc[key];
   const [q,t,p,d] = key.split("|"), dyn = d !== "0";
-  S.fc[key] = Promise.all([getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`), loadInhouse()]).then(([arr])=>{
+  S.fc[key] = Promise.all([getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`), loadInhouse(), loadDp()]).then(([arr])=>{
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
       else if(pl.sleeperId) players[pl.sleeperId] = {v:x.value, r:x.redraftValue||0, age:pl.maybeAge||null, pos:pl.position, name:pl.name, trend:x.trend30Day||0, yoe:pl.maybeYoe, sd:x.maybeMovingStandardDeviationPerc, tf:x.maybeTradeFrequency,
         rank:x.overallRank||null, prank:x.positionRank||null, team:pl.maybeTeam||null};
     }
-    return {players, picks, meta:{q:+q, teams:+t, ppr:+p, dyn, at:Date.now()}};
+    let dpN = 0;
+    if(dyn && S.dp && S.dp.players){ const dp = S.dp.players, j = +q === 2 ? 1 : 0, f = dpScale(players, dp, j);
+      if(f) for(const id in dp){ const e = dp[id]; if(!(e[j] > 0)) continue;
+        const x = {v:Math.round(f(e[j])), raw:e[j], ecr:e[j+2], pecr:e[4]};
+        if(players[id]) players[id].dp = x;
+        else { const m = ((S.proj || {})[id] || {}).player || {}, pos = m.position || e[5];   // no market price yet: the expert value stands in
+          if(!["QB","RB","WR","TE"].includes(pos)) continue;
+          players[id] = {v:x.v, r:0, age:e[7] || null, pos, name:e[6] || pname(id), trend:0, src:"dp", dp:x}; dpN++; } } }
+    return {players, picks, meta:{q:+q, teams:+t, ppr:+p, dyn, at:Date.now(), dp: dyn && S.dp ? {scraped:S.dp.scraped, filled:dpN} : null}};
   });
   return S.fc[key];
 }
@@ -702,7 +728,7 @@ function scoringAdj(lg, fc){
       return {mult: on ? clamp(1 + alpha*(rel - 1)) : 1, prod: clamp(rel), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B, priced:on}; }};
 }
 function adjPlayer(lg, fc, id){ const v = fc.players[id]; if(!v) return null; const a = scoringAdj(lg, fc).of(id, v.pos);
-  const ih = fc.meta && fc.meta.dyn ? ffuFactor("player", id) : null, hf = ih ? ih.f : 1;
+  const ih = fc.meta && fc.meta.dyn && v.src !== "dp" ? ffuFactor("player", id) : null, hf = ih ? ih.f : 1;
   return {...v, v:v.v*a.mult*hf, r:(v.r||0)*a.prod, mv:v.v, mr:v.r||0, adj:a, ffu:ih}; }
 function pickLabel(p){ return `${p.season} ${["1st","2nd","3rd","4th","5th","6th"][p.round-1]||("R"+p.round)}${p.tier?` (${p.tier})`:""}`; }
 function rankOf(arr, key, id){ const s = arr.slice().sort((a,b)=>b[key]-a[key]); return s.findIndex(x=>x.rid===id)+1; }
@@ -826,7 +852,7 @@ const erf = x => { const t = 1/(1+0.3275911*Math.abs(x)); const y = 1-((((1.0614
 const Phi = z => 0.5*(1+erf(z/Math.SQRT2));
 const cbLeagues = () => (S.raw||[]).filter(x=>!x.error && x.mine && x.lg.status==="in_season" && x.lg.roster_positions && (x.mine.players||[]).length);
 const cbLg = () => CB.league==="all" ? null : cbLeagues().find(x=>x.lg.league_id===CB.league) || null;
-function pname(pid){ const p = S.proj[pid] && S.proj[pid].player; if(p && p.first_name) return (p.first_name+" "+(p.last_name||"")).trim(); return isNaN(+pid) ? pid+" D/ST" : "Player "+pid; }
+function pname(pid){ const p = S.proj[pid] && S.proj[pid].player; if(p && p.first_name) return (p.first_name+" "+(p.last_name||"")).trim(); const d = S.dp && S.dp.players && S.dp.players[pid]; if(d && d[6]) return d[6]; return isNaN(+pid) ? pid+" D/ST" : "Player "+pid; }
 function pmeta(pid){ const p = S.proj[pid] && S.proj[pid].player || {}; return (p.position||"") + (p.team ? " · "+p.team : ""); }
 // this-week info: league scoring when a league is chosen, Sleeper's PPR projection otherwise
 function weekInfo(pid, x){

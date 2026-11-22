@@ -344,6 +344,16 @@ const n0 = v => Math.round(v || 0).toLocaleString();
 function whyPlayer(a, b){
   const fc = TR.fc, f = fc.players[a.id] || {}, meta = fc.meta || {}, lg = b.lg;
   const fmtName = `${meta.q === 2 ? "Superflex" : "1-QB"} · ${meta.teams} teams · ${meta.ppr} PPR · ${meta.dyn ? "dynasty" : "redraft"}`;
+  const dpx = f.dp, dpDate = meta.dp && meta.dp.scraped ? ` (rankings of ${meta.dp.scraped})` : "";
+  const ecrTxt = x => x.ecr ? ` Expert consensus #${Math.round(x.ecr)} overall${x.pecr ? `, ${f.pos} #${Math.round(x.pecr)}` : ""}.` : "";
+  if(f.src === "dp"){
+    const rows = [{k:"Market value", v:"None yet", n:"FantasyCalc doesn't price him yet: not enough trades. Without a stand-in he'd count as 0."},
+      {k:"Expert value", v:n0(dpx.v), n:`DynastyProcess value ${n0(dpx.raw)}, built from FantasyPros expert consensus rankings${dpDate}, converted to this league's market scale by rank: an expert value maps to the market value of the player at the same spot in the overlap.${ecrTxt(dpx)}`}];
+    const wk0 = ppw(a.id, lg, {}); rows.push({k:"In this league", v: wk0 ? `${fmt(wk0)} pts/wk` : "–", n:"Projected weekly points with this league's scoring. Not part of the trade value."});
+    if(a.slot) rows.push({k:"Roster spot", v:a.slot, n: a.slot === "Taxi" ? "On a taxi squad: full value in the trade." : "On injured reserve: full value in the trade."});
+    rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The expert value, until the market prices him. No in-house adjustment: that needs a market price to adjust."});
+    return rows;
+  }
   const rows = [{k:"Market value", v:n0(f.v), n:`FantasyCalc ${meta.dyn ? "dynasty" : "redraft"} value for ${fmtName}. FantasyCalc builds it from real trades made in fantasy leagues, then fits every player to one scale.${f.rank ? ` Overall #${f.rank}${f.prank ? `, ${f.pos} #${f.prank}` : ""}.` : ""}`}];
   if(f.sd) rows.push({k:"How settled it is", v:`±${Math.round(f.sd)}%`, n:`How much this value has moved lately. A fair range today is ${n0(f.v*(1-f.sd/100))} to ${n0(f.v*(1+f.sd/100))}.${f.tf ? ` Traded often enough to trust (${typeof f.tf === "number" ? f.tf.toFixed(2) : f.tf} trade frequency).` : ""}`});
   if(f.trend) rows.push({k:"Last 30 days", v:`${f.trend > 0 ? "+" : ""}${n0(f.trend)}`, n: f.trend > 0 ? "Rising: the market is paying more for him than a month ago." : "Falling: the market is paying less than a month ago."});
@@ -359,6 +369,8 @@ function whyPlayer(a, b){
       : `No projection for him right now, so this is the typical ${f.pos} difference under these rules.`)
       + (ad.priced ? ` You've chosen to price trades by league scoring (Settings), so it's applied to his trade value.`
       : ` Not added to his trade value: across ${CAL.n} trades in your leagues, managers paid market prices regardless of scoring rules (pricing it in made the fit worse). ${e >= 5 ? "So he's worth more to your lineup than he costs: a buy signal." : e <= -5 ? "So he's worth less to your lineup than the market pays: a sell signal." : ""} It does count toward your win-now lineup strength.`)}); }
+  if(dpx){ const d = Math.round((f.v / dpx.v - 1)*100);
+    rows.push({k:"Experts' value", v:n0(dpx.v), n:`Second opinion: DynastyProcess value ${n0(dpx.raw)}, from FantasyPros expert consensus rankings${dpDate}, converted to this scale by rank.${ecrTxt(dpx)} ${Math.abs(d) < 10 ? "The market and the experts roughly agree." : `The market prices him ${Math.abs(d)}% ${d > 0 ? "above" : "below"} the experts.`} Not used in the price: on ${DPCAL.n.toLocaleString()} dynasty trades in the FFU database (${DPCAL.built}), mixing in even 25% expert value made real trades look less fair (median gap ${(DPCAL.market*100).toFixed(1)}% → ${(DPCAL.blend25*100).toFixed(1)}%), and gaps like this one didn't predict where his market price went next.`}); }
   const ih = a.ffu, H = S.inhouse;
   if(ih) rows.push({k:"FFU in-house", v:`×${ih.f.toFixed(2)}`, n:`Seen in ${ih.n} trade${ih.n === 1 ? "" : "s"} in the FFU database (${H.fit.trades.toLocaleString()} trades from ${H.fit.leagues.toLocaleString()} leagues). Those trades priced him ${ih.f >= 1 ? "+" : ""}${Math.round((ih.f - 1)*100)}% against the market value on the day. The fewer trades, the more the estimate is held near the market price.`});
   else if(ffuOn()) rows.push({k:"FFU in-house", v:"×1.00", n:`Not enough trades in the FFU database (${H.fit.trades.toLocaleString()} so far) to move him off the market price.`});

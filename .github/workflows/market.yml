@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/crawl.mjs", "backend/inhouse.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/crawl.mjs", "backend/inhouse.mjs", "backend/dp.mjs", ".github/workflows/market.yml"]
 permissions:
   contents: write
 concurrency:
@@ -29,6 +29,10 @@ jobs:
           SLEEPER_USERNAME: jahswor
           OUT_DIR: data-branch
         run: node backend/market.mjs
+      - name: Expert values (DynastyProcess second opinion)
+        env:
+          OUT_DIR: data-branch
+        run: node backend/dp.mjs
       - name: Grow the trade database (league-mates' leagues)
         env:
           SEED_USERS: jahswor

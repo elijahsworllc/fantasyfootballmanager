@@ -175,13 +175,14 @@ function trAssets(team, fcIn){
   const ids = [...new Set([...(r.players || []), ...(r.reserve || []), ...(r.taxi || [])])];
   const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
   const pl = ids.map(id=>{ const v = (lgBp.lg ? adjPlayer(lgBp.lg, fc, id) : fc.players[id]) || {}, m = S.proj[id] && S.proj[id].player || {};
-    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, ffu:v.ffu, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
+    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, ffu:v.ffu, src:v.src, dp:v.dp, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const picks = team.picks.map(p=>{ const n = pickName(p, fc);
     return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round, p, origName:nm[p.orig]}; });
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
   team._tra = {fc, list}; return list;
 }
 const trTag = a => a.pk ? "" : [a.slot, a.inj && a.inj !== "Healthy" ? a.inj : ""].filter(Boolean).map(x=>`<em class="ttag${x === "Taxi" ? " tx" : ""}">${esc(x === "Questionable" ? "Q" : x === "Doubtful" ? "D" : x)}</em>`).join("")
+  + (a.src === "dp" ? `<em class="ttag xp" title="No market price yet: valued by expert consensus (DynastyProcess)">expert value</em>` : "")
   + (a.adj && Math.abs(a.adj.rel - 1) >= 0.05 ? `<em class="ttag ${a.adj.rel > 1 ? "eup" : "edn"}" title="Scores this much more or less in this league's rules than the market assumes">${a.adj.rel > 1 ? "+" : ""}${Math.round((a.adj.rel - 1)*100)}% here</em>` : "");
 function trPick(team, list){
   const all = trAssets(team), taken = new Set(), out = [];
