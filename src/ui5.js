@@ -250,6 +250,7 @@ function renderSettings(){
   return `<details class="settings"><summary>Settings</summary>
     <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
     <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
+    <div class="srow"><label for="valSrc">Trade values</label><select id="valSrc"><option value="ffu" ${store.get("valSrc","ffu")==="ffu"?"selected":""}>FFU in-house (from real trades)</option><option value="market" ${store.get("valSrc","ffu")==="market"?"selected":""}>Market only (FantasyCalc)</option></select></div>
     <div class="srow"><label for="adjOn">Price trades by league scoring <small style="display:block;color:var(--ink-3)">Off is recommended: your leagues trade at market prices</small></label><input type="checkbox" id="adjOn" ${store.get("adjPrice", false) ? "checked" : ""}></div>
     <div class="srow"><label for="lkm">Open Sleeper links as</label><select id="lkm"><option value="web" ${LINK.mode()==="web"?"selected":""}>Website (team page)</option><option value="app" ${LINK.mode()==="app"?"selected":""}>App (league chat)</option></select></div>
     <div class="srow"><span>Not sure which works?</span><button class="ghost" data-linkretest="1">Test links again</button></div>

@@ -173,6 +173,14 @@ Inputs: every completed two-team trade in the user's leagues (data branch market
 - **Context for every gap:** real trades are looser than "±5% = even". Median |gap| 19%, only 13% within ±5%. The bar now says "closer to even than N% of the 771 trades made in your leagues this season".
 - Caveats: snapshots start Oct 13 (earlier trades use that day's values); only the top ~420 players and plain pick prices are in the snapshot; snapshots are 12-team PPR. The calibration should be re-run monthly as trades accumulate.
 
+## FFU in-house values (Nov 22, 2026)
+Decision: FFU's own market values, built from trades in our users' leagues, replace third-party values over time.
+- **Model (backend/inhouse.mjs, nightly):** each asset gets a factor on the market price on the day of the trade, chosen so real trades come out as fair as possible. Huber loss limits lopsided trades. A ridge pull toward the market price fades as an asset shows up in more trades. 90-day half-life. Stud premium 1.45. Strength (lambda) tuned on a validation window and scored on the newest 20% of trades, which are never used for tuning.
+- **First result (771 trades, own leagues only):** held-out mean gap 15.9% → 15.0%, fairer on 87 vs 62 of 155 trades, median 13.2% → 14.0%. A modest gain; volume is the limit.
+- **Database growth (backend/crawl.mjs, nightly):** seeds (platform users) → their league-mates → those people's leagues → completed trades. Bounded per run (250 new users, 600 leagues, ~600 calls/min). Stores ids only. Data branch: trades-db.json, crawl-state.json.
+- **In the app:** values = market × FFU factor (dynasty leagues; players and pick classes). Ledger row "FFU in-house" shows the factor, the trade count and the database size. "Show the math" shows the held-out result. Settings: FFU in-house or market only.
+- Next: move the trade store to Supabase once it outgrows a JSON file; add platform users as seeds automatically; fit per league shape (SF/1QB, TEP) once there's enough data; drop the market anchor for players with deep trade history.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

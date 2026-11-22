@@ -175,7 +175,7 @@ function trAssets(team, fcIn){
   const ids = [...new Set([...(r.players || []), ...(r.reserve || []), ...(r.taxi || [])])];
   const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
   const pl = ids.map(id=>{ const v = (lgBp.lg ? adjPlayer(lgBp.lg, fc, id) : fc.players[id]) || {}, m = S.proj[id] && S.proj[id].player || {};
-    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
+    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, ffu:v.ffu, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const picks = team.picks.map(p=>{ const n = pickName(p, fc);
     return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round, p, origName:nm[p.orig]}; });
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));

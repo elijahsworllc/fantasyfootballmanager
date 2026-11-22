@@ -83,6 +83,9 @@ function fcValues(){
 function route(url){
   const u = new URL(url), p = u.pathname;
   if(u.hostname === "api.fantasycalc.com") return fcValues();
+  if(u.pathname.endsWith("/inhouse.json")){ const fc = fcValues().filter(x=>x.player.sleeperId).slice(0, 40), players = {};
+    fc.forEach((x, i)=>{ if(i % 2 === 0) players[x.player.sleeperId] = {f: i % 4 === 0 ? 1.12 : 0.9, n: 3 + i % 7}; });
+    return {built:Date.now(), fit:{p:1.45, lambda:4, trades:771, leagues:80}, holdout:{trades:155, marketMean:0.159, inhouseMean:0.150, marketMedian:0.132, inhouseMedian:0.14}, players, picks:{"2028-1":{f:0.92, n:14}}}; }
   if(u.hostname === "api.open-meteo.com"){ const n = 24; return {hourly:{time:Array.from({length:n},(_, i)=>i), temperature_2m:Array.from({length:n},()=>48), precipitation_probability:Array.from({length:n},()=>60), wind_speed_10m:Array.from({length:n},()=>17)}}; }
   if(u.hostname === "site.api.espn.com"){
     const wk = +u.searchParams.get("week"), games = schedule().filter(g=>g.week===wk);

@@ -1182,10 +1182,17 @@ function fcKey(lg){
   const dyn = ((lg.settings||{}).type || 0) >= 1 ? 1 : 0;   // 0 redraft, 1 keeper, 2 dynasty
   return `${q}|${nearest(lg.total_rosters||12,[8,10,12,14])}|${nearest((lg.scoring_settings||{}).rec||0,[0,0.5,1])}|${dyn}`;
 }
+/* FFU in-house values: trade-implied factors on the market price, fit nightly on every trade in the
+   FFU database (backend/inhouse.mjs). Missing or unreachable file = market values. */
+const INHOUSE_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/inhouse.json";
+let INHOUSE_P = null;
+function loadInhouse(){ return INHOUSE_P ||= fetch(INHOUSE_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.inhouse = x; return x; }); }
+const ffuOn = () => store.get("valSrc", "ffu") === "ffu" && S.inhouse;
+function ffuFactor(kind, key){ if(!ffuOn()) return null; const e = (kind === "pick" ? S.inhouse.picks : S.inhouse.players)[key]; return e || null; }
 function fcValues(key){
   if(S.fc[key]) return S.fc[key];
   const [q,t,p,d] = key.split("|"), dyn = d !== "0";
-  S.fc[key] = getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`).then(arr=>{
+  S.fc[key] = Promise.all([getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`), loadInhouse()]).then(([arr])=>{
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
@@ -1259,7 +1266,8 @@ function scoringAdj(lg, fc){
       return {mult: on ? clamp(1 + alpha*(rel - 1)) : 1, prod: clamp(rel), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B, priced:on}; }};
 }
 function adjPlayer(lg, fc, id){ const v = fc.players[id]; if(!v) return null; const a = scoringAdj(lg, fc).of(id, v.pos);
-  return {...v, v:v.v*a.mult, r:(v.r||0)*a.prod, mv:v.v, mr:v.r||0, adj:a}; }
+  const ih = fc.meta && fc.meta.dyn ? ffuFactor("player", id) : null, hf = ih ? ih.f : 1;
+  return {...v, v:v.v*a.mult*hf, r:(v.r||0)*a.prod, mv:v.v, mr:v.r||0, adj:a, ffu:ih}; }
 function pickLabel(p){ return `${p.season} ${["1st","2nd","3rd","4th","5th","6th"][p.round-1]||("R"+p.round)}${p.tier?` (${p.tier})`:""}`; }
 function rankOf(arr, key, id){ const s = arr.slice().sort((a,b)=>b[key]-a[key]); return s.findIndex(x=>x.rid===id)+1; }
 const grade = (r, n) => { const q = n>1 ? (r-1)/(n-1) : 0; return q<=0.15?"A":q<=0.4?"B":q<=0.65?"C":q<=0.85?"D":"F"; };
@@ -1293,6 +1301,7 @@ function buildBlueprint(x, users, traded, fc){
     else if(fc.picks[kP]){ base = fc.picks[kP]; src = {how:"plain", key:kP}; }
     else if(fc.picks[kY]){ base = fc.picks[kY]*0.9; src = {how:"prev", key:kY, note:`FantasyCalc has no ${kP} yet. Estimated at 90% of a ${kY}.`}; }
     else { base = 0; src = {how:"none", note:"No market price found for this pick."}; }
+    const ihp = fc.meta && fc.meta.dyn ? ffuFactor("pick", `${s}-${rd}`) : null; if(ihp && base){ base *= ihp.f; src.ffu = ihp; }
     const nowRank = nowSorted.findIndex(t=>t.rid===+orig) + 1;
     if(own[ownerRid]) own[ownerRid].push({season:+s, round:+rd, orig:+orig, tier, val:Math.round(base), mine:+orig===ownerRid, src, origNowRank:nowRank, N});
   }
@@ -3457,7 +3466,7 @@ function trAssets(team, fcIn){
   const ids = [...new Set([...(r.players || []), ...(r.reserve || []), ...(r.taxi || [])])];
   const lgBp = (S.bp || []).find(z=>z.teams.includes(team)) || trBp() || {teams:[]}, nm = {}; for(const t of lgBp.teams) nm[t.rid] = t.name;
   const pl = ids.map(id=>{ const v = (lgBp.lg ? adjPlayer(lgBp.lg, fc, id) : fc.players[id]) || {}, m = S.proj[id] && S.proj[id].player || {};
-    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
+    return {uid:id, id, name:pname(id), pos:m.position || v.pos || "?", age:v.age, v:v.v || 0, mv:v.mv, adj:v.adj, ffu:v.ffu, slot: tx.has(id) ? "Taxi" : ir.has(id) ? "IR" : "", inj:m.injury_status || ""}; });
   const picks = team.picks.map(p=>{ const n = pickName(p, fc);
     return {uid:`PK:${p.season}-${p.round}-${p.orig}`, id:"PICK:"+(n||pickLabel(p)), name:pickLabel(p) + (p.mine ? "" : ` (from ${nm[p.orig] || "trade"})`), pos:"PICK", v:p.val, pk:true, season:p.season, round:p.round, p, origName:nm[p.orig]}; });
   const list = pl.concat(picks).sort((a,b)=>b.v-a.v || (a.pk ? 1 : 0) - (b.pk ? 1 : 0));
@@ -4238,6 +4247,7 @@ function renderSettings(){
   return `<details class="settings"><summary>Settings</summary>
     <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
     <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
+    <div class="srow"><label for="valSrc">Trade values</label><select id="valSrc"><option value="ffu" ${store.get("valSrc","ffu")==="ffu"?"selected":""}>FFU in-house (from real trades)</option><option value="market" ${store.get("valSrc","ffu")==="market"?"selected":""}>Market only (FantasyCalc)</option></select></div>
     <div class="srow"><label for="adjOn">Price trades by league scoring <small style="display:block;color:var(--ink-3)">Off is recommended: your leagues trade at market prices</small></label><input type="checkbox" id="adjOn" ${store.get("adjPrice", false) ? "checked" : ""}></div>
     <div class="srow"><label for="lkm">Open Sleeper links as</label><select id="lkm"><option value="web" ${LINK.mode()==="web"?"selected":""}>Website (team page)</option><option value="app" ${LINK.mode()==="app"?"selected":""}>App (league chat)</option></select></div>
     <div class="srow"><span>Not sure which works?</span><button class="ghost" data-linkretest="1">Test links again</button></div>
@@ -5176,7 +5186,11 @@ function whyPlayer(a, b){
       : `No projection for him right now, so this is the typical ${f.pos} difference under these rules.`)
       + (ad.priced ? ` You've chosen to price trades by league scoring (Settings), so it's applied to his trade value.`
       : ` Not added to his trade value: across ${CAL.n} trades in your leagues, managers paid market prices regardless of scoring rules (pricing it in made the fit worse). ${e >= 5 ? "So he's worth more to your lineup than he costs: a buy signal." : e <= -5 ? "So he's worth less to your lineup than the market pays: a sell signal." : ""} It does count toward your win-now lineup strength.`)}); }
-  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: ad && ad.priced && Math.abs(ad.mult - 1) >= 0.005 ? `Market value ${n0(f.v)} × ${ad.mult.toFixed(2)} for this league's scoring.` : "The market value, unchanged."});
+  const ih = a.ffu, H = S.inhouse;
+  if(ih) rows.push({k:"FFU in-house", v:`×${ih.f.toFixed(2)}`, n:`Seen in ${ih.n} trade${ih.n === 1 ? "" : "s"} in the FFU database (${H.fit.trades.toLocaleString()} trades from ${H.fit.leagues.toLocaleString()} leagues). Those trades priced him ${ih.f >= 1 ? "+" : ""}${Math.round((ih.f - 1)*100)}% against the market value on the day. The fewer trades, the more the estimate is held near the market price.`});
+  else if(ffuOn()) rows.push({k:"FFU in-house", v:"×1.00", n:`Not enough trades in the FFU database (${H.fit.trades.toLocaleString()} so far) to move him off the market price.`});
+  const parts = [ad && ad.priced && Math.abs(ad.mult - 1) >= 0.005 ? `× ${ad.mult.toFixed(2)} league scoring` : "", ih ? `× ${ih.f.toFixed(2)} FFU in-house` : ""].filter(Boolean);
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: parts.length ? `Market value ${n0(f.v)} ${parts.join(" ")}.` : "The market value, unchanged."});
   return rows;
 }
 function whyPick(a, b){
@@ -5185,7 +5199,8 @@ function whyPick(a, b){
   if(p.tier) rows.push({k:"Where it may land", v:p.tier, n:`${p.season} picks are slotted by how strong ${esc(nm)} is today: ${ord(p.origNowRank)} of ${p.N} in win-now lineup value. Bottom third = Early, middle = Mid, top third = Late.`});
   else rows.push({k:"Where it may land", v:"Unknown", n:`Too far out to slot. Priced as an average ${["1st","2nd","3rd","4th","5th","6th"][p.round-1] || "R"+p.round}.`});
   const how = {tier:`FantasyCalc price for "${src.key}"`, plain:`FantasyCalc price for "${src.key}" (no tiered price available)`, prev:src.note, deep:src.note, none:src.note}[src.how] || "FantasyCalc pick price";
-  rows.push({k:"Market value", v:n0(p.val), n:how});
+  if(src.ffu){ const base = p.val / src.ffu.f; rows.push({k:"Market value", v:n0(base), n:how}); rows.push({k:"FFU in-house", v:`×${src.ffu.f.toFixed(2)}`, n:`${p.season} ${["1st","2nd","3rd","4th"][p.round-1]}s were traded ${src.ffu.n} times in the FFU database, at ${src.ffu.f >= 1 ? "+" : ""}${Math.round((src.ffu.f - 1)*100)}% against the market price.`}); }
+  else rows.push({k:"Market value", v:n0(p.val), n:how});
   rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The same number in the bar and in the full trade check."});
   return rows;
 }
@@ -5195,6 +5210,7 @@ function whyPackage(){
   const side = (lab, list) => `<div class="lab">${lab}</div>` + whyRows(list.map(a=>({k:esc(a.name), v:n0(a.v)})).concat([{k:"Added up", v:n0(raw(list))}, {k:"After the stud premium", v:n0(pm(list)), total:true}]));
   return side("You send", TR.give) + side("You get", TR.get) +
     `<div class="lab">How the stud premium works</div><p class="whyp">Each value is raised to the ${STUD_P} power, the results are added, then the ${STUD_P}th root is taken. One great player keeps his full value; several good ones lose some, because a roster spot and a starting slot are worth something. Example: two 3,000 players add up to 6,000 but count as ${n0(pm([{v:3000},{v:3000}]))}; one 6,000 player counts as 6,000. The ${STUD_P} was fit to ${CAL.n} real trades in your leagues (${CAL.built}): it's the setting where the side giving more pieces neither wins nor loses on average.</p>
+    ${S.inhouse && ffuOn() ? `<div class="lab">FFU in-house values</div><p class="whyp">Values are the market price adjusted by what ${S.inhouse.fit.trades.toLocaleString()} real trades in the FFU database say each player is worth (fit nightly; recent trades count more). On ${S.inhouse.holdout.trades} recent trades the model never saw, in-house values made the average gap ${(S.inhouse.holdout.marketMean*100).toFixed(1)}% → ${(S.inhouse.holdout.inhouseMean*100).toFixed(1)}%.</p>` : ""}
     <div class="lab">The gap</div>${whyRows([{k:"You get − you send", v:n0(gv - sv)}, {k:"As a share of the bigger side", v:`${diff >= 0 ? "+" : ""}${Math.round(diff*100)}%`, total:true, n:`Within ±5% reads as even. For context, the median trade in your leagues this season had a ${Math.round(CAL.q[10]*100)}% gap; this one is closer to even than ${Math.round(fairerThan(Math.abs(diff))*100)}% of them.`}])}
     <div class="lab">What the full check adds</div><p class="whyp">The verdict is half this value gap and half plan fit: how the trade moves your win-now lineup (redraft values) and future value (young players and picks), weighted by your team's lane (contenders 70/30 now/future, rebuilders 20/80, everyone else 50/50).</p>`;
 }
@@ -5218,6 +5234,7 @@ function openWhy(spec){
 document.addEventListener("click", e=>{ if(e.target.closest("[data-whyx]")){ const el = $("whysheet"); if(el) el.hidden = true; document.body.style.overflow = ""; } });
 document.addEventListener("keydown", e=>{ if(e.key === "Escape"){ const el = $("whysheet"); if(el && !el.hidden){ el.hidden = true; document.body.style.overflow = ""; } } });
 document.addEventListener("change", e=>{ if(e.target.id === "adjOn"){ store.set("adjPrice", e.target.checked); S.adjC = {}; S.bp = null; TR.fc = null; for(const b of S.results||[]) if(b.league) delete b._bp; showToast(e.target.checked ? "Values now follow each league's scoring" : "Showing raw market values"); loadBlueprints && loadBlueprints().then(()=>render()); render(); } });
+document.addEventListener("change", e=>{ if(e.target.id === "valSrc"){ store.set("valSrc", e.target.value); S.fc = {}; S.bp = null; TR.fc = null; showToast(e.target.value === "ffu" ? "Using FFU in-house values" : "Using market values only"); loadBlueprints().then(()=>render()); render(); } });
 
 SPACE.init();
 ORB.init();

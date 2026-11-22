@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/crawl.mjs", "backend/inhouse.mjs", ".github/workflows/market.yml"]
 permissions:
   contents: write
 concurrency:
@@ -14,7 +14,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -29,6 +29,13 @@ jobs:
           SLEEPER_USERNAME: jahswor
           OUT_DIR: data-branch
         run: node backend/market.mjs
+      - name: Grow the trade database (league-mates' leagues)
+        env:
+          SEED_USERS: jahswor
+          OUT_DIR: data-branch
+        run: node backend/crawl.mjs
+      - name: Fit in-house values
+        run: node backend/inhouse.mjs data-branch
       - name: Publish data
         run: |
           cd data-branch

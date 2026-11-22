@@ -618,10 +618,17 @@ function fcKey(lg){
   const dyn = ((lg.settings||{}).type || 0) >= 1 ? 1 : 0;   // 0 redraft, 1 keeper, 2 dynasty
   return `${q}|${nearest(lg.total_rosters||12,[8,10,12,14])}|${nearest((lg.scoring_settings||{}).rec||0,[0,0.5,1])}|${dyn}`;
 }
+/* FFU in-house values: trade-implied factors on the market price, fit nightly on every trade in the
+   FFU database (backend/inhouse.mjs). Missing or unreachable file = market values. */
+const INHOUSE_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/inhouse.json";
+let INHOUSE_P = null;
+function loadInhouse(){ return INHOUSE_P ||= fetch(INHOUSE_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.inhouse = x; return x; }); }
+const ffuOn = () => store.get("valSrc", "ffu") === "ffu" && S.inhouse;
+function ffuFactor(kind, key){ if(!ffuOn()) return null; const e = (kind === "pick" ? S.inhouse.picks : S.inhouse.players)[key]; return e || null; }
 function fcValues(key){
   if(S.fc[key]) return S.fc[key];
   const [q,t,p,d] = key.split("|"), dyn = d !== "0";
-  S.fc[key] = getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`).then(arr=>{
+  S.fc[key] = Promise.all([getJSON(`${FC_API}?isDynasty=${dyn}&numQbs=${q}&numTeams=${t}&ppr=${p}`), loadInhouse()]).then(([arr])=>{
     const players = {}, picks = {};
     for(const x of arr){ const pl = x.player;
       if(pl.position==="PICK") picks[pl.name] = x.value;
@@ -695,7 +702,8 @@ function scoringAdj(lg, fc){
       return {mult: on ? clamp(1 + alpha*(rel - 1)) : 1, prod: clamp(rel), rel, src: x ? "player" : "position", L:x && x.L, B:x && x.B, priced:on}; }};
 }
 function adjPlayer(lg, fc, id){ const v = fc.players[id]; if(!v) return null; const a = scoringAdj(lg, fc).of(id, v.pos);
-  return {...v, v:v.v*a.mult, r:(v.r||0)*a.prod, mv:v.v, mr:v.r||0, adj:a}; }
+  const ih = fc.meta && fc.meta.dyn ? ffuFactor("player", id) : null, hf = ih ? ih.f : 1;
+  return {...v, v:v.v*a.mult*hf, r:(v.r||0)*a.prod, mv:v.v, mr:v.r||0, adj:a, ffu:ih}; }
 function pickLabel(p){ return `${p.season} ${["1st","2nd","3rd","4th","5th","6th"][p.round-1]||("R"+p.round)}${p.tier?` (${p.tier})`:""}`; }
 function rankOf(arr, key, id){ const s = arr.slice().sort((a,b)=>b[key]-a[key]); return s.findIndex(x=>x.rid===id)+1; }
 const grade = (r, n) => { const q = n>1 ? (r-1)/(n-1) : 0; return q<=0.15?"A":q<=0.4?"B":q<=0.65?"C":q<=0.85?"D":"F"; };
@@ -729,6 +737,7 @@ function buildBlueprint(x, users, traded, fc){
     else if(fc.picks[kP]){ base = fc.picks[kP]; src = {how:"plain", key:kP}; }
     else if(fc.picks[kY]){ base = fc.picks[kY]*0.9; src = {how:"prev", key:kY, note:`FantasyCalc has no ${kP} yet. Estimated at 90% of a ${kY}.`}; }
     else { base = 0; src = {how:"none", note:"No market price found for this pick."}; }
+    const ihp = fc.meta && fc.meta.dyn ? ffuFactor("pick", `${s}-${rd}`) : null; if(ihp && base){ base *= ihp.f; src.ffu = ihp; }
     const nowRank = nowSorted.findIndex(t=>t.rid===+orig) + 1;
     if(own[ownerRid]) own[ownerRid].push({season:+s, round:+rd, orig:+orig, tier, val:Math.round(base), mine:+orig===ownerRid, src, origNowRank:nowRank, N});
   }

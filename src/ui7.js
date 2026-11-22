@@ -359,7 +359,11 @@ function whyPlayer(a, b){
       : `No projection for him right now, so this is the typical ${f.pos} difference under these rules.`)
       + (ad.priced ? ` You've chosen to price trades by league scoring (Settings), so it's applied to his trade value.`
       : ` Not added to his trade value: across ${CAL.n} trades in your leagues, managers paid market prices regardless of scoring rules (pricing it in made the fit worse). ${e >= 5 ? "So he's worth more to your lineup than he costs: a buy signal." : e <= -5 ? "So he's worth less to your lineup than the market pays: a sell signal." : ""} It does count toward your win-now lineup strength.`)}); }
-  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: ad && ad.priced && Math.abs(ad.mult - 1) >= 0.005 ? `Market value ${n0(f.v)} × ${ad.mult.toFixed(2)} for this league's scoring.` : "The market value, unchanged."});
+  const ih = a.ffu, H = S.inhouse;
+  if(ih) rows.push({k:"FFU in-house", v:`×${ih.f.toFixed(2)}`, n:`Seen in ${ih.n} trade${ih.n === 1 ? "" : "s"} in the FFU database (${H.fit.trades.toLocaleString()} trades from ${H.fit.leagues.toLocaleString()} leagues). Those trades priced him ${ih.f >= 1 ? "+" : ""}${Math.round((ih.f - 1)*100)}% against the market value on the day. The fewer trades, the more the estimate is held near the market price.`});
+  else if(ffuOn()) rows.push({k:"FFU in-house", v:"×1.00", n:`Not enough trades in the FFU database (${H.fit.trades.toLocaleString()} so far) to move him off the market price.`});
+  const parts = [ad && ad.priced && Math.abs(ad.mult - 1) >= 0.005 ? `× ${ad.mult.toFixed(2)} league scoring` : "", ih ? `× ${ih.f.toFixed(2)} FFU in-house` : ""].filter(Boolean);
+  rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n: parts.length ? `Market value ${n0(f.v)} ${parts.join(" ")}.` : "The market value, unchanged."});
   return rows;
 }
 function whyPick(a, b){
@@ -368,7 +372,8 @@ function whyPick(a, b){
   if(p.tier) rows.push({k:"Where it may land", v:p.tier, n:`${p.season} picks are slotted by how strong ${esc(nm)} is today: ${ord(p.origNowRank)} of ${p.N} in win-now lineup value. Bottom third = Early, middle = Mid, top third = Late.`});
   else rows.push({k:"Where it may land", v:"Unknown", n:`Too far out to slot. Priced as an average ${["1st","2nd","3rd","4th","5th","6th"][p.round-1] || "R"+p.round}.`});
   const how = {tier:`FantasyCalc price for "${src.key}"`, plain:`FantasyCalc price for "${src.key}" (no tiered price available)`, prev:src.note, deep:src.note, none:src.note}[src.how] || "FantasyCalc pick price";
-  rows.push({k:"Market value", v:n0(p.val), n:how});
+  if(src.ffu){ const base = p.val / src.ffu.f; rows.push({k:"Market value", v:n0(base), n:how}); rows.push({k:"FFU in-house", v:`×${src.ffu.f.toFixed(2)}`, n:`${p.season} ${["1st","2nd","3rd","4th"][p.round-1]}s were traded ${src.ffu.n} times in the FFU database, at ${src.ffu.f >= 1 ? "+" : ""}${Math.round((src.ffu.f - 1)*100)}% against the market price.`}); }
+  else rows.push({k:"Market value", v:n0(p.val), n:how});
   rows.push({k:"Used in the calculator", v:n0(a.v), total:true, n:"The same number in the bar and in the full trade check."});
   return rows;
 }
@@ -378,6 +383,7 @@ function whyPackage(){
   const side = (lab, list) => `<div class="lab">${lab}</div>` + whyRows(list.map(a=>({k:esc(a.name), v:n0(a.v)})).concat([{k:"Added up", v:n0(raw(list))}, {k:"After the stud premium", v:n0(pm(list)), total:true}]));
   return side("You send", TR.give) + side("You get", TR.get) +
     `<div class="lab">How the stud premium works</div><p class="whyp">Each value is raised to the ${STUD_P} power, the results are added, then the ${STUD_P}th root is taken. One great player keeps his full value; several good ones lose some, because a roster spot and a starting slot are worth something. Example: two 3,000 players add up to 6,000 but count as ${n0(pm([{v:3000},{v:3000}]))}; one 6,000 player counts as 6,000. The ${STUD_P} was fit to ${CAL.n} real trades in your leagues (${CAL.built}): it's the setting where the side giving more pieces neither wins nor loses on average.</p>
+    ${S.inhouse && ffuOn() ? `<div class="lab">FFU in-house values</div><p class="whyp">Values are the market price adjusted by what ${S.inhouse.fit.trades.toLocaleString()} real trades in the FFU database say each player is worth (fit nightly; recent trades count more). On ${S.inhouse.holdout.trades} recent trades the model never saw, in-house values made the average gap ${(S.inhouse.holdout.marketMean*100).toFixed(1)}% → ${(S.inhouse.holdout.inhouseMean*100).toFixed(1)}%.</p>` : ""}
     <div class="lab">The gap</div>${whyRows([{k:"You get − you send", v:n0(gv - sv)}, {k:"As a share of the bigger side", v:`${diff >= 0 ? "+" : ""}${Math.round(diff*100)}%`, total:true, n:`Within ±5% reads as even. For context, the median trade in your leagues this season had a ${Math.round(CAL.q[10]*100)}% gap; this one is closer to even than ${Math.round(fairerThan(Math.abs(diff))*100)}% of them.`}])}
     <div class="lab">What the full check adds</div><p class="whyp">The verdict is half this value gap and half plan fit: how the trade moves your win-now lineup (redraft values) and future value (young players and picks), weighted by your team's lane (contenders 70/30 now/future, rebuilders 20/80, everyone else 50/50).</p>`;
 }
@@ -401,3 +407,4 @@ function openWhy(spec){
 document.addEventListener("click", e=>{ if(e.target.closest("[data-whyx]")){ const el = $("whysheet"); if(el) el.hidden = true; document.body.style.overflow = ""; } });
 document.addEventListener("keydown", e=>{ if(e.key === "Escape"){ const el = $("whysheet"); if(el && !el.hidden){ el.hidden = true; document.body.style.overflow = ""; } } });
 document.addEventListener("change", e=>{ if(e.target.id === "adjOn"){ store.set("adjPrice", e.target.checked); S.adjC = {}; S.bp = null; TR.fc = null; for(const b of S.results||[]) if(b.league) delete b._bp; showToast(e.target.checked ? "Values now follow each league's scoring" : "Showing raw market values"); loadBlueprints && loadBlueprints().then(()=>render()); render(); } });
+document.addEventListener("change", e=>{ if(e.target.id === "valSrc"){ store.set("valSrc", e.target.value); S.fc = {}; S.bp = null; TR.fc = null; showToast(e.target.value === "ffu" ? "Using FFU in-house values" : "Using market values only"); loadBlueprints().then(()=>render()); render(); } });
