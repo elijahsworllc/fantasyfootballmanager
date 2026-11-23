@@ -60,13 +60,16 @@ const SPACE = {
     this.warp += (this.warpTarget - this.warp) * Math.min(1, dt*(this.warpTarget > this.warp ? 1.7 : 1.1));
     const t = this.t, I = this.inten, Wp = this.warp;
     c.setTransform(dpr,0,0,dpr,0,0); c.globalCompositeOperation = "source-over"; c.globalAlpha = 1; c.shadowBlur = 0;
-    const bg = c.createLinearGradient(0,0,W*0.3,H); bg.addColorStop(0,"#060818"); bg.addColorStop(.45,"#0A0C22"); bg.addColorStop(1,"#04060D");
-    c.fillStyle = bg; c.fillRect(0,0,W,H);
+    // command-center look: the photographic sky sits behind; this layer only draws the hyperspace streaks and the odd meteor
+    const CCM = document.body.classList.contains("cc");
+    if(CCM) c.clearRect(0,0,W,H);
+    else { const bg = c.createLinearGradient(0,0,W*0.3,H); bg.addColorStop(0,"#060818"); bg.addColorStop(.45,"#0A0C22"); bg.addColorStop(1,"#04060D");
+    c.fillStyle = bg; c.fillRect(0,0,W,H); }
     c.globalCompositeOperation = "lighter";
     const M = Math.max(W, 420);
-    for(const n of [[W*.1+Math.sin(t*.05)*30, H*.22, M*.9, "123,92,255", .2], [W*.95, H*.62+Math.cos(t*.04)*30, M*.85, "60,196,214", .12], [W*.65+Math.cos(t*.06)*20, H*.05, M*.6, "224,123,255", .1], [W*.2, H*.95, M*.8, "70,100,255", .11]]){
+    if(!CCM) for(const n of [[W*.1+Math.sin(t*.05)*30, H*.22, M*.9, "123,92,255", .2], [W*.95, H*.62+Math.cos(t*.04)*30, M*.85, "60,196,214", .12], [W*.65+Math.cos(t*.06)*20, H*.05, M*.6, "224,123,255", .1], [W*.2, H*.95, M*.8, "70,100,255", .11]]){
       const g = c.createRadialGradient(n[0],n[1],0,n[0],n[1],n[2]); g.addColorStop(0,`rgba(${n[3]},${(n[4]*I).toFixed(3)})`); g.addColorStop(1,`rgba(${n[3]},0)`); c.fillStyle = g; c.fillRect(0,0,W,H); }
-    for(const s of this.stars){ const y = ((s.y*H - t*3*s.d) % H + H) % H, x = s.x*W, a = (0.35+0.55*s.d)*(0.55+0.45*Math.sin(t*s.tw+s.ph));
+    if(!CCM) for(const s of this.stars){ const y = ((s.y*H - t*3*s.d) % H + H) % H, x = s.x*W, a = (0.35+0.55*s.d)*(0.55+0.45*Math.sin(t*s.tw+s.ph));
       c.globalAlpha = a*(1 - Wp*.75); c.fillStyle = s.c; c.fillRect(x-s.s/2, y-s.s/2, s.s, s.s);
       if(s.d === 1 && s.s > 1.8){ c.globalAlpha = a*0.3; c.fillRect(x-s.s*2.4, y-.25, s.s*4.8, .5); c.fillRect(x-.25, y-s.s*2.4, .5, s.s*4.8); } }
     c.globalAlpha = 1;
@@ -90,19 +93,20 @@ const SPACE = {
       this.nextShot -= dt;
       if(this.nextShot <= 0){ const L = Math.random() < .5, ang = (.35 + Math.random()*.5);
         this.shots.push({x: L ? Math.random()*W*.6 : W*.4 + Math.random()*W*.6, y: Math.random()*H*.45, dx: Math.cos(ang)*(L?1:-1), dy: Math.sin(ang), sp: 520+Math.random()*420, len: 70+Math.random()*90, l:0});
-        this.nextShot = 2.5 + Math.random()*6.5; }
+        this.nextShot = CCM ? 14 + Math.random()*20 : 2.5 + Math.random()*6.5; }
       this.shots = this.shots.filter(sh=>{ sh.l += dt; const a = Math.max(0, 1-sh.l/1.1), hx = sh.x + sh.dx*sh.sp*sh.l, hy = sh.y + sh.dy*sh.sp*sh.l;
         const g = c.createLinearGradient(hx-sh.dx*sh.len, hy-sh.dy*sh.len, hx, hy); g.addColorStop(0,"rgba(185,166,255,0)"); g.addColorStop(1,`rgba(255,255,255,${(.95*a).toFixed(2)})`);
         c.strokeStyle = g; c.lineWidth = 1.5; c.beginPath(); c.moveTo(hx-sh.dx*sh.len, hy-sh.dy*sh.len); c.lineTo(hx, hy); c.stroke();
         const hg = c.createRadialGradient(hx,hy,0,hx,hy,6); hg.addColorStop(0,`rgba(220,235,255,${(.8*a).toFixed(2)})`); hg.addColorStop(1,"rgba(220,235,255,0)"); c.fillStyle = hg; c.fillRect(hx-6,hy-6,12,12);
         return sh.l < 1.1; });
       c.globalCompositeOperation = "source-over";
-      if(!this.seeded){ this.spawn(W, H, true); this.seeded = true; }
+      if(!this.seeded && !CCM){ this.spawn(W, H, true); this.seeded = true; }
       this.nextItem -= dt;
-      if(this.nextItem <= 0 && this.items.length < 3){ this.spawn(W, H, false); this.nextItem = 3 + Math.random()*6; }
+      if(this.nextItem <= 0 && this.items.length < 3 && !CCM){ this.spawn(W, H, false); this.nextItem = 3 + Math.random()*6; }
       this.items = this.items.filter(it=>{ it.life += dt; it.x += it.vx*dt; it.y += it.vy*dt; it.rot += it.vr*dt; this.item(c, it); return it.x > -80 && it.x < W+80 && it.y > -80 && it.y < H+80; });
     }
     c.globalCompositeOperation = "source-over"; c.globalAlpha = 1; c.shadowBlur = 0;
+    if(CCM) return;
     const vg = c.createRadialGradient(W/2, H*.45, Math.min(W,H)*.35, W/2, H*.5, Math.max(W,H)*.75); vg.addColorStop(0,"rgba(2,3,8,0)"); vg.addColorStop(1,"rgba(2,3,8,.6)");
     c.fillStyle = vg; c.fillRect(0,0,W,H);
   }
@@ -660,7 +664,7 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;

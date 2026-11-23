@@ -186,6 +186,12 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - App: mapped onto each league shape's market scale by rank. Shown as "Experts' value" in every dynasty player's "Show the math", with how far the market sits from it. Players the market doesn't price get the expert value (tagged "expert value") instead of 0. Redraft leagues: unchanged.
 - Not in the price: on 2,890 trades, a 25% blend raised the median gap 15.1% to 16.0%, and expert-market gaps didn't predict market moves (`tools/calibration/dp_eval.py`, `dp_lead.py`).
 
+## V3 command-center look (Nov 23, 2026)
+- New default look (`src/ui8.js`, `body.cc`): photographic Milky Way sky (Solar System Scope 8K, from ESO imagery, CC BY 4.0, color-graded; `sky-4k.jpg` / `sky-8k.jpg`, WebGL with a CSS fallback), dark glass, Space Grotesk headlines and Inter body. Settings → Look → Classic (or `?classic`) restores V2.
+- Desktop (1100px and up): tool rail on the left with every tool, tool colors and live badges; content centered; side column (1380px and up) with Needs attention, Next lock and your 30-day movers. Phone keeps the dock; the menu gains Managers and Scoring edges.
+- **Scoring Edges** (new): per player, how much more or less he scores in each league's rules than standard scoring (vs a typical starter), since trade prices follow standard scoring. Buy (other teams), Hold (yours, underpriced), Sell (yours, overpriced). Build offer / Shop him open the trade builder.
+- **Managers** (new): every league-mate from this season's trades in your leagues: trades and last trade, what they buy and sell by value, pricing (median gap at today's values), trade fit 0–100 (35% activity, 30% direction complement, 20% your strength where they buy, 15% recency), and a pitch that opens the trade builder.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

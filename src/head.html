@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800;1,900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800;1,900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
 /* Command Center: a fantasy football universe. Live space behind everything, frosted-glass surfaces on top,
    the particle crystal ball as the hero, one motion language (rise + focus, 0.8s, soft ease-out). */
@@ -872,6 +872,81 @@ section.dirsum .chips{margin-inline:-14px;padding-inline:14px}
 .ttag.eup{background:rgba(76,194,122,.16);color:var(--ok)}.ttag.edn{background:rgba(242,100,104,.14);color:#FF9A9D}
 .ttag.xp{background:rgba(155,135,255,.16);color:#C5B8FF}
 .tctx{text-align:center;font-size:12px;color:var(--ink-3);margin-top:4px}
+
+/* ===== V3 command-center look (body.cc): photographic sky, dark glass, Space Grotesk + Inter ===== */
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:-3;display:block}
+body.cc{--display:"Space Grotesk",Inter,system-ui,sans-serif;--body:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"Space Grotesk",Inter,system-ui,sans-serif;
+  --cyan:#46E6F5;--cyan-2:#8CF2FB;--violet:#9B7BFF;--violet-2:#CBBBFF;--grad:linear-gradient(135deg,#6FE0EE,#9B7BFF);
+  --glass:linear-gradient(160deg,rgba(18,22,50,.74),rgba(8,10,26,.68));--glass-flat:rgba(12,16,36,.70);--sunk:rgba(4,6,16,.55);
+  --hair:rgba(160,175,255,.11);--hair-2:rgba(160,175,255,.17);--hair-3:rgba(160,175,255,.28);background:#03050F}
+body.cc.cc-flat{background:#03050F url(sky-4k.jpg) 50% 45%/cover fixed no-repeat}
+body.cc .grain{display:none}
+body.cc .glass{-webkit-backdrop-filter:blur(18px) saturate(1.25);backdrop-filter:blur(18px) saturate(1.25)}
+body.cc :is(.wm,.h1,.h2,.answer .v,.summary h3,.bulletin .bh b,.tool b,.verdict b,.tv strong,.dline b,.primary,.askbtn,.tile b,.stats b){font-style:normal;text-transform:none;letter-spacing:-.015em}
+body.cc :is(.wk span,.day,.gchip b,.slot,.vsb,.rn,.tav,.rsec,.rktier){font-style:normal;letter-spacing:.08em}
+body.cc .h1{font-weight:700;font-size:34px;line-height:1.08}
+body.cc .h2{font-weight:700;font-size:20px}
+body.cc :is(.tile b,.stats b){font-weight:700}
+body.cc .wm{font-weight:700;font-size:19px}
+body.cc .wm .a{animation:none;background:none;color:#fff}
+body.cc .lab{font-family:var(--display);font-weight:700;letter-spacing:.1em}
+/* desktop: tool rail left, content centered, side column right */
+.ccrail,.ccside{display:none}
+@media (min-width:1100px){
+  body.cc.cc-ready .ccrail{display:flex;flex-direction:column;gap:2px;position:fixed;z-index:12;left:16px;top:16px;bottom:16px;width:252px;padding:10px;overflow:auto;border-radius:18px;scrollbar-width:thin}
+  body.cc.cc-ready .dock{display:none!important}
+  body.cc.cc-ready :is(main,.top){max-width:none;width:min(880px,calc(100vw - 308px));margin-left:calc(284px + (100vw - 308px - min(880px,calc(100vw - 308px)))/2);margin-right:0}
+  body.cc.cc-ready main{padding-bottom:40px}
+}
+@media (min-width:1380px){
+  body.cc.cc-ready .ccside{display:flex;flex-direction:column;gap:14px;position:fixed;z-index:12;right:16px;top:16px;bottom:16px;width:300px;overflow:auto;scrollbar-width:thin}
+  body.cc.cc-ready :is(main,.top){width:min(880px,calc(100vw - 632px));margin-left:max(284px,calc(284px + (100vw - 632px - min(880px,calc(100vw - 632px)))/2))}
+}
+.ccg{margin:14px 10px 4px;font-family:var(--display);font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8C95B8}
+.ccg:first-child{margin-top:4px}
+.cci{display:flex;align-items:center;gap:12px;width:100%;padding:8px 12px;border:0;border-radius:11px;background:none;text-align:left;color:#DCE2F4;transition:background .2s,transform .12s}
+.cci svg{flex:none;stroke:var(--tc);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--tc) 45%,transparent))}
+.cci span{flex:1;font-family:var(--display);font-size:15.5px;font-weight:600;letter-spacing:-.005em}
+.cci span.ccb{flex:none;font-size:11.5px;font-weight:700;letter-spacing:0}
+.cci:hover{background:rgba(255,255,255,.05);color:#fff}
+.cci:active{transform:scale(.98)}
+.cci[aria-current="page"]{background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 24%,transparent),color-mix(in srgb,var(--tc) 6%,transparent));color:#fff;box-shadow:inset 3px 0 0 var(--tc)}
+.cci[aria-current="page"] span{font-weight:700}
+.ccb{flex:none;min-width:22px;height:20px;padding:0 6px;border-radius:10px;display:inline-grid;place-items:center;font-family:var(--display);font-size:11.5px;font-weight:700}
+.ccb.crit{background:rgba(242,100,104,.18);color:#FF9DA0}.ccb.warn{background:rgba(233,169,58,.18);color:#FFD592}.ccb.info{background:rgba(155,123,255,.18);color:#CBBBFF}
+.ccnew{flex:none;font-style:normal;font-family:var(--display);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;color:#120B2E;background:var(--tc)}
+.cccred{margin:auto 8px 2px;padding-top:12px;font-size:11px;color:var(--ink-3)}
+.cccred a{color:var(--ink-2);text-decoration:underline}
+.ccs{padding:14px;border-radius:18px}
+.ccs h2{margin:0 0 10px;font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#B4BCD8}
+.ccq{display:flex;gap:10px;align-items:flex-start;width:100%;padding:9px 0;border:0;border-top:1px solid var(--hair);background:none;text-align:left;color:inherit}
+.ccq:first-of-type{border-top:0;padding-top:0}
+.ccq i{width:8px;height:8px;border-radius:50%;margin-top:7px;flex:none}
+.ccq b{display:block;font-weight:600;font-size:14.5px}.ccq small{color:var(--ink-3);font-size:12.5px}
+.ccq:hover b{color:var(--cyan)}
+.ccnext b{display:block;font-family:var(--display);font-size:22px;font-weight:700;color:#FFD592}.ccnext small{color:var(--ink-3);font-size:12.5px}
+.ccmv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13.5px}.ccmv small{color:var(--ink-3)}
+.ccmv .up,.ccrow-side .up{color:var(--ok)}.ccmv .dn,.ccrow-side .dn{color:var(--crit)}
+/* Scoring Edges and Managers */
+.cclist{display:flex;flex-direction:column;gap:8px}
+.ccrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;animation:ccrise .45s var(--ease) both;animation-delay:calc(var(--i,0)*28ms)}
+.ccrow-main b{display:block;font-family:var(--display);font-size:16.5px;font-weight:700}.ccrow-main b small{font-family:var(--body);font-weight:500;font-size:12.5px;color:var(--ink-3)}
+.ccrow-main .sub{font-size:13px;line-height:1.45}
+.ccrow-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
+.ccrow-side b{font-family:var(--display);font-size:22px;font-weight:700;line-height:1}.ccrow-side small{color:var(--ink-3);font-size:12px}
+.ccgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.ccmgr{padding:14px;border-radius:16px;display:flex;flex-direction:column;gap:10px;animation:ccrise .45s var(--ease) both;animation-delay:calc(var(--i,0)*28ms)}
+.ccmgr-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ccmgr-h b{display:block;font-family:var(--display);font-size:17px;font-weight:700}.ccmgr-h small{display:block;color:var(--ink-3);font-size:12.5px}
+.ccfit{text-align:right;flex:none}.ccfit b{font-size:26px;line-height:1}.ccfit small{font-size:11px}
+.ccmgr dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:0;font-size:13.5px}
+.ccmgr dt{color:var(--ink-3)}.ccmgr dd{margin:0;text-align:right;font-weight:600}
+.ccpitch{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;background:rgba(255,154,92,.08);border:1px solid rgba(255,154,92,.25);font-size:13.5px}
+.ccpitch small{display:block;color:#FFC29A;font-weight:600;font-size:11.5px}
+.ccnote{padding:12px 14px;border-radius:16px;display:grid;gap:4px;font-size:13px;color:var(--ink-2)}.ccnote b{color:var(--ink)}
+.ccempty{padding:16px;border-radius:16px;color:var(--ink-2)}
+@keyframes ccrise{from{opacity:0;transform:translateY(8px)}}
+@media (prefers-reduced-motion:reduce){.ccrow,.ccmgr{animation:none}}
 </style>
 </head>
 <body>
