@@ -4,7 +4,7 @@
 // remembered in crawl-state.json, so each nightly run picks up where the last one stopped and the
 // database grows by a bounded amount per run (Sleeper asks for fewer than 1,000 calls a minute).
 // Stored per trade: league id, time, roster ids, player ids and picks moved. No names, no messages.
-// Output (data branch): trades-db.json  { built, season, leagues: {lid: shape}, trades: [...] }, crawl-state.json
+// Output (data branch): trades-db.json  { built, season, leagues: {lid: shape}, owners: {lid: {rosterId: userId}}, trades: [...] }, crawl-state.json
 import fs from "node:fs";
 import path from "node:path";
 import { getJSON, pool } from "./sleeper.mjs";
@@ -61,8 +61,19 @@ await pool(jobs, 10, async j => {
   state.leagues[j.lid].weeks[j.w] = 1;
   db.leagues[j.lid] = state.leagues[j.lid].shape;
 });
+// 5) who owns each roster, so trades can be tied to people across leagues (refreshed every two weeks)
+let market = { tx: [] }; try { market = JSON.parse(fs.readFileSync(path.join(OUT, "market.json"), "utf8")); } catch {}
+const tradeLids = new Set(db.trades.map(t => t.lid).concat(market.tx.filter(t => t.type === "trade").map(t => t.lid)));
+const OWNER_CALLS = +(process.env.CRAWL_OWNERS || 1200);
+const needOwn = [...tradeLids].filter(lid => { const l = state.leagues[lid] ||= { shape: db.leagues[lid] || {}, weeks: {}, mates: true }; return !l.own || Date.now() - (l.ownAt || 0) > 14 * 864e5; }).slice(0, OWNER_CALLS);
+await pool(needOwn, 10, async lid => {
+  const rs = await get(`/v1/league/${lid}/rosters`); const own = {};
+  for (const r of rs || []) if (r.owner_id) own[r.roster_id] = r.owner_id;
+  state.leagues[lid].own = own; state.leagues[lid].ownAt = Date.now();
+});
+db.owners = {}; for (const lid of tradeLids) if (state.leagues[lid] && state.leagues[lid].own) db.owners[lid] = state.leagues[lid].own;
 db.built = Date.now();
 fs.writeFileSync(path.join(OUT, "trades-db.json"), JSON.stringify(db));
 fs.writeFileSync(path.join(OUT, "crawl-state.json"), JSON.stringify(state));
 const users = Object.keys(state.users).length, crawled = Object.values(state.users).filter(u => u.at).length;
-console.log(`crawl: ${calls} API calls; ${Object.keys(state.leagues).length} leagues known; ${crawled}/${users} users crawled; trades-db ${db.trades.length} trades from ${Object.keys(db.leagues).length} leagues`);
+console.log(`crawl: ${calls} API calls; ${Object.keys(state.leagues).length} leagues known; ${crawled}/${users} users crawled; trades-db ${db.trades.length} trades from ${Object.keys(db.leagues).length} leagues; owners for ${Object.keys(db.owners).length} leagues`);

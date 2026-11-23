@@ -192,6 +192,11 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - **Scoring Edges** (new): per player, how much more or less he scores in each league's rules than standard scoring (vs a typical starter), since trade prices follow standard scoring. Buy (other teams), Hold (yours, underpriced), Sell (yours, overpriced). Build offer / Shop him open the trade builder.
 - **Managers** (new): every league-mate from this season's trades in your leagues: trades and last trade, what they buy and sell by value, pricing (median gap at today's values), trade fit 0–100 (35% activity, 30% direction complement, 20% your strength where they buy, 15% recency), and a pitch that opens the trade builder.
 
+## Managers and Scoring Edges on the FFU database (Nov 23, 2026)
+- Crawler records each league's roster owners (`trades-db.json` → `owners`, refreshed every two weeks), so trades tie to people across leagues.
+- `backend/managers.mjs` (nightly, after the in-house fit) writes `managers.json`: per manager, trades this season across the whole database, leagues, partners, value shares bought and sold by position, and pricing = median gap with each trade valued on its own day's market snapshot (redraft trades count for activity, not pricing).
+- Managers view uses those profiles (falls back to the user's own leagues at today's values for anyone not crawled yet). Scoring Edges now subtracts what trades already pay over market (in-house factor): Edge = scores − costs.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

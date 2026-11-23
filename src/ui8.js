@@ -141,12 +141,15 @@ function edgesData(){
     for(const t of b.teams){ const mine = t === b.me;
       for(const p of t.pl){ const mv = p.mv || p.v; if(!p.adj || p.adj.src !== "player" || mv < 900) continue;
         const e = by[p.id] ||= {id:p.id, name:pname(p.id), pos:p.pos, age:p.age, v:mv, mine:[], other:[]};
-        (mine ? e.mine : e.other).push({lid:lg.league_id, lg:lg.name, rel:p.adj.rel, team:t.name, rid:t.rid}); } } }
-  const all = Object.values(by), med = a => median(a.map(x=>x.rel));
-  const buy = all.map(e=>({...e, at:e.other.filter(x=>x.rel >= 1.08).sort((a,b)=>b.rel - a.rel)})).filter(e=>e.at.length).map(e=>({...e, edge:med(e.at) - 1}))
+        // cost: what trades in the FFU database already pay over market for him (in-house factor), so a priced-in edge isn't counted twice
+        const cost = p.ffu && p.ffu.f ? p.ffu.f - 1 : 0;
+        (mine ? e.mine : e.other).push({lid:lg.league_id, lg:lg.name, rel:p.adj.rel, cost, edge:p.adj.rel - 1 - cost, team:t.name, rid:t.rid}); } } }
+  const all = Object.values(by), med = (a, k) => median(a.map(x=>x[k]));
+  const fin = e => ({...e, edge:med(e.at, "edge"), sc:med(e.at, "rel") - 1, cost:med(e.at, "cost")});
+  const buy = all.map(e=>({...e, at:e.other.filter(x=>x.edge >= .07).sort((a,b)=>b.edge - a.edge)})).filter(e=>e.at.length).map(fin)
     .sort((a,b)=>(b.edge*Math.sqrt(b.at.length)*Math.log(b.v)) - (a.edge*Math.sqrt(a.at.length)*Math.log(a.v))).slice(0, 14);
-  const hold = all.map(e=>({...e, at:e.mine.filter(x=>x.rel >= 1.08).sort((a,b)=>b.rel - a.rel)})).filter(e=>e.at.length).map(e=>({...e, edge:med(e.at) - 1})).sort((a,b)=>b.edge*b.at.length - a.edge*a.at.length).slice(0, 12);
-  const sell = all.map(e=>({...e, at:e.mine.filter(x=>x.rel <= 0.93).sort((a,b)=>a.rel - b.rel)})).filter(e=>e.at.length).map(e=>({...e, edge:med(e.at) - 1})).sort((a,b)=>a.edge*b.at.length - b.edge*a.at.length).slice(0, 12);
+  const hold = all.map(e=>({...e, at:e.mine.filter(x=>x.edge >= .07).sort((a,b)=>b.edge - a.edge)})).filter(e=>e.at.length).map(fin).sort((a,b)=>b.edge*b.at.length - a.edge*a.at.length).slice(0, 12);
+  const sell = all.map(e=>({...e, at:e.mine.filter(x=>x.edge <= -.07).sort((a,b)=>a.edge - b.edge)})).filter(e=>e.at.length).map(fin).sort((a,b)=>a.edge*b.at.length - b.edge*a.at.length).slice(0, 12);
   return {buy, hold, sell, leagues:S.bp.length};
 }
 function viewEdges(){
@@ -158,26 +161,32 @@ function viewEdges(){
   h += `<div class="seg" role="tablist" style="--n:3;--i:${ti}">${tabs.map(([k,l,n])=>`<button role="tab" data-edtab="${k}" aria-selected="${EDG.tab === k}">${l} <small class="num">${n}</small></button>`).join("")}<i aria-hidden="true"></i></div>`;
   const rows = d[EDG.tab], blurb = {buy:"On other teams, scoring more in that league than the price says. Trade for them at market.", hold:"On your roster and underpriced for your scoring. Don't sell them at market price.", sell:"On your roster and overpriced for your scoring. Market price is more than they're worth to you."}[EDG.tab];
   h += `<p class="sub" style="margin:2px 0 0">${blurb}</p>`;
-  if(!rows.length) h += `<div class="glass ccempty">Nothing here right now. Edges show up when a player scores at least 7% more or less in a league's rules than in standard scoring.</div>`;
+  if(!rows.length) h += `<div class="glass ccempty">Nothing here right now. Edges show up when a player scores at least 7% more or less in a league's rules than his trade price allows for.</div>`;
   else h += `<div class="cclist">${rows.map((e, i)=>{ const pct = Math.round(e.edge*100), best = e.at[0];
-    const where = e.at.slice(0, 3).map(x=>`${esc(x.lg)} <span class="num">${x.rel >= 1 ? "+" : ""}${Math.round((x.rel - 1)*100)}%</span>${EDG.tab === "buy" ? ` · ${esc(x.team)}` : ""}`).join("<br>") + (e.at.length > 3 ? `<br><span class="sub">+${e.at.length - 3} more</span>` : "");
+    const sgn = x => (x >= 0 ? "+" : "") + Math.round(x*100) + "%";
+    const where = e.at.slice(0, 3).map(x=>`${esc(x.lg)}: scores <span class="num">${sgn(x.rel - 1)}</span>${Math.abs(x.cost) >= .01 ? `, costs <span class="num">${sgn(x.cost)}</span>` : ""}${EDG.tab === "buy" ? ` · ${esc(x.team)}` : ""}`).join("<br>") + (e.at.length > 3 ? `<br><span class="sub">+${e.at.length - 3} more</span>` : "");
     const act = EDG.tab === "buy" ? `<button class="ghost tint" data-edbuild="${esc(JSON.stringify({lid:best.lid, rid:best.rid, get:[{uid:e.id, id:e.id}], give:[]}))}">Build offer</button>`
       : EDG.tab === "sell" ? `<button class="ghost tint" data-edbuild="${esc(JSON.stringify({lid:best.lid, rid:null, give:[{uid:e.id, id:e.id}], get:[]}))}">Shop him</button>` : "";
     return `<article class="glass ccrow" style="--i:${i}"><div class="ccrow-main"><b>${esc(e.name)} <small>${e.pos}${e.age ? " · " + Math.floor(e.age) : ""}</small></b><span class="sub">${where}</span></div>
       <div class="ccrow-side"><b class="num ${pct >= 0 ? "up" : "dn"}">${pct >= 0 ? "+" : ""}${pct}%</b><small>${e.at.length} league${e.at.length > 1 ? "s" : ""} · ${n0v(e.v)}</small>${act}</div></article>`; }).join("")}</div>`;
-  h += `<div class="glass ccnote"><b>Why this works</b><span>85 of the 89 leagues we calibrated on use TE premium, yet across 143 real trades the side getting the tight end paid only 0.5% more than market (FFU calibration, Nov 2026). Managers price players on standard scoring. Edge = points per game in that league's rules vs standard scoring, compared with a typical starter. Values are market values.</span></div>`;
+  h += `<div class="glass ccnote"><b>Why this works</b><span>85 of the 89 leagues we calibrated on use TE premium, yet across 143 real trades the side getting the tight end paid only 0.5% more than market (FFU calibration, Nov 2026). Managers price players on standard scoring. Scores = points per game in that league's rules vs standard scoring, compared with a typical starter. Costs = what trades in the FFU database already pay over market for him (in-house values). Edge = scores minus costs.</span></div>`;
   return h;
 }
 const n0v = v => Math.round(v).toLocaleString("en-US");
 
 /* ---------- Managers: how every league-mate actually trades ---------- */
 const MG = {data:null, busy:false, err:null, sort:"fit"};
+const MGDB_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/managers.json";
+let MGDB_P = null;
+function loadMgdb(){ return MGDB_P ||= fetch(MGDB_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null); }
 const ARCH_DIR = a => ["jugg","win"].includes(a) ? "Contender" : ["build","reset"].includes(a) ? "Rebuilder" : "Middle";
 async function buildManagers(){
   if(MG.busy) return; MG.busy = true; MG.err = null; render();
   try{
     if(!S.bp) await loadBlueprints();
-    const tx = await loadTx(), rows = [], owners = {};
+    const [tx, db] = await Promise.all([loadTx(), loadMgdb()]), rows = [], owners = {};
+    MG.db = db ? {trades:db.trades, priced:db.priced, n:Object.keys(db.users || {}).length, built:db.built} : null;
+    const CATS = (db && db.cats) || ["QB","RB","WR","TE","Picks"];
     for(const b of S.bp || []) for(const t of b.teams) if(t !== b.me && t.owner) owners[t.owner] = (owners[t.owner] || 0) + 1;
     for(const b of S.bp || []){
       const lg = b.lg, lid = lg.league_id, fc = await fcValues(fcKey(lg));
@@ -194,8 +203,14 @@ async function buildManagers(){
           for(const p of x.picks){ const v = pval(p); if(p.to === t.rid){ got.push({v}); recv.Picks += v; } else if(p.from === t.rid){ gave.push({v}); sent.Picks += v; } }
           const g = pmOf(got), s = pmOf(gave); if(g > 0 && s > 0) prem.push((s - g)/Math.max(g, s)); }
         const top = o => { const e = Object.entries(o).sort((a,b)=>b[1]-a[1])[0]; return e && e[1] > 0 ? e[0] : null; };
-        const buys = top(recv), sells = top(sent), pm = prem.length ? median(prem) : null, dir = ARCH_DIR(t.arch);
-        const act = Math.min(1, mine.length/6), rec = !last ? 0 : (Date.now() - last) < 30*864e5 ? 1 : (Date.now() - last) < 90*864e5 ? .5 : .2;
+        let buys = top(recv), sells = top(sent), pm = prem.length ? median(prem) : null, n = mine.length, lgs = 1, pmN = prem.length, buyPm = null, buyShare = null, src = "local";
+        const dir = ARCH_DIR(t.arch), prof = db && db.users && t.owner ? db.users[t.owner] : null;
+        if(prof && prof[0] >= n){   // the whole FFU database, valued on each trade's own day
+          const arg = a => { const m = Math.max(...a); return m > 0 ? a.indexOf(m) : -1; }, bi = arg(prof[6]), si2 = arg(prof[7]);
+          n = prof[0]; last = Math.max(last, prof[1]*864e5); lgs = prof[2]; pm = prof[4] == null ? null : prof[4]/1000; pmN = prof[5];
+          buys = bi >= 0 ? CATS[bi] : null; sells = si2 >= 0 ? CATS[si2] : null; buyShare = bi >= 0 ? prof[6][bi] : null;
+          buyPm = prof[8] && prof[8][1] >= 2 ? prof[8][0]/1000 : null; src = "db"; }
+        const act = Math.min(1, n/(src === "db" ? 16 : 6)), rec = !last ? 0 : (Date.now() - last) < 30*864e5 ? 1 : (Date.now() - last) < 90*864e5 ? .5 : .2;
         const comp = (myDir === "Contender" && dir === "Rebuilder") || (myDir === "Rebuilder" && dir === "Contender") ? 1 : myDir === dir && dir !== "Middle" ? .25 : .6;
         const surplus = buys && buys !== "Picks" ? b.me.posRank[buys] <= Math.ceil(b.N/3) : buys === "Picks" ? b.me.picks.length > 0 : false;
         const fit = Math.round(100*(.35*act + .3*comp + .15*rec + .2*(surplus ? 1 : 0)));
@@ -203,7 +218,7 @@ async function buildManagers(){
         let pitch = null;
         if(buys && buys !== "Picks" && surplus){ const at = b.me.pl.filter(p=>p.pos === buys).sort((a,c)=>c.v - a.v); const pk = at[1] && at[1].v >= 800 ? at[1] : null; if(pk) pitch = {txt:`Shop ${pname(pk.id)} (${buys})`, give:[{uid:pk.id, id:pk.id}]}; }
         else if(buys === "Picks" && myDir === "Contender" && b.me.picks.length){ const pk = b.me.picks.slice().sort((a,c)=>c.val - a.val)[0]; pitch = {txt:`Shop your ${pickLabel(pk)}`, give:[{uid:`PK:${pk.season}-${pk.round}-${pk.orig}`, id:"PICK:" + pickLabel(pk)}]}; }
-        rows.push({lid, lg:lg.name, rid:t.rid, name:t.name, rec:t.rec, dir, n:mine.length, last, buys, sells, pm, fit, pitch, more:Math.max(0, (owners[t.owner] || 1) - 1)});
+        rows.push({lid, lg:lg.name, rid:t.rid, name:t.name, rec:t.rec, dir, n, lgs, last, buys, buyShare, buyPm, sells, pm, pmN, src, fit, pitch, more:Math.max(0, (owners[t.owner] || 1) - 1)});
       }
     }
     MG.data = rows;
@@ -211,7 +226,7 @@ async function buildManagers(){
   MG.busy = false; render();
 }
 function viewManagers(){
-  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Managers</h1><div class="sub">How every league-mate actually trades, from this season's trades in your leagues: what they buy, what they sell, how they price it, and how likely they are to deal with you.</div></section>`;
+  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Managers</h1><div class="sub">How every league-mate actually trades, from every trade they've made this season in the FFU database: what they buy, what they sell, how they price it, and how likely they are to deal with you.</div></section>`;
   if(MG.err) return h + `<div class="err">${esc(MG.err)}</div>`;
   if(!MG.data){ if(!MG.busy) setTimeout(buildManagers, 0);
     return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Reading this season's trades in ${(S.raw||[]).filter(x=>x.mine).length} leagues…</div><div class="skel" aria-hidden="true"><i style="height:120px"></i><i style="height:320px"></i></div>`; }
@@ -221,9 +236,9 @@ function viewManagers(){
   const price = pm => pm == null ? "No trades to judge yet" : pm > .05 ? `Pays ~${Math.round(pm*100)}% over` : pm < -.05 ? `Wins trades by ~${Math.round(-pm*100)}%` : "Trades near even";
   h += `<div class="ccgrid">${rows.map((m, i)=>{ const col = m.fit >= 70 ? "var(--ok)" : m.fit >= 45 ? "var(--warn)" : "var(--crit)";
     return `<article class="glass ccmgr" style="--i:${i}"><div class="ccmgr-h"><div><b>${esc(m.name)}</b><small>${esc(m.lg)} · ${m.dir}${m.rec ? " · " + esc(m.rec) : ""}${m.more ? ` · in ${m.more + 1} of your leagues` : ""}</small></div><div class="ccfit"><b class="num" style="color:${col}">${m.fit}</b><small>trade fit</small></div></div>
-      <dl><dt>Trades this season</dt><dd class="num">${m.n}${m.last ? ` · last ${esc(ago(m.last))}` : ""}</dd><dt>Buys</dt><dd>${m.buys || "–"}</dd><dt>Sells</dt><dd>${m.sells || "–"}</dd><dt>Pricing</dt><dd>${price(m.pm)}</dd></dl>
+      <dl><dt>Trades this season</dt><dd class="num">${m.n}${m.src === "db" && m.lgs > 1 ? ` in ${m.lgs} leagues` : ""}${m.last ? ` · last ${esc(ago(m.last))}` : ""}</dd><dt>Buys</dt><dd>${m.buys ? m.buys + (m.buyShare ? ` · ${m.buyShare}% of value in` : "") : "–"}</dd><dt>Sells</dt><dd>${m.sells || "–"}</dd><dt>Pricing</dt><dd>${price(m.pm)}${m.pmN ? ` <small class="sub">(${m.pmN})</small>` : ""}</dd>${m.buyPm != null && m.buys ? `<dt>Buying ${m.buys}</dt><dd>${price(m.buyPm)}</dd>` : ""}</dl>
       <div class="ccpitch">${m.pitch ? `<span><small>Best pitch</small>${esc(m.pitch.txt)}</span><button class="ghost tint" data-edbuild="${esc(JSON.stringify({lid:m.lid, rid:m.rid, give:m.pitch.give, get:[]}))}">Build it</button>` : `<span><small>Best pitch</small>${m.n ? "Nothing of yours lines up with what they buy" : "No trades this season: low odds"}</span><button class="ghost" data-edbuild="${esc(JSON.stringify({lid:m.lid, rid:m.rid, give:[], get:[]}))}">Open</button>`}</div></article>`; }).join("")}</div>`;
-  h += `<div class="glass ccnote"><b>How this is worked out</b><span>Trades: completed trades this season in your leagues. Buys and sells: the positions (or picks) they've taken in and sent out most, by value. Pricing: the median gap in their trades at today's values, so later value changes count too. Trade fit (0–100): 35% how often they trade, 30% whether their direction complements yours, 20% whether you're strong where they buy, 15% how recently they traded.</span></div>`;
+  h += `<div class="glass ccnote"><b>How this is worked out</b><span>${MG.db ? `Trades: every completed trade this season in the FFU database (${MG.db.trades.toLocaleString()} trades, ${MG.db.n.toLocaleString()} managers), not just your leagues. Pricing: the median gap in their trades, each valued with the market on the day it happened, so later value swings don't count against them (number in brackets = trades priced). Managers we haven't crawled yet fall back to your leagues at today's values.` : `Trades: completed trades this season in your leagues. Pricing: the median gap in their trades at today's values.`} Buys and sells: the positions (or picks) they've taken in and sent out most, by value. Trade fit (0–100): 35% how often they trade, 30% whether their direction complements yours, 20% whether you're strong where they buy, 15% how recently they traded.</span></div>`;
   return h;
 }
 

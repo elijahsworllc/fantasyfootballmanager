@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/crawl.mjs", "backend/inhouse.mjs", "backend/dp.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/crawl.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", ".github/workflows/market.yml"]
 permissions:
   contents: write
 concurrency:
@@ -40,6 +40,8 @@ jobs:
         run: node backend/crawl.mjs
       - name: Fit in-house values
         run: node backend/inhouse.mjs data-branch
+      - name: Manager profiles (trade-day values)
+        run: node backend/managers.mjs data-branch
       - name: Publish data
         run: |
           cd data-branch
