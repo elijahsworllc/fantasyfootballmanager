@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/crawl.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/db.mjs", ".github/workflows/market.yml"]
 permissions:
   contents: write
 concurrency:
-  group: market
-  cancel-in-progress: true
+  group: data-branch          # shared with the crawl: one data job at a time, queued, never cancelled
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,14 +33,15 @@ jobs:
         env:
           OUT_DIR: data-branch
         run: node backend/dp.mjs
-      - name: Grow the trade database (league-mates' leagues)
-        env:
-          SEED_USERS: jahswor
-          OUT_DIR: data-branch
-        run: node backend/crawl.mjs
       - name: Fit in-house values
         run: node backend/inhouse.mjs data-branch
+      - name: Daily FFU values
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node backend/ffu-values.mjs data-branch
       - name: Manager profiles (trade-day values)
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node backend/managers.mjs data-branch
       - name: Publish data
         run: |
@@ -48,4 +49,8 @@ jobs:
           git config user.name "command-center-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || (git commit -m "Market data $(date -u +%F)" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -qm "Market data $(date -u +%F)"
+          # other jobs (alerts) also write to the data branch: rebase onto theirs and retry
+          for i in 1 2 3 4 5; do git push -q && exit 0; git pull -q --rebase origin data || true; sleep $((i*5)); done
+          exit 1

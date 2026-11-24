@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FFU Data API</title>
+<meta name="description" content="Fantasy football values, trades and manager behavior from the FFU database.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+:root{--bg:#03050F;--glass:rgba(12,16,36,.78);--line:rgba(160,175,255,.14);--ink:#EEF1FA;--ink-2:#B4BBD3;--ink-3:#7C84A2;--cyan:#46E6F5;--violet:#9B7BFF;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg) url(sky-4k.jpg) 50% 30%/cover fixed no-repeat;color:var(--ink);font:15px/1.6 Inter,system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:40px max(16px,env(safe-area-inset-left,0px)) 64px max(16px,env(safe-area-inset-right,0px))}
+h1{font:700 40px/1.1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.02em;margin:0 0 8px}
+h2{font:700 22px/1.2 "Space Grotesk",Inter,sans-serif;margin:34px 0 10px}
+p{color:var(--ink-2);margin:0 0 12px;max-width:68ch}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:12px 0;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px}
+code{color:#9DF1FA}
+pre{margin:10px 0 0;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid var(--line);overflow-x:auto;color:#D8DEF0}
+.ep{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ep b{font:700 12px "Space Grotesk",sans-serif;letter-spacing:.08em;color:#04180F;background:#4BE3A0;border-radius:6px;padding:2px 7px}
+.ep code{font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--ink-3);font-weight:600;font-size:12.5px}
+.wide{overflow-x:auto}
+a{color:var(--cyan)}
+.note{font-size:13px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p style="color:var(--violet);font-weight:600;margin-bottom:4px">Fantasy Football Universe</p>
+  <h1>FFU Data API</h1>
+  <p>Player values, completed trades and manager trading behavior from the FFU database: every trade in the leagues we track, valued on the day it happened. Built for platforms, tools and creators who want values grounded in what managers actually pay.</p>
+
+  <div class="card"><b>Getting a key.</b> Keys are issued by FFU during the partner beta. Email <code>hello@fantasyfootballuniverse.com</code>. Send it on every request in the <code>x-api-key</code> header. Each key has a daily limit (UTC); responses carry <code>X-RateLimit-Limit</code> and <code>X-RateLimit-Remaining</code>.
+  <pre>curl -H "x-api-key: YOUR_KEY" "https://fantasyfootballuniverse.com/api/v1/values?shape=sf"</pre></div>
+
+  <h2>Endpoints</h2>
+  <div class="card"><div class="ep"><b>GET</b><code>/api/v1/values?shape=sf|oneqb</code></div>
+    <p style="margin-top:8px">Today's FFU value for every player and pick. Optional <code>day=YYYY-MM-DD</code> for a past day; <code>src=trades,market</code> (default) filters by how each value was set.</p>
+    <pre>{ "meta": { "day": "2026-11-23", "shape": "sf", "count": 671 },
+  "data": [ { "asset": "9221", "ffu": 10912, "market": 10751, "factor": 1.015, "n": 214, "src": "trades" }, … ] }</pre></div>
+  <div class="card"><div class="ep"><b>GET</b><code>/api/v1/players/{sleeperId}?shape=sf&amp;days=90</code></div><p style="margin-top:8px">One player's daily FFU value history, newest first.</p></div>
+  <div class="card"><div class="ep"><b>GET</b><code>/api/v1/managers/{sleeperUserId}</code></div>
+    <p style="margin-top:8px">How a manager trades this season, across every league in the database: trades, leagues, partners, the share of value they take in and send out by position, and their pricing (median gap, each trade valued on its own day; positive means they give more than they get).</p></div>
+  <div class="card"><div class="ep"><b>GET</b><code>/api/v1/trades?player={id} | owner={userId} | league={id}</code></div><p style="margin-top:8px">Recent completed trades, newest first, with who got what. <code>limit</code> up to 200.</p></div>
+  <div class="card"><div class="ep"><b>GET</b><code>/api/v1</code></div><p style="margin-top:8px">Status, endpoints and the latest values day. No key needed.</p></div>
+
+  <h2>How values are made</h2>
+  <div class="card wide"><table>
+    <tr><th>Field</th><th>Meaning</th></tr>
+    <tr><td><code>ffu</code></td><td>The FFU value: <code>market × factor</code>.</td></tr>
+    <tr><td><code>market</code></td><td>That day's market price for the league shape.</td></tr>
+    <tr><td><code>factor</code></td><td>What real trades in the FFU database pay against the market price, fit nightly with a pull toward 1.00 where trades are few. Checked every night on trades the fit never saw.</td></tr>
+    <tr><td><code>n</code></td><td>Trades behind the factor.</td></tr>
+    <tr><td><code>src</code></td><td><code>trades</code> (5+ trades behind it) or <code>market</code> (fewer).</td></tr>
+  </table></div>
+  <p class="note">Shapes: <code>sf</code> = Superflex / 2QB, <code>oneqb</code> = one quarterback. Player ids are Sleeper ids; picks are <code>2027-1</code>, with tiers <code>2027-1-early</code> / <code>-mid</code> / <code>-late</code>. Partner beta: endpoints and fields may still change, with notice. Data may not be resold without an FFU data license.</p>
+</main>
+</body>
+</html>

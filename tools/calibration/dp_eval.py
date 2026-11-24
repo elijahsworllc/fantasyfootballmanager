@@ -45,7 +45,8 @@ def RM(fday, dday, shape):
             t = (d - xs[i-1]) / (xs[i] - xs[i-1] or 1); return ys[i-1] + t * (ys[i] - ys[i-1])
         _rm[k] = f
     return _rm[k]
-mk = json.load(open(D + '/market.json')); cr = json.load(open(D + '/trades-db.json'))
+import gzip
+mk = json.load(open(D + '/market.json')); cr = json.load(gzip.open(D + '/trades-db.json.gz', 'rt')) if os.path.exists(D + '/trades-db.json.gz') else json.load(open(D + '/trades-db.json'))
 shapes = {**cr['leagues'], **mk['leagues']}; seen = {}
 for t in mk['tx'] + cr['trades']:
     if t.get('type') == 'trade' and t['id'] not in seen: seen[t['id']] = t

@@ -8,19 +8,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import { getJSON, pool } from "./sleeper.mjs";
+import { upsert, safely, dbOn, readJSON, writeGz } from "./db.mjs";
 
 const OUT = process.env.OUT_DIR || "out";
 const SEEDS = (process.env.SEED_USERS || process.env.SLEEPER_USERNAME || "jahswor").split(",").map(s => s.trim()).filter(Boolean);
-const NEW_USERS = +(process.env.CRAWL_USERS || 250);     // new people whose leagues we look up per run
-const MAX_LEAGUES = +(process.env.CRAWL_LEAGUES || 600);  // leagues whose trades we refresh per run
-const read = (f, d) => { try { return JSON.parse(fs.readFileSync(path.join(OUT, f), "utf8")); } catch { return d; } };
+const NEW_USERS = +(process.env.CRAWL_USERS || 500);     // new people whose leagues we look up per run
+const MAX_LEAGUES = +(process.env.CRAWL_LEAGUES || 1200);  // leagues whose trades we refresh per run
+const read = (f, d) => readJSON(OUT, f, d);
 
 const st = await getJSON("/v1/state/nfl"); const season = st.season, week = Math.max(1, Math.min(18, st.week || 1));
 const state = read("crawl-state.json", { season, users: {}, leagues: {} });
 if (state.season !== season) { state.season = season; state.leagues = {}; }
 const db = read("trades-db.json", { season, leagues: {}, trades: [] });
 if (db.season !== season) { db.season = season; db.leagues = {}; db.trades = []; }
-const seen = new Set(db.trades.map(t => t.id));
+const seen = new Set(db.trades.map(t => t.id)), newIds = new Set();
 // stay well under Sleeper's ~1,000 calls/minute: one call every 100 ms across all workers (~600/min)
 let calls = 0, nextAt = 0;
 const get = async p => { const wait = Math.max(0, nextAt - Date.now()); nextAt = Math.max(Date.now(), nextAt) + 100; if (wait) await new Promise(r => setTimeout(r, wait)); calls++; return getJSON(p); };
@@ -39,7 +40,7 @@ await pool(todo, 8, async ([uid, u]) => {
   u.at = Date.now(); u.season = season;
 });
 // 3) league-mates of known leagues become future users to crawl
-const needMates = Object.entries(state.leagues).filter(([, l]) => !l.mates).slice(0, 400);
+const needMates = Object.entries(state.leagues).filter(([, l]) => !l.mates).slice(0, +(process.env.CRAWL_MATES || 800));
 await pool(needMates, 8, async ([lid, l]) => {
   const us = await get(`/v1/league/${lid}/users`);
   for (const u of us || []) if (u.user_id && !state.users[u.user_id]) state.users[u.user_id] = { at: 0 };
@@ -54,17 +55,17 @@ await pool(jobs, 10, async j => {
   const arr = await get(`/v1/league/${j.lid}/transactions/${j.w}`);
   for (const t of arr || []) {
     if (t.type !== "trade" || t.status !== "complete" || seen.has(t.transaction_id)) continue;
-    seen.add(t.transaction_id);
-    db.trades.push({ lid: j.lid, id: t.transaction_id, type: "trade", ts: t.status_updated || t.created, rids: t.roster_ids || [], adds: t.adds || {},
+    seen.add(t.transaction_id); newIds.add(t.transaction_id);
+    db.trades.push({ lid: j.lid, id: t.transaction_id, type: "trade", ts: t.status_updated || t.created || Date.now(), rids: t.roster_ids || [], adds: t.adds || {},
       picks: (t.draft_picks || []).map(p => ({ season: +p.season, round: p.round, orig: p.roster_id, to: p.owner_id, from: p.previous_owner_id })) });
   }
   state.leagues[j.lid].weeks[j.w] = 1;
   db.leagues[j.lid] = state.leagues[j.lid].shape;
 });
 // 5) who owns each roster, so trades can be tied to people across leagues (refreshed every two weeks)
-let market = { tx: [] }; try { market = JSON.parse(fs.readFileSync(path.join(OUT, "market.json"), "utf8")); } catch {}
+const market = read("market.json", { tx: [] });
 const tradeLids = new Set(db.trades.map(t => t.lid).concat(market.tx.filter(t => t.type === "trade").map(t => t.lid)));
-const OWNER_CALLS = +(process.env.CRAWL_OWNERS || 1200);
+const OWNER_CALLS = +(process.env.CRAWL_OWNERS || 2500);
 const needOwn = [...tradeLids].filter(lid => { const l = state.leagues[lid] ||= { shape: db.leagues[lid] || {}, weeks: {}, mates: true }; return !l.own || Date.now() - (l.ownAt || 0) > 14 * 864e5; }).slice(0, OWNER_CALLS);
 await pool(needOwn, 10, async lid => {
   const rs = await get(`/v1/league/${lid}/rosters`); const own = {};
@@ -73,7 +74,20 @@ await pool(needOwn, 10, async lid => {
 });
 db.owners = {}; for (const lid of tradeLids) if (state.leagues[lid] && state.leagues[lid].own) db.owners[lid] = state.leagues[lid].own;
 db.built = Date.now();
-fs.writeFileSync(path.join(OUT, "trades-db.json"), JSON.stringify(db));
-fs.writeFileSync(path.join(OUT, "crawl-state.json"), JSON.stringify(state));
+writeGz(OUT, "trades-db.json", db);
+writeGz(OUT, "crawl-state.json", state);
+
+// 6) the FFU database: leagues and trades into Supabase (everything once, then what's new or changed)
+await safely("database", async () => {
+  const full = !state.dbSync, since = state.dbSync || 0;
+  const lgRows = Object.entries(state.leagues).filter(([lid, l]) => tradeLids.has(lid) && (full || (l.ownAt || 0) > since || (l.ref || 0) > since))
+    .map(([lid, l]) => ({ league_id: lid, season: +season, type: l.shape.type ?? null, teams: l.shape.teams ?? null, qbs: l.shape.qbs ?? null, ppr: l.shape.ppr ?? null, tep: l.shape.tep ?? null, pass_td: l.shape.passTd ?? null,
+      owners: l.own || null, owners_at: l.ownAt ? new Date(l.ownAt).toISOString() : null, updated_at: new Date().toISOString() }));
+  const trRows = db.trades.filter(t => full || newIds.has(t.id) || (state.leagues[t.lid] && (state.leagues[t.lid].ownAt || 0) > since))
+    .map(t => { const own = (state.leagues[t.lid] || {}).own || {}; return { id: t.id, league_id: t.lid, season: +season, ts: new Date(t.ts).toISOString(), rids: t.rids, owners: t.rids.map(r => own[r] || null), adds: t.adds, picks: t.picks }; });
+  const a = await upsert("ffu_leagues", lgRows, { onConflict: "league_id" }), b = await upsert("ffu_trades", trRows, { onConflict: "id" });
+  state.dbSync = Date.now(); writeGz(OUT, "crawl-state.json", state);
+  return `${a} leagues, ${b} trades upserted${full ? " (first full load)" : ""}`;
+});
 const users = Object.keys(state.users).length, crawled = Object.values(state.users).filter(u => u.at).length;
 console.log(`crawl: ${calls} API calls; ${Object.keys(state.leagues).length} leagues known; ${crawled}/${users} users crawled; trades-db ${db.trades.length} trades from ${Object.keys(db.leagues).length} leagues; owners for ${Object.keys(db.owners).length} leagues`);

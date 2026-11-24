@@ -16,10 +16,11 @@
 // Output: inhouse.json  { built, method, fit, holdout, players: {id: {f, n}}, picks: {"2027-1": {f, n}} }
 import fs from "node:fs";
 import path from "node:path";
+import { readJSON } from "./db.mjs";
 
 const DIR = process.env.DATA_DIR || process.argv[2] || "data-branch";
 const P = 1.45, HALF_LIFE = 90, HUBER = 0.35, FLOOR_SHARE = 0.5, CLAMP = 0.7;
-const LAMBDAS = [0.5, 1, 2, 4, 8, 16];
+const LAMBDAS = [0.5, 1, 2, 4, 8, 16, 32, 64];   // 16 was the best at the top of the old grid (Nov 23), so the grid goes higher
 
 const market = JSON.parse(fs.readFileSync(path.join(DIR, "market.json"), "utf8"));
 const snapFiles = fs.readdirSync(path.join(DIR, "values")).filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
@@ -36,7 +37,7 @@ const floorOf = vals => { const v = Object.values(vals).filter(x => x > 0).sort(
 // ---- build trades: each side is a list of {key, price}
 // the user's own leagues (market.json) plus every crawled league (trades-db.json), deduplicated
 let crawled = { leagues: {}, trades: [] };
-try { crawled = JSON.parse(fs.readFileSync(path.join(DIR, "trades-db.json"), "utf8")); } catch { console.log("no trades-db.json yet: own leagues only"); }
+crawled = readJSON(DIR, "trades-db.json", null) || (console.log("no trades-db.json yet: own leagues only"), crawled);
 const shapes = { ...crawled.leagues, ...market.leagues };
 const all = new Map(); for (const t of market.tx.concat(crawled.trades)) if (t.type === "trade" && !all.has(t.id)) all.set(t.id, t);
 const trades = [];

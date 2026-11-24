@@ -11,10 +11,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { getJSON } from "./sleeper.mjs";
+import { readJSON, upsert, safely } from "./db.mjs";
 
 const DIR = process.env.DATA_DIR || process.argv[2] || "data-branch";
 const P = 1.45, FLOOR_SHARE = 0.5, CATS = ["QB", "RB", "WR", "TE", "Picks"];
-const read = (f, d) => { try { return JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8")); } catch { return d; } };
+const read = (f, d) => readJSON(DIR, f, d);
 
 const market = read("market.json", { leagues: {}, tx: [] }), crawled = read("trades-db.json", { leagues: {}, owners: {}, trades: [] });
 const owners = crawled.owners || {};
@@ -64,4 +65,9 @@ for (const [uid, u] of U) {
 }
 const out = { built: Date.now(), season: crawled.season || market.season, trades: used, priced, cats: CATS, users };
 fs.writeFileSync(path.join(DIR, "managers.json"), JSON.stringify(out));
+await safely("database: manager profiles", async () => {
+  const season = +(out.season || new Date().getFullYear()), now = new Date().toISOString();
+  const rows = Object.entries(users).map(([user_id, u]) => ({ user_id, season, trades: u[0], profile: { lastDay: u[1], leagues: u[2], partners: u[3], pricing: u[4], pricedN: u[5], buy: u[6], sell: u[7], buyPricing: u[8] }, updated_at: now }));
+  return `${await upsert("ffu_managers", rows, { onConflict: "user_id" })} upserted`;
+});
 console.log(`managers.json: ${Object.keys(users).length} managers from ${used} trades (${priced} priced at trade-day values); owners known for ${Object.keys(owners).length} leagues`);
