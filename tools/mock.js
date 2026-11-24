@@ -83,15 +83,15 @@ function fcValues(){
 function route(url){
   const u = new URL(url), p = u.pathname;
   if(u.hostname === "api.fantasycalc.com") return fcValues();
-  if(u.pathname.endsWith("/inhouse.json")){ const fc = fcValues().filter(x=>x.player.sleeperId).slice(0, 40), players = {};
+  if(p === "/api/app/inhouse"){ const fc = fcValues().filter(x=>x.player.sleeperId).slice(0, 40), players = {};
     fc.forEach((x, i)=>{ if(i % 2 === 0) players[x.player.sleeperId] = {f: i % 4 === 0 ? 1.12 : 0.9, n: 3 + i % 7}; });
     return {built:Date.now(), fit:{p:1.45, lambda:4, trades:771, leagues:80}, holdout:{trades:155, marketMean:0.159, inhouseMean:0.150, marketMedian:0.132, inhouseMedian:0.14}, players, picks:{"2028-1":{f:0.92, n:14}}}; }
-  if(u.pathname.endsWith("/managers.json")){ const users = {}, today = Math.floor(Date.now()/864e5);
+  if(p === "/api/app/managers"){ const users = {}, today = Math.floor(Date.now()/864e5);
     leagues.forEach((lg, li) => ROSTERS[lg.league_id].forEach(r => { if(r.owner_id === ME || r.roster_id % 2) return; const k = r.roster_id;
       users[r.owner_id] = [6 + k, today - k, 1 + k % 4, 4 + k, (k % 3 - 1) * 90, 4 + k, k % 4 === 0 ? [10,50,25,10,5] : [5,15,55,15,10], [20,20,20,20,20], [(k % 3 - 1) * 120, 3]]; }));
     const excluded = {}; leagues.forEach(lg => { const r = ROSTERS[lg.league_id].find(x => x.roster_id === 3); if(r && r.owner_id !== ME) excluded[r.owner_id] = [412, 122]; });
-    return {built:Date.now(), season:"2026", trades:20000, priced:14000, cats:["QB","RB","WR","TE","Picks"], users, excluded}; }
-  if(u.pathname.endsWith("/dp.json")){ const out = {};
+    return {built:Date.now(), season:"2026", trades:20000, priced:14000, total:15000, cats:["QB","RB","WR","TE","Picks"], users, excluded}; }
+  if(p === "/api/app/dp"){ const out = {};
     players.forEach((p, i) => { const v = Math.round(p.pts * 300 * (1.5 - (p.age - 21)/22) * (i % 3 === 0 ? 1.35 : i % 3 === 1 ? 0.8 : 1)); out[p.id] = [v, Math.round(v * (p.pos === "QB" ? 1.4 : 0.9)), i + 1, i + 1, (i % 30) + 1, p.pos, p.first + " " + p.last, p.age]; });
     return {built:Date.now(), scraped:"2026-11-20", source:"mock", players:out}; }
   if(u.hostname === "api.open-meteo.com"){ const n = 24; return {hourly:{time:Array.from({length:n},(_, i)=>i), temperature_2m:Array.from({length:n},()=>48), precipitation_probability:Array.from({length:n},()=>60), wind_speed_10m:Array.from({length:n},()=>17)}}; }

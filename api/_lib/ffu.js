@@ -42,4 +42,33 @@ function endpoint(fn, { open = false } = {}) {
 }
 const shapeOf = q => (String((q || {}).shape || "sf").toLowerCase() === "oneqb" || String((q || {}).shape).toLowerCase() === "1qb") ? "oneqb" : "sf";
 const okId = s => /^[A-Za-z0-9_-]{1,40}$/.test(String(s || ""));
-module.exports = { sb, sbAll, send, endpoint, shapeOf, okId, VERSION, ATTR, configured: () => !!KEY };
+
+// ---------- the app's own data (no API key: the site itself), from the private FFU store ----------
+const BUCKET = process.env.STORE_BUCKET || "ffu-data";
+const zlib = require("node:zlib");
+const memo = new Map();   // per warm function instance: file -> { at, data }
+async function storeJSON(name, ttlMs = 20 * 60e3) {
+  const hit = memo.get(name); if (hit && Date.now() - hit.at < ttlMs) return hit.data;
+  const r = await fetch(`${SB_URL}/storage/v1/object/authenticated/${BUCKET}/${name}`, { headers: sbHeaders() });
+  if (!r.ok) { if (hit) return hit.data; throw Object.assign(new Error(`store ${r.status}`), { status: r.status === 400 || r.status === 404 ? 404 : 502 }); }
+  const buf = Buffer.from(await r.arrayBuffer()), data = JSON.parse((name.endsWith(".gz") ? zlib.gunzipSync(buf) : buf).toString("utf8"));
+  memo.set(name, { at: Date.now(), data }); return data;
+}
+const SITE = /^https:\/\/((www\.)?fantasyfootballuniverse\.com|[a-z0-9-]+-elijah-00f2\.vercel\.app|fantasyfootballuniverse\.vercel\.app)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+function appEndpoint(fn, { methods = ["GET"] } = {}) {
+  return async (req, res) => {
+    const origin = String(req.headers.origin || ""), cors = SITE.test(origin) ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : { "Access-Control-Allow-Origin": "https://fantasyfootballuniverse.com" };
+    const out = (st, body, h = {}) => send(res, st, body, { ...cors, "Access-Control-Allow-Methods": methods.join(", "), ...h });
+    if (req.method === "OPTIONS") return out(204, {});
+    if (!methods.includes(req.method)) return out(405, { error: `${methods.join("/")} only` });
+    if (!KEY) return out(503, { error: "not configured" });
+    try { return await fn(req, out); } catch (e) { return out(e.status || 500, { error: e.status ? e.message : "Something went wrong." }); }
+  };
+}
+async function readBody(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (typeof req.body === "string") { try { return JSON.parse(req.body); } catch { return {}; } }
+  const chunks = []; for await (const c of req) chunks.push(c); try { return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { return {}; }
+}
+const idList = (v, max) => [...new Set(String(v || "").split(",").map(s => s.trim()).filter(okId))].slice(0, max);
+module.exports = { sb, sbAll, send, endpoint, shapeOf, okId, VERSION, ATTR, configured: () => !!KEY, storeJSON, appEndpoint, readBody, idList };

@@ -26,7 +26,7 @@ function sb(url, req){
   page.on("console", m => { if (m.type() === "error" && !/401|400|422|404/.test(m.text())) errs.push("console: " + m.text()); });
   await ctx.route("**/*", async r => {
     const url = r.request().url();
-    if (url.startsWith("http://localhost")) return r.continue();
+    if (url.startsWith("http://localhost") && !new URL(url).pathname.startsWith("/api/")) return r.continue();
     if (url.includes("supabase.co")){ const [st, body] = sb(url, r.request()); return r.fulfill({status: st, contentType:"application/json", headers:{"access-control-allow-origin":"*"}, body: body == null ? "" : JSON.stringify(body)}); }
     const data = route(url);
     if (data) return r.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(data) });

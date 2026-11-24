@@ -10,10 +10,11 @@ const OUT = process.argv[2] || "/tmp/shots";
   page.on("pageerror", e => errs.push("pageerror: " + e.message + "\n" + (e.stack || "").split("\n").slice(0, 4).join("\n")));
   await ctx.route("**/*", async r => {
     const url = r.request().url();
-    if (url.startsWith("http://localhost")) return r.continue();
+    if (url.startsWith("http://localhost") && !new URL(url).pathname.startsWith("/api/")) return r.continue();
     const data = route(url);
     if (data) return r.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(data) });
     if (url.includes("fonts.g")) return r.abort();
+    if (process.env.DBG) console.log("404 " + url.slice(0, 90));
     return r.fulfill({ status: 404, body: "", headers: { "access-control-allow-origin": "*" } });
   });
   const shot = async name => { await page.waitForTimeout(400); await page.screenshot({ path: `${OUT}/${name}.png` }); };

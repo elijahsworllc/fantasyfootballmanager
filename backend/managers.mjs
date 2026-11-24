@@ -71,9 +71,12 @@ const exf = readJSON(DIR, "excluded.json", { users: {} });
 const excluded = Object.fromEntries(Object.entries(exf.users || {}).map(([u, x]) => [u, [x.trades, x.leagues]]));
 const out = { built: Date.now(), season: crawled.season || market.season, trades: used, priced, cats: CATS, users, excluded, cleaning: { excludedTrades: dropEx, lopsidedUnpriced: dropLop } };
 fs.writeFileSync(path.join(DIR, "managers.json"), JSON.stringify(out));
+fs.writeFileSync(path.join(DIR, "managers-meta.json"), JSON.stringify({ built: out.built, season: out.season, trades: used, priced, total: Object.keys(users).length, excluded: Object.keys(excluded).length, cats: CATS }));
 await safely("database: manager profiles", async () => {
   const season = +(out.season || new Date().getFullYear()), now = new Date().toISOString();
   const rows = Object.entries(users).map(([user_id, u]) => ({ user_id, season, trades: u[0], profile: { lastDay: u[1], leagues: u[2], partners: u[3], pricing: u[4], pricedN: u[5], buy: u[6], sell: u[7], buyPricing: u[8] }, updated_at: now }));
+  // excluded accounts get a row too, so the app and partners can see why a busy account has no profile
+  for (const [user_id, x] of Object.entries(excluded)) if (!users[user_id]) rows.push({ user_id, season, trades: 0, profile: { excluded: { trades: x[0], leagues: x[1] } }, updated_at: now });
   return `${await upsert("ffu_managers", rows, { onConflict: "user_id" })} upserted`;
 });
 console.log(`managers.json: ${Object.keys(users).length} managers from ${used} trades (${priced} priced at trade-day values); owners known for ${Object.keys(owners).length} leagues`);

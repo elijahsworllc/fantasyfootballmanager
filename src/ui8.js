@@ -176,18 +176,21 @@ const n0v = v => Math.round(v).toLocaleString("en-US");
 
 /* ---------- Managers: how every league-mate actually trades ---------- */
 const MG = {data:null, busy:false, err:null, sort:"fit"};
-const MGDB_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/managers.json";
-let MGDB_P = null;
-function loadMgdb(){ return MGDB_P ||= fetch(MGDB_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null); }
+const MGDB_URL = FFU_API + "/api/app/managers";
+let MGDB_P = null, MGDB_K = "";
+// only the league-mates on screen, never the whole database
+function loadMgdb(ids){ const k = ids.slice().sort().join(","); if(MGDB_P && k === MGDB_K) return MGDB_P; MGDB_K = k;
+  return MGDB_P = !ids.length ? Promise.resolve(null) : fetch(MGDB_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({users:ids})}).then(r=>r.ok ? r.json() : null).catch(()=>null); }
 const ARCH_DIR = a => ["jugg","win"].includes(a) ? "Contender" : ["build","reset"].includes(a) ? "Rebuilder" : "Middle";
 async function buildManagers(){
   if(MG.busy) return; MG.busy = true; MG.err = null; render();
   try{
     if(!S.bp) await loadBlueprints();
-    const [tx, db] = await Promise.all([loadTx(), loadMgdb()]), rows = [], owners = {};
-    MG.db = db ? {trades:db.trades, priced:db.priced, n:Object.keys(db.users || {}).length, built:db.built} : null;
-    const CATS = (db && db.cats) || ["QB","RB","WR","TE","Picks"];
+    const owners = {}, rows = [];
     for(const b of S.bp || []) for(const t of b.teams) if(t !== b.me && t.owner) owners[t.owner] = (owners[t.owner] || 0) + 1;
+    const [tx, db] = await Promise.all([loadTx(), loadMgdb(Object.keys(owners))]);
+    MG.db = db ? {trades:db.trades, priced:db.priced, n:db.total || Object.keys(db.users || {}).length, built:db.built} : null;
+    const CATS = (db && db.cats) || ["QB","RB","WR","TE","Picks"];
     for(const b of S.bp || []){
       const lg = b.lg, lid = lg.league_id, fc = await fcValues(fcKey(lg));
       const val = id => (fc.players[id] || {}).v || 0, posOf = id => (fc.players[id] || {}).pos || ((S.proj[id] || {}).player || {}).position || "?";

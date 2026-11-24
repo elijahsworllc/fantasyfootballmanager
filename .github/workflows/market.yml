@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/ffu-index.mjs", "backend/db.mjs", "backend/clean.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/ffu-index.mjs", "backend/db.mjs", "backend/clean.mjs", "backend/store.mjs", ".github/workflows/market.yml"]
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: data-branch          # shared with the crawl: one data job at a time, queued, never cancelled
   cancel-in-progress: false
@@ -15,15 +15,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    env:
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          ref: data
-          path: data-branch
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Pull data from the private FFU store
+        run: node backend/store.mjs pull data-branch --skip crawl-state.json.gz,alert-state.json
       - name: Collect transactions and values
         env:
           SLEEPER_USERNAME: jahswor
@@ -39,21 +39,9 @@ jobs:
         continue-on-error: true
         run: node backend/ffu-index.mjs data-branch
       - name: Daily FFU values
-        env:
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node backend/ffu-values.mjs data-branch
       - name: Manager profiles (trade-day values)
-        env:
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node backend/managers.mjs data-branch
-      - name: Publish data
-        run: |
-          cd data-branch
-          git config user.name "command-center-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet && exit 0
-          git commit -qm "Market data $(date -u +%F)"
-          # other jobs (alerts) also write to the data branch: rebase onto theirs and retry
-          for i in 1 2 3 4 5; do git push -q && exit 0; git pull -q --rebase origin data || true; sleep $((i*5)); done
-          exit 1
+      - name: Save data to the private FFU store
+        if: ${{ !cancelled() }}   # keep what earlier steps produced (market prices, values) even if a later step failed
+        run: node backend/store.mjs push data-branch

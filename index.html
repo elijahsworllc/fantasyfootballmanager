@@ -1261,19 +1261,21 @@ function fcKey(lg){
 }
 /* FFU in-house values: trade-implied factors on the market price, fit nightly on every trade in the
    FFU database (backend/inhouse.mjs). Missing or unreachable file = market values. */
-const INHOUSE_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/inhouse.json";
+/* The FFU data store is private (Nov 24, 2026): the app reads only what it needs through the site's own /api/app endpoints. */
+const FFU_API = /^(localhost|127\.0\.0\.1|(www\.)?fantasyfootballuniverse\.com|.*\.vercel\.app)$/.test(location.hostname) ? "" : "https://fantasyfootballuniverse.com";
+const INHOUSE_URL = FFU_API + "/api/app/inhouse";
 let INHOUSE_P = null;
-function loadInhouse(){ return INHOUSE_P ||= fetch(INHOUSE_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.inhouse = x; return x; }); }
+function loadInhouse(){ return INHOUSE_P ||= fetch(INHOUSE_URL).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.inhouse = x; return x; }); }
 const ffuOn = () => store.get("valSrc", "ffu") === "ffu" && S.inhouse;
 /* Second opinion: DynastyProcess expert values (FantasyPros consensus), nightly in data/dp.json (backend/dp.mjs).
    Shown beside the market value and used for players the market doesn't price yet; never mixed into prices.
    Tested Nov 22, 2026 on 2,890 dynasty trades (tools/calibration/dp_eval.py): blending 25% expert value made
    real trades look less fair (median gap 15.1% -> 16.0%), and expert-vs-market gaps had ~0 correlation with
    later market moves. Dynasty only (DynastyProcess has no redraft values). */
-const DP_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/dp.json";
+const DP_URL = FFU_API + "/api/app/dp";
 const DPCAL = {n:2890, built:"Nov 22, 2026", market:0.151, blend25:0.160, blend50:0.183};
 let DP_P = null;
-function loadDp(){ return DP_P ||= fetch(DP_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.dp = x; return x; }); }
+function loadDp(){ return DP_P ||= fetch(DP_URL).then(r=>r.ok ? r.json() : null).catch(()=>null).then(x=>{ S.dp = x; return x; }); }
 /* rank (quantile) map from expert values onto this league shape's market scale, fit on players both price */
 function dpScale(players, dp, j){
   const both = []; for(const id in players){ const e = dp[id]; if(e && e[j] > 0 && players[id].v > 0) both.push([e[j], players[id].v]); }
@@ -1681,7 +1683,7 @@ async function answerTrade(){
 }
 
 /* ---------- transactions: waiver bids, trades, activity ---------- */
-const MARKET_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/market.json";
+const MARKET_URL = FFU_API + "/api/app/market?leagues=";
 const txLeagues = () => (S.raw||[]).filter(x=>!x.error && x.mine && x.lg.status!=="pre_draft");
 function normTx(t, lid){
   return {lid, id:t.transaction_id, type:t.type, status:t.status, ts:t.status_updated||t.created, leg:t.leg,
@@ -1695,7 +1697,7 @@ async function loadTx(){
     const list = txLeagues(), byLeague = {};
     const lastLeg = Math.max(1, S.week||1);
     let market = null;
-    try{ const r = await fetch(MARKET_URL + "?h=" + Math.floor(Date.now()/3.6e6)); if(r.ok){ market = await r.json(); } }catch(e){}
+    try{ const ids = list.map(x=>x.lg.league_id).sort().slice(0,150); if(ids.length){ const r = await fetch(MARKET_URL + ids.join(",")); if(r.ok){ market = await r.json(); } } }catch(e){}
     const fresh = market && Date.now() - market.built < 36*3.6e6 && market.season === S.season;
     if(fresh) for(const t of market.tx) (byLeague[t.lid] ||= []).push(t);
     const jobs = [];
@@ -5537,18 +5539,21 @@ const n0v = v => Math.round(v).toLocaleString("en-US");
 
 /* ---------- Managers: how every league-mate actually trades ---------- */
 const MG = {data:null, busy:false, err:null, sort:"fit"};
-const MGDB_URL = "https://raw.githubusercontent.com/elijahsworllc/fantasyfootballmanager/data/managers.json";
-let MGDB_P = null;
-function loadMgdb(){ return MGDB_P ||= fetch(MGDB_URL + "?h=" + Math.floor(Date.now()/3.6e6)).then(r=>r.ok ? r.json() : null).catch(()=>null); }
+const MGDB_URL = FFU_API + "/api/app/managers";
+let MGDB_P = null, MGDB_K = "";
+// only the league-mates on screen, never the whole database
+function loadMgdb(ids){ const k = ids.slice().sort().join(","); if(MGDB_P && k === MGDB_K) return MGDB_P; MGDB_K = k;
+  return MGDB_P = !ids.length ? Promise.resolve(null) : fetch(MGDB_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({users:ids})}).then(r=>r.ok ? r.json() : null).catch(()=>null); }
 const ARCH_DIR = a => ["jugg","win"].includes(a) ? "Contender" : ["build","reset"].includes(a) ? "Rebuilder" : "Middle";
 async function buildManagers(){
   if(MG.busy) return; MG.busy = true; MG.err = null; render();
   try{
     if(!S.bp) await loadBlueprints();
-    const [tx, db] = await Promise.all([loadTx(), loadMgdb()]), rows = [], owners = {};
-    MG.db = db ? {trades:db.trades, priced:db.priced, n:Object.keys(db.users || {}).length, built:db.built} : null;
-    const CATS = (db && db.cats) || ["QB","RB","WR","TE","Picks"];
+    const owners = {}, rows = [];
     for(const b of S.bp || []) for(const t of b.teams) if(t !== b.me && t.owner) owners[t.owner] = (owners[t.owner] || 0) + 1;
+    const [tx, db] = await Promise.all([loadTx(), loadMgdb(Object.keys(owners))]);
+    MG.db = db ? {trades:db.trades, priced:db.priced, n:db.total || Object.keys(db.users || {}).length, built:db.built} : null;
+    const CATS = (db && db.cats) || ["QB","RB","WR","TE","Picks"];
     for(const b of S.bp || []){
       const lg = b.lg, lid = lg.league_id, fc = await fcValues(fcKey(lg));
       const val = id => (fc.players[id] || {}).v || 0, posOf = id => (fc.players[id] || {}).pos || ((S.proj[id] || {}).player || {}).position || "?";

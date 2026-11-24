@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/crawl.mjs", "backend/db.mjs", "backend/clean.mjs", ".github/workflows/crawl.yml"]
+    paths: ["backend/crawl.mjs", "backend/db.mjs", "backend/clean.mjs", "backend/store.mjs", ".github/workflows/crawl.yml"]
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: data-branch          # shared with the nightly market job: queued, never cancelled
   cancel-in-progress: false
@@ -15,29 +15,20 @@ jobs:
   crawl:
     runs-on: ubuntu-latest
     timeout-minutes: 55
+    env:
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          ref: data
-          path: data-branch
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Pull data from the private FFU store
+        run: node backend/store.mjs pull data-branch --only trades-db.json.gz,crawl-state.json.gz,market.json,excluded.json
       - name: Crawl league-mates' leagues, trades and roster owners
         env:
           SEED_USERS: jahswor
           OUT_DIR: data-branch
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node backend/crawl.mjs
-      - name: Publish data
-        run: |
-          cd data-branch
-          git config user.name "command-center-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet && exit 0
-          git commit -qm "Trade database $(date -u +%F)"
-          # other jobs (alerts) also write to the data branch: rebase onto theirs and retry
-          for i in 1 2 3 4 5; do git push -q && exit 0; git pull -q --rebase origin data || true; sleep $((i*5)); done
-          exit 1
+      - name: Save data to the private FFU store
+        if: ${{ !cancelled() }}   # keep what earlier steps produced (market prices, values) even if a later step failed
+        run: node backend/store.mjs push data-branch

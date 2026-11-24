@@ -1,0 +1,37 @@
+name: Move data to the private FFU store (one-time)
+on:
+  push:
+    branches: [private-store]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: data-branch          # wait for any running crawl or nightly job
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Create the private bucket
+        run: node backend/store.mjs bucket
+      - name: Seed from the git data branch (only if the store is empty)
+        env:
+          STORE_SEED_FROM_GIT: "1"
+        run: node backend/store.mjs pull seed && node backend/store.mjs push seed
+      - name: Verify a full pull matches the data branch byte for byte
+        run: |
+          node backend/store.mjs pull check
+          git clone -q --depth 1 --branch data https://github.com/${{ github.repository }}.git ref && rm -rf ref/.git
+          diff -r -x .store.json check ref && echo "store matches the data branch"
+      - name: A crawl-style partial pull and an unchanged push upload nothing
+        run: |
+          node backend/store.mjs pull part --only trades-db.json.gz,crawl-state.json.gz,market.json,excluded.json
+          node backend/store.mjs push part | tee out.txt
+          grep -q "pushed 0 changed" out.txt
