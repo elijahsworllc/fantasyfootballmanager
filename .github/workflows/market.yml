@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/db.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/ffu-index.mjs", "backend/db.mjs", ".github/workflows/market.yml"]
 permissions:
   contents: write
 concurrency:
@@ -35,6 +35,9 @@ jobs:
         run: node backend/dp.mjs
       - name: Fit in-house values
         run: node backend/inhouse.mjs data-branch
+      - name: FFU Index (values from trades only) and its scorecard
+        continue-on-error: true
+        run: node backend/ffu-index.mjs data-branch
       - name: Daily FFU values
         env:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}

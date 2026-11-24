@@ -203,6 +203,12 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - **Daily FFU values** (`backend/ffu-values.mjs` → `ffu-values.json` and `ffu_values`): market × in-house factor per player and pick, Superflex and 1QB, with expert values for players the market doesn't price (flagged, excluded from the API by default). Reports the share of value backed by 5+ trades (95% on Nov 23). In-house lambda grid extended to 64 (32 now wins).
 - **Data API v1** (Vercel functions in `api/`, docs at `/developers.html`): `/api/v1` (status), `/values`, `/players/{id}`, `/managers/{id}`, `/trades?player|owner|league`. Key in `x-api-key`, daily limits, CORS open. Needs `SUPABASE_SECRET_KEY` in Vercel; answers 503 until then.
 
+## FFU Index: values from trades only (Nov 24, 2026)
+- `backend/ffu-index.mjs` (nightly, `ffu-index.json`): one value per player and future pick fitted only on real trades in the FFU database, no outside prices. Baseline from facts (position, age, years in the league, NFL draft slot from `player-facts.json`), each asset's own trade evidence on top, a Superflex offset by position; memory window and ridge tuned on a validation slice. Published values lean on the baseline by n/(n+10); players need 3+ trades, picks are future drafts rounds 1–5 with 20+.
+- Nightly scorecard on the newest 20% of trades (never fitted), against the market price on the trade's day and against today's FFU values (market × in-house factor). Nov 24 (41,000+ trades, 8,335 held out): market 15.6% / 19.5%, FFU values 14.6% / 18.4%, Index 16.1% / 18.8% (median / mean |gap|). Two milestones tracked: beats market (independence) and beats FFU values (the gate to replace the market anchor). Neither passed yet; the Index already beats the market on the mean.
+- Findings: Superflex QBs trade at ×1.22 of 1QB; rank correlation with the market 0.87 (players with 5+ trades). Value trends per player tested and left off (helped held-out trades slightly, hurt validation).
+- `dp.mjs` now also writes `player-facts.json` (ids, birthdates, NFL draft slots; facts, no valuations).
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

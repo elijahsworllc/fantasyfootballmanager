@@ -51,6 +51,10 @@ try {
     players[sid] = [num(r.value_1qb), num(r.value_2qb), num(r.ecr_1qb), num(r.ecr_2qb), num(r.ecr_pos), r.pos, r.player, num(r.age)];
   }
   const out = { built: Date.now(), scraped, source: "DynastyProcess values (FantasyPros expert consensus), github.com/dynastyprocess/data", players };
+  // facts only (no valuations): position, birthdate, NFL draft year and overall pick, for the FFU Index baseline
+  const facts = {};
+  for (const r of ids) if (num(r.sleeper_id) && r.position) facts[r.sleeper_id] = [r.position, r.birthdate && r.birthdate !== "NA" ? r.birthdate : null, num(r.draft_year), num(r.draft_ovr)];
+  fs.writeFileSync(path.join(DIR, "player-facts.json"), JSON.stringify({ built: Date.now(), source: "player ids, birthdates and NFL draft slots (github.com/dynastyprocess/data db_playerids)", fields: ["pos", "birthdate", "draftYear", "draftOverall"], players: facts }));
   fs.writeFileSync(path.join(DIR, "dp.json"), JSON.stringify(out));
   console.log(`dp.json: ${Object.keys(players).length} players (scraped ${scraped}); ${missing} without a Sleeper id, ${zero} valued at 0`);
 } catch (e) {
