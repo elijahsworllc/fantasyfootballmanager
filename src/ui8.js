@@ -17,7 +17,12 @@ Object.assign(NI, {
 VIEWS.add("edges"); VIEWS.add("managers");
 
 /* ---------- the sky: Solar System Scope 8K Milky Way (from ESO imagery, CC BY 4.0), color-graded ---------- */
-const SKY = {on:false, dimT:1, setFocus(on){ this.dimT = on ? .78 : 1; }};
+const SKY = {on:false, dimT:1, setFocus(on){ this.dimT = on ? .78 : 1; },
+  // reactive sky (Nov 24, 2026): a tint that follows how your week is going, a brief flare on big moments, a meteor
+  tintT:[1,1,1], flare:0,
+  mood(p){ if(p == null){ this.tintT = [1,1,1]; return; } const k = Math.max(-1, Math.min(1, (p - .5)*2));   // -1 losing … +1 winning
+    this.tintT = k >= 0 ? [1 + .07*k, 1 + .015*k, 1 - .07*k] : [1 + .03*k, 1 + .005*k, 1 - .09*k]; },
+  pulse(big){ if(reduceMotion()) return; this.flare = big ? .3 : .16; if(typeof SPACE !== "undefined") SPACE.nextShot = 0; }};
 function skyInit(){
   if(!CC.on || SKY.on) return;
   const cv = document.createElement("canvas"); cv.id = "sky"; cv.setAttribute("aria-hidden", "true"); document.body.insertBefore(cv, document.body.firstChild);
@@ -27,13 +32,13 @@ function skyInit(){
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
   const pr = gl.createProgram();
   gl.attachShader(pr, sh(gl.VERTEX_SHADER, "attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.,1.);}"));
-  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision highp float;varying vec2 v;uniform sampler2D T;uniform mat3 M;uniform float tanH,asp,dim;" +
+  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision highp float;varying vec2 v;uniform sampler2D T;uniform mat3 M;uniform float tanH,asp,dim;uniform vec3 tint;" +
     "void main(){vec3 d=normalize(M*vec3(v.x*tanH*asp,v.y*tanH,-1.));float lon=atan(d.x,-d.z);float lat=asin(clamp(d.y,-1.,1.));" +
-    "vec2 uv=vec2(lon/6.2831853+.5,.5-lat/3.1415927);vec3 c=texture2D(T,uv).rgb;float vg=1.-.3*dot(v*vec2(.8,1.),v*vec2(.8,1.));gl_FragColor=vec4(c*dim*vg,1.);}"));
+    "vec2 uv=vec2(lon/6.2831853+.5,.5-lat/3.1415927);vec3 c=texture2D(T,uv).rgb;float vg=1.-.3*dot(v*vec2(.8,1.),v*vec2(.8,1.));gl_FragColor=vec4(c*dim*vg*tint,1.);}"));
   gl.linkProgram(pr); gl.useProgram(pr);
   const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  const U = {M:gl.getUniformLocation(pr, "M"), tanH:gl.getUniformLocation(pr, "tanH"), asp:gl.getUniformLocation(pr, "asp"), dim:gl.getUniformLocation(pr, "dim")};
+  const U = {M:gl.getUniformLocation(pr, "M"), tanH:gl.getUniformLocation(pr, "tanH"), asp:gl.getUniformLocation(pr, "asp"), dim:gl.getUniformLocation(pr, "dim"), tint:gl.getUniformLocation(pr, "tint")};
   const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([3, 5, 15]));
   const aniso = gl.getExtension("EXT_texture_filter_anisotropic") || gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic");
@@ -50,18 +55,23 @@ function skyInit(){
   const baseFov = () => innerWidth/innerHeight < .9 ? 74 : 58;
   const resize = () => { const dpr = Math.min(window.devicePixelRatio || 1, 2); W = Math.round(innerWidth*dpr); H = Math.round(innerHeight*dpr); cv.width = W; cv.height = H; gl.viewport(0, 0, W, H); };
   addEventListener("resize", resize); resize();
-  addEventListener("pointermove", e => { look.tx = e.clientX/innerWidth - .5; look.ty = e.clientY/innerHeight - .5; }, {passive:true});
+  addEventListener("pointermove", e => { if(e.pointerType === "touch") return; look.tx = e.clientX/innerWidth - .5; look.ty = e.clientY/innerHeight - .5; }, {passive:true});
+  // phones: the sky leans with the device (where tilt is available without a permission prompt) and drifts as you scroll
+  addEventListener("deviceorientation", e => { if(e.gamma == null) return; look.tx = Math.max(-.5, Math.min(.5, e.gamma/60)); look.ty = Math.max(-.5, Math.min(.5, ((e.beta || 45) - 45)/60)); }, {passive:true});
+  let scroll = 0; const tint = [1,1,1];
   const mul = (m, n) => { const o = []; for(let c = 0; c < 3; c++) for(let r = 0; r < 3; r++) o[c*3+r] = m[r]*n[c*3] + m[3+r]*n[c*3+1] + m[6+r]*n[c*3+2]; return o; };
   const mat = (yaw, pitch, roll) => { const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch), cr = Math.cos(roll), sr = Math.sin(roll);
     return mul([cy,0,-sy, 0,1,0, sy,0,cy], mul([1,0,0, 0,cp,sp, 0,-sp,cp], [cr,sr,0, -sr,cr,0, 0,0,1])); };
   const reduce = reduceMotion(), t0 = performance.now(); let last = t0;
   const frame = now => { requestAnimationFrame(frame); if(document.hidden) return;
     const dt = Math.min(.05, (now - last)/1000); last = now; const t = reduce ? 0 : (now - t0)/1000;
-    look.x += (look.tx - look.x)*Math.min(1, dt*1.5); look.y += (look.ty - look.y)*Math.min(1, dt*1.5);
+    if(!reduce){ look.x += (look.tx - look.x)*Math.min(1, dt*1.5); look.y += (look.ty - look.y)*Math.min(1, dt*1.5); scroll += (Math.min(4000, scrollY) - scroll)*Math.min(1, dt*2); }
+    for(let i = 0; i < 3; i++) tint[i] += (SKY.tintT[i] - tint[i])*Math.min(1, dt*(reduce ? 60 : .8));
+    SKY.flare = Math.max(0, SKY.flare - dt*.45);
     const fovT = baseFov() - (SKY.dimT < 1 ? 3 : 0); fov += (fovT - fov)*Math.min(1, dt*2.5); dim += (SKY.dimT - dim)*Math.min(1, dt*2.5);
     const warp = typeof SPACE !== "undefined" ? SPACE.warp || 0 : 0;
-    gl.uniformMatrix3fv(U.M, false, new Float32Array(mat(.06 + Math.sin(t*2*Math.PI/600)*.3 - look.x*.03, -.13 + Math.sin(t*2*Math.PI/420)*.025 + look.y*.02, -.27 + Math.sin(t*2*Math.PI/900)*.02)));
-    gl.uniform1f(U.tanH, Math.tan((fov - warp*14)*Math.PI/360)); gl.uniform1f(U.asp, W/H); gl.uniform1f(U.dim, dim);
+    gl.uniformMatrix3fv(U.M, false, new Float32Array(mat(.06 + Math.sin(t*2*Math.PI/600)*.3 - look.x*.03 - scroll*.00006, -.13 + Math.sin(t*2*Math.PI/420)*.025 + look.y*.02 + scroll*.000025, -.27 + Math.sin(t*2*Math.PI/900)*.02)));
+    gl.uniform1f(U.tanH, Math.tan((fov - warp*14)*Math.PI/360)); gl.uniform1f(U.asp, W/H); gl.uniform1f(U.dim, dim*(1 + SKY.flare)); gl.uniform3f(U.tint, tint[0], tint[1], tint[2]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
   requestAnimationFrame(frame);
 }
@@ -69,7 +79,7 @@ function skyInit(){
 /* ---------- desktop rail and side column ---------- */
 const CC_TOOLS = [
   ["Overview", [["home","Home","home","#46E6F5",{go:"home"}], ["ask","Crystal Ball","orb","#B9A6FF",{go:"ask"}]]],
-  ["Game day", [["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
+  ["Game day", [["live","Live","live","#FF4D6D",{go:"live"}, 1], ["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
   ["Trades", [["trades","Trade Finder","trades","#46E6F5",{go:"trades"}], ["trade","Trade Check","swaps","#5CE1E6",{tool:"trade"}], ["offers","Offers","offers","#9B7BFF",{go:"offers"}], ["managers","Managers","managers","#FF9A5C",{go:"managers"}, 1], ["compare","Compare","compare","#F25CD4",{tool:"compare"}]]],
   ["Teams", [["teams","Team Outlook","diagnose","#8B7BFF",{nav:"teams:value"}], ["edges","Scoring Edges","edges","#FFE066",{go:"edges"}, 1], ["exposure","Exposure","exposure","#FFB25C",{nav:"players:exposure"}], ["rankings","Rankings","rankings","#5CE1E6",{go:"rankings"}]]]
 ];
@@ -85,6 +95,7 @@ function ccBadge(id){
   if(!S.results.length) return "";
   if(id === "fix"){ const c = fixCounts().fix; return c ? `<span class="ccb crit">${c}</span>` : ""; }
   if(id === "offers"){ const n = INBOX.all().filter(x=>x.status === "open").length; return n ? `<span class="ccb info">${n}</span>` : ""; }
+  if(id === "live" && typeof LIVE !== "undefined" && LIVE.anyLive) return `<span class="ccb livepill">Live</span>`;
   if(id === "run"){ const q = typeof runQueue === "function" ? runQueue().length : 0; return q ? `<span class="ccb warn">${q}</span>` : ""; }
   return "";
 }
@@ -103,7 +114,8 @@ function ccSideHTML(){
   if(c.startsit) q.push(["var(--cyan)", `${c.startsit} upgrade${c.startsit>1?"s":""}`, "Bench players who outscore a starter", `data-go="fix" data-tab="startsit"`]);
   if(open) q.push(["var(--violet)", `${open} offer${open>1?"s":""} waiting`, "Logged in your inbox", `data-go="offers"`]);
   const wi = stepInfo("waivers"); q.push(["var(--ok)", "Waivers", wi.line || "Holes to fill and bids", `data-go="waivers"`]);
-  let h = `<section class="glass ccs"><h2>Needs attention</h2>${q.map(x=>`<button class="ccq" ${x[3]}><i style="background:${x[0]};box-shadow:0 0 10px ${x[0]}"></i><span><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></button>`).join("")}</section>`;
+  let h = typeof liveSideHTML === "function" ? liveSideHTML() : "";
+  h += `<section class="glass ccs"><h2>Needs attention</h2>${q.map(x=>`<button class="ccq" ${x[3]}><i style="background:${x[0]};box-shadow:0 0 10px ${x[0]}"></i><span><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></button>`).join("")}</section>`;
   if(nl) h += `<section class="glass ccs"><h2>Next lock</h2><div class="ccnext"><b class="num">${esc(kickLabel(nl.k))}</b><small>${nl.n} league${nl.n > 1 ? "s" : ""} with a decision lock then${nl.fix ? ` · ${nl.fix} must fix` : ""}</small></div></section>`;
   const mv = ccMovers();
   if(mv.length) h += `<section class="glass ccs"><h2>Your movers · 30 days</h2>${mv.map(m=>`<div class="ccmv"><span>${esc(m.name)} <small>${m.pos}</small></span><b class="num ${m.p > 0 ? "up" : "dn"}">${m.p > 0 ? "+" : ""}${Math.round(m.p*100)}%</b></div>`).join("")}</section>`;

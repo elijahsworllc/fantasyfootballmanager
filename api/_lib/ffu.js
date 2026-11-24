@@ -8,9 +8,9 @@ const ATTR = "FFU values: market price × FFU in-house factor from real trades. 
 
 function sbHeaders(extra) { const h = { apikey: KEY, "Content-Type": "application/json", ...extra }; if (!KEY.startsWith("sb_secret_")) h.Authorization = `Bearer ${KEY}`; return h; }
 async function sb(pathAndQuery, { method = "GET", body, range } = {}) {
-  const r = await fetch(`${SB_URL}${pathAndQuery}`, { method, headers: sbHeaders(range ? { Range: range, "Range-Unit": "items" } : {}), body: body ? JSON.stringify(body) : undefined });
+  const r = await fetch(`${SB_URL}${pathAndQuery}`, { method, headers: sbHeaders({ ...(range ? { Range: range, "Range-Unit": "items" } : {}), ...(method === "POST" && !pathAndQuery.includes("/rpc/") ? { Prefer: "return=minimal" } : {}) }), body: body ? JSON.stringify(body) : undefined });
   if (!r.ok) throw Object.assign(new Error(`database ${r.status}`), { status: 502, detail: (await r.text()).slice(0, 200) });
-  return r.json();
+  const t = await r.text(); return t ? JSON.parse(t) : null;
 }
 // read every row of a filtered table in 1,000-row pages (the database caps a single read)
 async function sbAll(pathAndQuery, max = 20000) {
@@ -33,13 +33,16 @@ function endpoint(fn, { open = false } = {}) {
       if (!key) return send(res, 401, { error: "Missing API key: send it in the x-api-key header." });
       const hash = crypto.createHash("sha256").update(key).digest("hex");
       const [hit] = await sb("/rest/v1/rpc/ffu_api_hit", { method: "POST", body: { p_hash: hash } });
-      if (!hit || hit.plan == null) return send(res, 401, { error: "Unknown or revoked API key." });
+      if (!hit || hit.plan == null) return send(res, 401, { error: "Unknown or revoked API key, or one that hasn't been approved yet." });
       const limits = { "X-RateLimit-Limit": String(hit.daily_limit), "X-RateLimit-Remaining": String(Math.max(0, hit.daily_limit - hit.calls)) };
       if (!hit.ok) return send(res, 429, { error: "Daily limit reached. It resets at midnight UTC." }, limits);
-      return await fn(req, res, { plan: hit.plan, limits });
+      return await fn(req, res, { plan: hit.plan, limits, hash, calls: hit.calls, dailyLimit: hit.daily_limit });
     } catch (e) { return send(res, e.status || 500, { error: e.status ? e.message : "Something went wrong.", detail: e.detail }); }
   };
 }
+// raw market prices (and the factor that reveals them) are only for internal and licensed partner keys
+const FULL = new Set(["internal", "partner", "trial"]);
+const fieldsFor = plan => FULL.has(plan) ? (r => r) : (({ market, factor, ...r }) => r);
 const shapeOf = q => (String((q || {}).shape || "sf").toLowerCase() === "oneqb" || String((q || {}).shape).toLowerCase() === "1qb") ? "oneqb" : "sf";
 const okId = s => /^[A-Za-z0-9_-]{1,40}$/.test(String(s || ""));
 
@@ -71,4 +74,4 @@ async function readBody(req) {
   const chunks = []; for await (const c of req) chunks.push(c); try { return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { return {}; }
 }
 const idList = (v, max) => [...new Set(String(v || "").split(",").map(s => s.trim()).filter(okId))].slice(0, max);
-module.exports = { sb, sbAll, send, endpoint, shapeOf, okId, VERSION, ATTR, configured: () => !!KEY, storeJSON, appEndpoint, readBody, idList };
+module.exports = { fieldsFor, sb, sbAll, send, endpoint, shapeOf, okId, VERSION, ATTR, configured: () => !!KEY, storeJSON, appEndpoint, readBody, idList };

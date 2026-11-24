@@ -61,8 +61,16 @@ function rostersFor(lg, li){
   return out;
 }
 const ROSTERS = {}; leagues.forEach((lg, i) => ROSTERS[lg.league_id] = rostersFor(lg, i));
+// live game-day mock (global.MOCK_LIVE): every third game final, the next in the 3rd quarter, the rest not started
+function liveState(team, week){ const games = schedule().filter(g=>g.week===week), i = games.findIndex(g=>g.home===team || g.away===team);
+  return i < 0 ? null : i % 3 === 0 ? {state:"post", f:1} : i % 3 === 1 ? {state:"in", f:.55, period:3, clock:420} : {state:"pre", f:0}; }
+const PBYID = {}; function pById(id){ if(!PBYID.n){ players.forEach(p=>PBYID[p.id] = p); PBYID.n = 1; } return PBYID[id]; }
 function matchups(lid, week){
-  return ROSTERS[lid].map((r, i) => ({roster_id: r.roster_id, matchup_id: Math.floor(i/2) + 1, starters: r.starters, players: r.players, players_points: {}, points: 0}));
+  return ROSTERS[lid].map((r, i) => { const pp = {};
+    if(global.MOCK_LIVE) (r.starters || []).forEach((pid, k) => { const p = pById(pid), ls = p && liveState(p.team, week); pp[pid] = ls ? Math.round(p.pts * ls.f * (0.7 + ((+pid + i) % 7)/10) * 10)/10 : 0; });
+    if(global.MOCK_LIVE && r.owner_id === ME && global.MOCK_BUMP) pp[r.starters[0]] = (pp[r.starters[0]] || 0) + global.MOCK_BUMP;
+    const pts = Math.round(Object.values(pp).reduce((a, b) => a + b, 0)*100)/100;
+    return {roster_id: r.roster_id, matchup_id: Math.floor(i/2) + 1, starters: r.starters, players: r.players, players_points: pp, points: pts}; });
 }
 function users(lid, li){ return ROSTERS[lid].map(r => ({user_id: r.owner_id, display_name: r.owner_id === ME ? "jahswor" : "Mgr " + r.roster_id, metadata: {team_name: r.owner_id === ME ? "My Team" : ["Win Now Willie","Rebuild Rangers","Tank Commander","Gridiron Gang","QB Hoarder","Taxi Kings","The Bench Mob","Sunday Funday","Waiver Wolves","Flex Appeal","Hail Marys"][r.roster_id-2]}})); }
 function transactions(lid, week){
@@ -103,6 +111,7 @@ function route(url){
       const intl = i === 1;
       return {date: iso.replace(":00.000Z","Z"), name: g.away + " at " + g.home, shortName: g.away + (intl ? " VS " : " @ ") + g.home,
         competitions: [{neutralSite: intl, venue: {indoor: ["ATL","DET","LV","MIN","NO","IND","ARI","DAL","HOU","LAR","LAC"].includes(g.home), fullName: intl ? "Tottenham Hotspur Stadium" : "Stadium", address: intl ? {city: "London", country: "England"} : {city: "X", state: "Y", country: "USA"}},
+          status: (()=>{ if(!global.MOCK_LIVE) return undefined; const ls = liveState(g.home, wk); return {type:{state: ls.state, shortDetail: ls.state === "in" ? "7:00 - 3rd" : ls.state === "post" ? "Final" : "Sun 1:00 PM"}, period: ls.period || 0, clock: ls.clock || 0}; })(),
           competitors: [{homeAway: "home", team: {abbreviation: toESPN(g.home)}}, {homeAway: "away", team: {abbreviation: toESPN(g.away)}}]}]}; })};
   }
   if(u.hostname !== "api.sleeper.app") return null;

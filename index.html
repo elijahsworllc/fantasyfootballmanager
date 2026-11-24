@@ -948,6 +948,39 @@ body.cc .lab{font-family:var(--display);font-weight:700;letter-spacing:.1em}
 .ccempty{padding:16px;border-radius:16px;color:var(--ink-2)}
 @keyframes ccrise{from{opacity:0;transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){.ccrow,.ccmgr{animation:none}}
+/* Live (Nov 24, 2026) */
+.ccb.livepill{background:rgba(255,77,109,.2);color:#FF9DB0;text-transform:uppercase;letter-spacing:.06em;font-size:10.5px}
+.lvlive{display:inline-flex;align-items:center;gap:7px;font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#FF8FA6}
+.lvlive i{width:8px;height:8px;border-radius:50%;background:#FF4D6D;box-shadow:0 0 0 0 rgba(255,77,109,.6);animation:lvping 1.6s infinite}
+@keyframes lvping{0%{box-shadow:0 0 0 0 rgba(255,77,109,.55)}70%{box-shadow:0 0 0 9px rgba(255,77,109,0)}100%{box-shadow:0 0 0 0 rgba(255,77,109,0)}}
+@media (prefers-reduced-motion:reduce){.lvlive i{animation:none}}
+.lvsoon{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.lvsum{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px 14px;padding:16px 18px;margin:12px 0}
+.lvstats{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lvstats div{display:grid;gap:2px}
+.lvstats b{font-family:var(--display);font-size:30px;line-height:1;font-weight:700;color:var(--ink)}
+.lvstats b small{font-size:16px;color:var(--ink-3);font-weight:600}
+.lvstats span{font-size:12.5px;color:var(--ink-3)}
+.lvsum > button{grid-row:1;grid-column:2}
+.lvat{grid-column:1/-1;color:var(--ink-3);font-size:12px}
+.lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.lvcard{padding:14px 16px;display:grid;gap:10px;animation:ccrise .45s var(--ease) both;animation-delay:calc(var(--i,0)*40ms);border:1px solid transparent}
+.lvcard.close{border-color:rgba(255,193,92,.38);box-shadow:0 0 0 1px rgba(255,193,92,.12),0 10px 30px -18px rgba(255,193,92,.5)}
+.lvtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.lvlg{font-family:var(--display);font-size:15.5px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvp{font-family:var(--display);font-weight:700;font-size:13px;white-space:nowrap}
+.lvp.up{color:var(--ok,#4BE3A0)}.lvp.dn{color:#FF8A8A}
+.lvsc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lvsc > div{display:grid;gap:1px;min-width:0}
+.lvsc .r{text-align:right}
+.lvsc small{font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvsc b{font-family:var(--display);font-size:32px;line-height:1.05;font-weight:700;color:var(--ink)}
+.lvsc span{font-size:12.5px;color:var(--ink-2)}
+.lvbar{height:6px;border-radius:3px;background:rgba(255,138,138,.28);overflow:hidden}
+.lvbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#3FD3A0,#4BE3A0);transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.lvfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
+.lvfoot span:last-child{color:var(--ink-2)}
+.lvdot{display:inline-block;width:6px;height:6px;margin-left:4px;border-radius:50%;background:#FF4D6D;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -3165,7 +3198,7 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;
@@ -4499,6 +4532,7 @@ function renderMenu(){
       <button class="mtile" data-go="rankings">${svgI("rankings",18)}Rankings</button>
       <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
       <button class="mtile" data-nav="teams:value">${svgI("reviews",18)}Now vs future</button>
+      <button class="mtile" data-go="live">${svgI("live",18)}Live scores</button>
       <button class="mtile" data-go="edges">${svgI("edges",18)}Scoring edges</button>
       <button class="mtile" data-nav="teams:odds">${svgI("diagnose",18)}Playoff odds${dirI.badge ? ` <span class="ct warn">${dirI.badge}</span>` : ""}</button>
     </div></div>
@@ -5380,7 +5414,12 @@ Object.assign(NI, {
 VIEWS.add("edges"); VIEWS.add("managers");
 
 /* ---------- the sky: Solar System Scope 8K Milky Way (from ESO imagery, CC BY 4.0), color-graded ---------- */
-const SKY = {on:false, dimT:1, setFocus(on){ this.dimT = on ? .78 : 1; }};
+const SKY = {on:false, dimT:1, setFocus(on){ this.dimT = on ? .78 : 1; },
+  // reactive sky (Nov 24, 2026): a tint that follows how your week is going, a brief flare on big moments, a meteor
+  tintT:[1,1,1], flare:0,
+  mood(p){ if(p == null){ this.tintT = [1,1,1]; return; } const k = Math.max(-1, Math.min(1, (p - .5)*2));   // -1 losing … +1 winning
+    this.tintT = k >= 0 ? [1 + .07*k, 1 + .015*k, 1 - .07*k] : [1 + .03*k, 1 + .005*k, 1 - .09*k]; },
+  pulse(big){ if(reduceMotion()) return; this.flare = big ? .3 : .16; if(typeof SPACE !== "undefined") SPACE.nextShot = 0; }};
 function skyInit(){
   if(!CC.on || SKY.on) return;
   const cv = document.createElement("canvas"); cv.id = "sky"; cv.setAttribute("aria-hidden", "true"); document.body.insertBefore(cv, document.body.firstChild);
@@ -5390,13 +5429,13 @@ function skyInit(){
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
   const pr = gl.createProgram();
   gl.attachShader(pr, sh(gl.VERTEX_SHADER, "attribute vec2 p;varying vec2 v;void main(){v=p;gl_Position=vec4(p,0.,1.);}"));
-  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision highp float;varying vec2 v;uniform sampler2D T;uniform mat3 M;uniform float tanH,asp,dim;" +
+  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision highp float;varying vec2 v;uniform sampler2D T;uniform mat3 M;uniform float tanH,asp,dim;uniform vec3 tint;" +
     "void main(){vec3 d=normalize(M*vec3(v.x*tanH*asp,v.y*tanH,-1.));float lon=atan(d.x,-d.z);float lat=asin(clamp(d.y,-1.,1.));" +
-    "vec2 uv=vec2(lon/6.2831853+.5,.5-lat/3.1415927);vec3 c=texture2D(T,uv).rgb;float vg=1.-.3*dot(v*vec2(.8,1.),v*vec2(.8,1.));gl_FragColor=vec4(c*dim*vg,1.);}"));
+    "vec2 uv=vec2(lon/6.2831853+.5,.5-lat/3.1415927);vec3 c=texture2D(T,uv).rgb;float vg=1.-.3*dot(v*vec2(.8,1.),v*vec2(.8,1.));gl_FragColor=vec4(c*dim*vg*tint,1.);}"));
   gl.linkProgram(pr); gl.useProgram(pr);
   const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  const U = {M:gl.getUniformLocation(pr, "M"), tanH:gl.getUniformLocation(pr, "tanH"), asp:gl.getUniformLocation(pr, "asp"), dim:gl.getUniformLocation(pr, "dim")};
+  const U = {M:gl.getUniformLocation(pr, "M"), tanH:gl.getUniformLocation(pr, "tanH"), asp:gl.getUniformLocation(pr, "asp"), dim:gl.getUniformLocation(pr, "dim"), tint:gl.getUniformLocation(pr, "tint")};
   const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([3, 5, 15]));
   const aniso = gl.getExtension("EXT_texture_filter_anisotropic") || gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic");
@@ -5413,18 +5452,23 @@ function skyInit(){
   const baseFov = () => innerWidth/innerHeight < .9 ? 74 : 58;
   const resize = () => { const dpr = Math.min(window.devicePixelRatio || 1, 2); W = Math.round(innerWidth*dpr); H = Math.round(innerHeight*dpr); cv.width = W; cv.height = H; gl.viewport(0, 0, W, H); };
   addEventListener("resize", resize); resize();
-  addEventListener("pointermove", e => { look.tx = e.clientX/innerWidth - .5; look.ty = e.clientY/innerHeight - .5; }, {passive:true});
+  addEventListener("pointermove", e => { if(e.pointerType === "touch") return; look.tx = e.clientX/innerWidth - .5; look.ty = e.clientY/innerHeight - .5; }, {passive:true});
+  // phones: the sky leans with the device (where tilt is available without a permission prompt) and drifts as you scroll
+  addEventListener("deviceorientation", e => { if(e.gamma == null) return; look.tx = Math.max(-.5, Math.min(.5, e.gamma/60)); look.ty = Math.max(-.5, Math.min(.5, ((e.beta || 45) - 45)/60)); }, {passive:true});
+  let scroll = 0; const tint = [1,1,1];
   const mul = (m, n) => { const o = []; for(let c = 0; c < 3; c++) for(let r = 0; r < 3; r++) o[c*3+r] = m[r]*n[c*3] + m[3+r]*n[c*3+1] + m[6+r]*n[c*3+2]; return o; };
   const mat = (yaw, pitch, roll) => { const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch), cr = Math.cos(roll), sr = Math.sin(roll);
     return mul([cy,0,-sy, 0,1,0, sy,0,cy], mul([1,0,0, 0,cp,sp, 0,-sp,cp], [cr,sr,0, -sr,cr,0, 0,0,1])); };
   const reduce = reduceMotion(), t0 = performance.now(); let last = t0;
   const frame = now => { requestAnimationFrame(frame); if(document.hidden) return;
     const dt = Math.min(.05, (now - last)/1000); last = now; const t = reduce ? 0 : (now - t0)/1000;
-    look.x += (look.tx - look.x)*Math.min(1, dt*1.5); look.y += (look.ty - look.y)*Math.min(1, dt*1.5);
+    if(!reduce){ look.x += (look.tx - look.x)*Math.min(1, dt*1.5); look.y += (look.ty - look.y)*Math.min(1, dt*1.5); scroll += (Math.min(4000, scrollY) - scroll)*Math.min(1, dt*2); }
+    for(let i = 0; i < 3; i++) tint[i] += (SKY.tintT[i] - tint[i])*Math.min(1, dt*(reduce ? 60 : .8));
+    SKY.flare = Math.max(0, SKY.flare - dt*.45);
     const fovT = baseFov() - (SKY.dimT < 1 ? 3 : 0); fov += (fovT - fov)*Math.min(1, dt*2.5); dim += (SKY.dimT - dim)*Math.min(1, dt*2.5);
     const warp = typeof SPACE !== "undefined" ? SPACE.warp || 0 : 0;
-    gl.uniformMatrix3fv(U.M, false, new Float32Array(mat(.06 + Math.sin(t*2*Math.PI/600)*.3 - look.x*.03, -.13 + Math.sin(t*2*Math.PI/420)*.025 + look.y*.02, -.27 + Math.sin(t*2*Math.PI/900)*.02)));
-    gl.uniform1f(U.tanH, Math.tan((fov - warp*14)*Math.PI/360)); gl.uniform1f(U.asp, W/H); gl.uniform1f(U.dim, dim);
+    gl.uniformMatrix3fv(U.M, false, new Float32Array(mat(.06 + Math.sin(t*2*Math.PI/600)*.3 - look.x*.03 - scroll*.00006, -.13 + Math.sin(t*2*Math.PI/420)*.025 + look.y*.02 + scroll*.000025, -.27 + Math.sin(t*2*Math.PI/900)*.02)));
+    gl.uniform1f(U.tanH, Math.tan((fov - warp*14)*Math.PI/360)); gl.uniform1f(U.asp, W/H); gl.uniform1f(U.dim, dim*(1 + SKY.flare)); gl.uniform3f(U.tint, tint[0], tint[1], tint[2]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
   requestAnimationFrame(frame);
 }
@@ -5432,7 +5476,7 @@ function skyInit(){
 /* ---------- desktop rail and side column ---------- */
 const CC_TOOLS = [
   ["Overview", [["home","Home","home","#46E6F5",{go:"home"}], ["ask","Crystal Ball","orb","#B9A6FF",{go:"ask"}]]],
-  ["Game day", [["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
+  ["Game day", [["live","Live","live","#FF4D6D",{go:"live"}, 1], ["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
   ["Trades", [["trades","Trade Finder","trades","#46E6F5",{go:"trades"}], ["trade","Trade Check","swaps","#5CE1E6",{tool:"trade"}], ["offers","Offers","offers","#9B7BFF",{go:"offers"}], ["managers","Managers","managers","#FF9A5C",{go:"managers"}, 1], ["compare","Compare","compare","#F25CD4",{tool:"compare"}]]],
   ["Teams", [["teams","Team Outlook","diagnose","#8B7BFF",{nav:"teams:value"}], ["edges","Scoring Edges","edges","#FFE066",{go:"edges"}, 1], ["exposure","Exposure","exposure","#FFB25C",{nav:"players:exposure"}], ["rankings","Rankings","rankings","#5CE1E6",{go:"rankings"}]]]
 ];
@@ -5448,6 +5492,7 @@ function ccBadge(id){
   if(!S.results.length) return "";
   if(id === "fix"){ const c = fixCounts().fix; return c ? `<span class="ccb crit">${c}</span>` : ""; }
   if(id === "offers"){ const n = INBOX.all().filter(x=>x.status === "open").length; return n ? `<span class="ccb info">${n}</span>` : ""; }
+  if(id === "live" && typeof LIVE !== "undefined" && LIVE.anyLive) return `<span class="ccb livepill">Live</span>`;
   if(id === "run"){ const q = typeof runQueue === "function" ? runQueue().length : 0; return q ? `<span class="ccb warn">${q}</span>` : ""; }
   return "";
 }
@@ -5466,7 +5511,8 @@ function ccSideHTML(){
   if(c.startsit) q.push(["var(--cyan)", `${c.startsit} upgrade${c.startsit>1?"s":""}`, "Bench players who outscore a starter", `data-go="fix" data-tab="startsit"`]);
   if(open) q.push(["var(--violet)", `${open} offer${open>1?"s":""} waiting`, "Logged in your inbox", `data-go="offers"`]);
   const wi = stepInfo("waivers"); q.push(["var(--ok)", "Waivers", wi.line || "Holes to fill and bids", `data-go="waivers"`]);
-  let h = `<section class="glass ccs"><h2>Needs attention</h2>${q.map(x=>`<button class="ccq" ${x[3]}><i style="background:${x[0]};box-shadow:0 0 10px ${x[0]}"></i><span><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></button>`).join("")}</section>`;
+  let h = typeof liveSideHTML === "function" ? liveSideHTML() : "";
+  h += `<section class="glass ccs"><h2>Needs attention</h2>${q.map(x=>`<button class="ccq" ${x[3]}><i style="background:${x[0]};box-shadow:0 0 10px ${x[0]}"></i><span><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></button>`).join("")}</section>`;
   if(nl) h += `<section class="glass ccs"><h2>Next lock</h2><div class="ccnext"><b class="num">${esc(kickLabel(nl.k))}</b><small>${nl.n} league${nl.n > 1 ? "s" : ""} with a decision lock then${nl.fix ? ` · ${nl.fix} must fix` : ""}</small></div></section>`;
   const mv = ccMovers();
   if(mv.length) h += `<section class="glass ccs"><h2>Your movers · 30 days</h2>${mv.map(m=>`<div class="ccmv"><span>${esc(m.name)} <small>${m.pos}</small></span><b class="num ${m.p > 0 ? "up" : "dn"}">${m.p > 0 ? "+" : ""}${Math.round(m.p*100)}%</b></div>`).join("")}</section>`;
@@ -5620,6 +5666,120 @@ document.addEventListener("click", e=>{
 // fresh data from Sleeper rebuilds the managers list next time it's opened
 { const _ra = typeof runAnalysis === "function" ? runAnalysis : null; if(_ra){ runAnalysis = function(){ MG.data = null; return _ra.apply(this, arguments); }; } }
 skyInit();
+
+/* =====================================================================
+   Live (Nov 24, 2026): every matchup you're in, live, in one place.
+   Scores from Sleeper (they update during games); game clocks from ESPN's scoreboard.
+   Projected final = points so far + each starter's projection × the share of his game still to play.
+   Win chance: normal model on the projected margin, each starter's remaining points able to miss by
+   about 70% of his remaining projection. Refreshes every minute while games are on.
+   ===================================================================== */
+Object.assign(NI, {live:'<circle cx="12" cy="12" r="2.6"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>'});
+VIEWS.add("live");
+const LIVE = {data:null, busy:false, err:null, timer:null, prev:null, anyLive:false, at:0, proj:{}, users:{}};
+const nCdf = z => { const t = 1/(1 + .2316419*Math.abs(z)), d = .3989423*Math.exp(-z*z/2), p = d*t*(.3193815 + t*(-.3565638 + t*(1.781478 + t*(-1.821256 + t*1.330274)))); return z > 0 ? 1 - p : p; };
+
+async function liveGames(season, week){
+  const j = await getJSON(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}&seasontype=2&week=${week}`, {cache:"network"});
+  const by = {}; let any = false, next = null;
+  for(const ev of j.events || []){ const c = ev.competitions && ev.competitions[0]; if(!c) continue;
+    const st = (c.status || ev.status || {}), ty = (st.type || {}).state || "pre", per = st.period || 0, clk = st.clock || 0;
+    const left = ty === "post" ? 0 : ty === "pre" ? 1 : Math.max(0, Math.min(1, ((4 - Math.min(4, per))*900 + (per <= 4 ? clk : 0))/3600));
+    const g = {state:ty, left, detail:(st.type || {}).shortDetail || "", ts:Date.parse(ev.date)};
+    if(ty === "in") any = true; if(ty === "pre" && (!next || g.ts < next)) next = g.ts;
+    for(const t of c.competitors || []){ const a = t.team && t.team.abbreviation; if(a) by[ESPN_FIX[a] || a] = g; }
+  }
+  return {by, any, next};
+}
+async function liveRefresh(manual){
+  if(LIVE.busy) return; LIVE.busy = true; LIVE.err = null; if(manual) render();
+  try{
+    const st = await getJSON("/v1/state/nfl", {cache:"network"}), season = st.season, week = st.week;
+    const leagues = (S.raw || []).filter(x => !x.error && x.mine && x.lg.status === "in_season");
+    const [games, proj] = await Promise.all([liveGames(season, week).catch(()=>({by:{}, any:false, next:null})),
+      week === S.week ? Promise.resolve(S.proj) : LIVE.proj[week] ? Promise.resolve(LIVE.proj[week]) : getJSON(`${API}/projections/nfl/${season}/${week}?season_type=regular&${["QB","RB","WR","TE","K","DEF","DL","LB","DB"].map(p=>"position%5B%5D="+p).join("&")}`, {cache:"prefer"}).then(a=>{ const m = {}; for(const e of a) m[e.player_id] = e; return LIVE.proj[week] = m; }).catch(()=>({}))]);
+    const rows = (await pool(leagues, 10, async x => {
+      const lid = x.lg.league_id, [mu, users] = await Promise.all([getJSON(`/v1/league/${lid}/matchups/${week}`, {cache:"network"}), LIVE.users[lid] || getJSON(`/v1/league/${lid}/users`, {cache:"prefer"}).catch(()=>[])]);
+      LIVE.users[lid] = users;
+      const me = (mu || []).find(m => m.roster_id === x.mine.roster_id); if(!me) return null;
+      const opp = me.matchup_id != null ? mu.find(m => m.matchup_id === me.matchup_id && m.roster_id !== me.roster_id) : null;
+      const side = m => { if(!m) return null; let rem = 0, v = 0, live = 0, yet = 0, done = 0; const top = [];
+        (m.starters || []).forEach((pid, i) => { if(!pid || pid === "0") return;
+          const e = proj[pid], pos = e && e.player ? e.player.position : null, team = e && e.player ? e.player.team : null, g = team ? games.by[team] : null;
+          const full = e && e.stats ? leagueScore(e.stats, x.lg.scoring_settings || {}, pos) * ((FACTOR[(e.player || {}).injury_status] ?? 1)) : 0;
+          const f = g ? g.left : 0, r = Math.max(0, full*f); rem += r; v += f > 0 ? Math.pow((.7*full + 1.5), 2)*f : 0;
+          if(!g || g.state === "post") done++; else if(g.state === "in") live++; else yet++;
+          const pts = (m.players_points || {})[pid] ?? (m.starters_points || [])[i] ?? 0; top.push({pid, pts, state: g ? g.state : "post"}); });
+        top.sort((a, b) => b.pts - a.pts);
+        const pts = m.points != null ? m.points : top.reduce((s, t) => s + t.pts, 0);
+        const u = users.find(u => { const r = x.rosters && x.rosters.find(r => r.roster_id === m.roster_id); return r && u.user_id === r.owner_id; });
+        return {rid:m.roster_id, pts, rem, v, fin:pts + rem, live, yet, done, top:top.slice(0, 3), name:(u && ((u.metadata || {}).team_name || u.display_name)) || `Team ${m.roster_id}`}; };
+      const A = side(me), B = side(opp);
+      let win = null; if(B){ const sd = Math.sqrt(A.v + B.v), d = A.fin - B.fin; win = sd > .5 ? nCdf(d/sd) : d > 0 ? 1 : d < 0 ? 0 : .5; }
+      return {lid, name:x.lg.name, me:A, opp:B, win, playing:A.live + (B ? B.live : 0), left:A.live + A.yet + (B ? B.live + B.yet : 0)};
+    })).filter(r => r && !r.error);
+    // big moments since the last refresh: a starter's points jumping 6+ in one of your matchups
+    const jumps = []; if(LIVE.prev) for(const r of rows){ const p = LIVE.prev[r.lid]; if(p != null && r.me.pts - p >= 6) jumps.push({r, d:r.me.pts - p}); }
+    LIVE.prev = Object.fromEntries(rows.map(r => [r.lid, r.me.pts]));
+    LIVE.data = {week, season, rows, games, at:Date.now()}; LIVE.anyLive = games.any; LIVE.at = Date.now();
+    const ws = rows.filter(r => r.win != null);
+    SKY.mood(ws.length && (games.any || ws.some(r => r.left)) ? ws.reduce((s, r) => s + r.win, 0)/ws.length : null);
+    if(jumps.length){ const big = jumps.sort((a, b) => b.d - a.d)[0];
+      toast(jumps.length === 1 ? `+${big.d.toFixed(1)} in ${big.r.name}` : `+${big.d.toFixed(1)} in ${big.r.name}, and ${jumps.length - 1} more league${jumps.length > 2 ? "s" : ""} scoring`);
+      SKY.pulse(big.d >= 12); if(navigator.vibrate && !reduceMotion()) try{ navigator.vibrate([10, 40, 14]); }catch(_){} }
+  }catch(e){ LIVE.err = e.message || String(e); }
+  LIVE.busy = false; render(); liveSchedule();
+}
+function liveSchedule(){
+  clearTimeout(LIVE.timer);
+  const watching = S.view === "live" || LIVE.anyLive;   // keep the side panel and sky current while games are on
+  if(!watching) return;
+  LIVE.timer = setTimeout(()=>{ if(document.visibilityState === "visible") liveRefresh(); else liveSchedule(); }, LIVE.anyLive ? 60e3 : 5*60e3);
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible" && (S.view === "live" || LIVE.anyLive) && Date.now() - LIVE.at > 45e3) liveRefresh(); });
+
+function liveCard(r, i){
+  const A = r.me, B = r.opp, p = r.win, pc = p == null ? null : Math.round(p*100), cls = p == null ? "" : p >= .5 ? "up" : "dn";
+  const close = p != null && p > .3 && p < .7 && r.left > 0;
+  const who = s => s.top.map(t => `${esc(pname(t.pid).split(" ").slice(-1)[0])} <span class="num">${t.pts.toFixed(1)}</span>${t.state === "in" ? '<i class="lvdot" aria-label="playing"></i>' : ""}`).join(" · ");
+  const status = s => [s.live ? `${s.live} playing` : "", s.yet ? `${s.yet} to play` : "", !s.live && !s.yet ? "all done" : ""].filter(Boolean).join(" · ");
+  return `<article class="glass lvcard${close ? " close" : ""}" style="--i:${i}">
+    <div class="lvtop"><b class="lvlg">${esc(r.name)}</b>${pc != null ? `<span class="lvp num ${cls}">${r.left ? pc + "% to win" : p >= .5 ? "Won" : "Lost"}</span>` : ""}</div>
+    <div class="lvsc"><div><small>You</small><b class="num">${A.pts.toFixed(1)}</b><span class="num">${r.left ? "→ " + A.fin.toFixed(1) : "final"}</span></div>
+      ${B ? `<div class="r"><small>${esc(B.name)}</small><b class="num">${B.pts.toFixed(1)}</b><span class="num">${r.left ? "→ " + B.fin.toFixed(1) : "final"}</span></div>` : `<div class="r"><small>No opponent this week</small></div>`}</div>
+    ${pc != null ? `<div class="lvbar" role="img" aria-label="${pc}% chance to win"><i style="width:${pc}%"></i></div>` : ""}
+    <div class="lvfoot"><span>${status(A)}</span><span>${who(A)}</span></div></article>`;
+}
+function viewLive(){
+  if(!LIVE.data && !LIVE.busy && !LIVE.err) setTimeout(()=>liveRefresh(), 0);
+  else if(!LIVE.timer && !LIVE.busy) liveSchedule();
+  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Live</h1><div class="sub">Every matchup you're in, as it happens. Scores from Sleeper, game clocks from ESPN; projected finals add each starter's projection for the part of his game still to play.</div></section>`;
+  const d = LIVE.data;
+  if(!d) return h + (LIVE.err ? `<div class="glass ccempty">Couldn't load live scores: ${esc(LIVE.err)} <button class="ghost tint" data-liverefresh="1">Try again</button></div>` : `<div class="statusline"><span class="livedot"></span>Loading your matchups…</div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:240px"></i></div>`);
+  const ws = d.rows.filter(r => r.win != null), going = ws.filter(r => r.left), winning = ws.filter(r => r.win >= .5).length, close = going.filter(r => r.win > .3 && r.win < .7).length;
+  const exp = ws.reduce((s, r) => s + r.win, 0);
+  const label = d.games.any ? `<span class="lvlive"><i></i>Live</span>` : going.length ? `<span class="lvsoon">Next kickoff ${d.games.next ? esc(kickLabel({ts:d.games.next})) : "soon"}</span>` : `<span class="lvsoon">Week ${d.week} final</span>`;
+  h += `<section class="glass lvsum">${label}<div class="lvstats">
+    <div><b class="num">${winning}<small>/${ws.length}</small></b><span>${going.length ? "winning now" : "won"}</span></div>
+    <div><b class="num">${exp.toFixed(1)}</b><span>expected wins</span></div>
+    <div><b class="num">${close}</b><span>coin flips</span></div></div>
+    <button class="ghost" data-liverefresh="1" ${LIVE.busy ? "disabled" : ""}>${LIVE.busy ? "Refreshing…" : "Refresh"}</button>
+    <small class="lvat">Updated ${new Date(d.at).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}${d.games.any ? " · every minute while games are on" : ""}</small></section>`;
+  // the matchups that need watching first: closest to a coin flip, then the rest by margin
+  const order = d.rows.slice().sort((a, b) => (a.win == null) - (b.win == null) || (b.left > 0) - (a.left > 0) || Math.abs((a.win ?? .5) - .5) - Math.abs((b.win ?? .5) - .5));
+  if(!order.length) h += `<div class="glass ccempty">No matchups this week in your in-season leagues.</div>`;
+  else h += `<div class="lvgrid">${order.map(liveCard).join("")}</div>`;
+  h += `<p class="src">Win chance treats each starter's remaining points as able to miss his projection by about 70%, so a 10-point lead with one player left is far from safe. Leagues without head-to-head matchups show your score only.</p>`;
+  return h;
+}
+function liveSideHTML(){
+  const d = LIVE.data; if(!d || !LIVE.anyLive) return "";
+  const ws = d.rows.filter(r => r.win != null && r.left), win = ws.filter(r => r.win >= .5).length, close = ws.filter(r => r.win > .3 && r.win < .7);
+  return `<section class="glass ccs"><h2><span class="lvlive"><i></i>Live</span></h2><button class="ccq" data-go="live"><i style="background:#FF4D6D;box-shadow:0 0 10px #FF4D6D"></i><span><b>Winning ${win} of ${ws.length}</b><small>${close.length ? `${close.length} coin flip${close.length > 1 ? "s" : ""}: ${esc(close.slice(0, 2).map(r => r.name).join(", "))}` : "No coin flips right now"}</small></span></button></section>`;
+}
+document.addEventListener("click", e => { const t = e.target.closest("[data-liverefresh]"); if(!t) return; liveRefresh(true); });
+// on game days, check once after load so the rail badge, side panel and sky know games are on
+setTimeout(()=>{ const d = new Date().getDay(); if([0, 1, 4].includes(d) && S.raw && S.raw.length && !LIVE.data) liveRefresh(); }, 6000);
 
 SPACE.init();
 ORB.init();

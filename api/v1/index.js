@@ -8,6 +8,8 @@ module.exports = endpoint(async (req, res) => {
       "GET /api/v1/values?shape=sf|oneqb[&day=YYYY-MM-DD][&src=trades,market]": "Daily FFU value for every player and pick",
       "GET /api/v1/players/{sleeperId}?shape=sf|oneqb[&days=90]": "One player's FFU value history",
       "GET /api/v1/managers/{sleeperUserId}": "How a manager trades: activity, what they buy and sell, how they price trades",
-      "GET /api/v1/trades?player={id}|owner={userId}|league={id}[&limit=50]": "Recent completed trades from the FFU database" },
+      "GET /api/v1/trades?player={id}|owner={userId}|league={id}[&limit=50]": "Recent completed trades from the FFU database",
+      "GET /api/v1/usage": "Your key's plan, today's calls and the last 30 days",
+      "POST /api/v1/signup": "Request a free key (or use the form at /developers.html#key)" },
     auth: "Send your key in the x-api-key header. Limits are per key per day (UTC).", attribution: ATTR, docs: "/developers.html" }, { "Cache-Control": "public, s-maxage=300" });
 }, { open: true });

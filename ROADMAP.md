@@ -214,6 +214,22 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - After cleaning (held out, never fitted): market 15.8% / 18.7%, FFU values 13.6% / 16.9%; Index 16.6% / 18.8% vs market 15.6% / 18.6%.
 - Managers view labels excluded league-mates ("left out of FFU values") and uses the user's leagues for them.
 
+## Private data store (Nov 24, 2026)
+- The jobs' working files (trade database, crawl state, market snapshots, fits, profiles) moved from the public `data` branch to a private Supabase Storage bucket (`ffu-data`). `backend/store.mjs pull|push` moves only what a job needs and only what changed (sha256 manifest), and refuses to run on an empty store. Crawl, nightly, alerts and calibration all use it; none of them write to git any more.
+- The app no longer downloads whole datasets. It reads `/api/app/inhouse`, `/api/app/dp`, `/api/app/market?leagues=…` (only the user's leagues) and `POST /api/app/managers` (only the league-mates on screen), answered from the store and the database, cached at Vercel's edge, site origins only.
+- Excluded accounts get a row in `ffu_managers` so the app and partners can see why a busy account has no profile.
+- Egress budget (Supabase free tier, 5 GB/month): jobs pull about 45 MB a day (~1.4 GB/month); app reads are mostly served from Vercel's cache.
+- Still to do: delete the old public `data` branch (its history still holds the dataset up to Nov 24).
+
+## Partner program (Nov 24, 2026)
+- `/developers.html#key`: self-serve key requests (name, email, project, what they'll build; honeypot; 3 per IP per day; one free key per email). The key is shown once and stored only as a SHA-256 hash in `api_keys` (plan `free`, 500/day), switched off until approved: Supabase → Table editor → `api_keys` → set `revoked` to false. Set `PARTNER_SIGNUPS=open` in Vercel to approve automatically.
+- Plans on the page: Free (500/day, attribution, non-commercial) and Partner (commercial license, contact). Terms in plain words. `GET /api/v1/usage` shows a key's plan and calls.
+- Free keys don't receive raw `market` prices or `factor` (FantasyCalc-derived); `internal`, `partner` and `trial` keys do.
+
+## Live game day and the reactive sky (Nov 24, 2026)
+- **Live** (rail and menu): every matchup you're in, with live scores (Sleeper), game clocks (ESPN), projected finals (points so far + each starter's projection × the share of his game left) and win chance (normal model; each starter's remaining points can miss by ~70%). Coin flips first and outlined. Refreshes every minute while games are on; rail badge and a side-panel summary while live; a toast and haptic tap when one of your matchups jumps 6+ points.
+- **Reactive sky**: tints warmer as your week goes well and cooler when it doesn't, flares with a meteor on big scoring moments, leans with the pointer or phone tilt and drifts as you scroll. All motion respects reduced-motion settings.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

@@ -28,6 +28,24 @@ th{color:var(--ink-3);font-weight:600;font-size:12.5px}
 .wide{overflow-x:auto}
 a{color:var(--cyan)}
 .note{font-size:13px;color:var(--ink-3)}
+.form{display:grid;gap:10px;margin-top:10px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--ink-3);font-weight:600}
+.form input,.form textarea{font:15px Inter,system-ui,sans-serif;color:var(--ink);background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.form textarea{min-height:84px;resize:vertical}
+.form input:focus,.form textarea:focus{outline:2px solid var(--cyan);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.row2{grid-template-columns:1fr}}
+.btn{font:700 15px "Space Grotesk",Inter,sans-serif;color:#04121A;background:var(--cyan);border:0;border-radius:12px;padding:12px 18px;cursor:pointer;justify-self:start}
+.btn[disabled]{opacity:.6;cursor:wait}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.keybox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.keybox code{font-size:14px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.45);border:1px solid var(--line);word-break:break-all}
+.err{color:#FF8A8A}
+.ok{color:#4BE3A0}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.plans .card{margin:0}
+.plans h3{font:700 18px "Space Grotesk",Inter,sans-serif;margin:0 0 4px}
+.plans ul{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px}
 </style>
 </head>
 <body>
@@ -36,8 +54,27 @@ a{color:var(--cyan)}
   <h1>FFU Data API</h1>
   <p>Player values, completed trades and manager trading behavior from the FFU database: every trade in the leagues we track, valued on the day it happened. Built for platforms, tools and creators who want values grounded in what managers actually pay.</p>
 
-  <div class="card"><b>Getting a key.</b> Keys are issued by FFU during the partner beta. Email <code>hello@fantasyfootballuniverse.com</code>. Send it on every request in the <code>x-api-key</code> header. Each key has a daily limit (UTC); responses carry <code>X-RateLimit-Limit</code> and <code>X-RateLimit-Remaining</code>.
+  <div class="card"><b>Using a key.</b> Send it on every request in the <code>x-api-key</code> header. Each key has a daily limit (UTC); responses carry <code>X-RateLimit-Limit</code> and <code>X-RateLimit-Remaining</code>.
   <pre>curl -H "x-api-key: YOUR_KEY" "https://fantasyfootballuniverse.com/api/v1/values?shape=sf"</pre></div>
+
+  <h2>Plans</h2>
+  <div class="plans">
+    <div class="card"><h3>Free</h3><p style="margin:0">For building and testing.</p><ul><li>500 requests a day</li><li>FFU values, trades, manager profiles</li><li>Credit “Values: Fantasy Football Universe” where values appear</li><li>Non-commercial use</li></ul></div>
+    <div class="card"><h3>Partner</h3><p style="margin:0">For live products.</p><ul><li>Higher daily limits</li><li>Commercial use under an FFU data license</li><li>Value history and bulk daily files</li><li>Email <code>hello@fantasyfootballuniverse.com</code></li></ul></div>
+  </div>
+
+  <h2 id="key">Get a free key</h2>
+  <div class="card">
+    <p style="margin:0">We show your key once, right here, and store only a fingerprint of it. During the partner beta we read every request; your key switches on when it's approved, usually within a day.</p>
+    <form class="form" id="signup" novalidate>
+      <div class="row2"><label>Your name<input name="name" autocomplete="name" required maxlength="80"></label><label>Email<input name="email" type="email" autocomplete="email" required maxlength="120"></label></div>
+      <div class="row2"><label>Project or company<input name="project" required maxlength="120"></label><label>Website (optional)<input name="url" type="url" maxlength="200" placeholder="https://"></label></div>
+      <label>What will you build with it?<textarea name="use" required maxlength="600" placeholder="A sentence or two is plenty."></textarea></label>
+      <label class="hp" aria-hidden="true">Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label>
+      <button class="btn" type="submit">Request a key</button>
+      <div id="signupMsg" role="status" aria-live="polite"></div>
+    </form>
+  </div>
 
   <h2>Endpoints</h2>
   <div class="card"><div class="ep"><b>GET</b><code>/api/v1/values?shape=sf|oneqb</code></div>
@@ -48,18 +85,45 @@ a{color:var(--cyan)}
   <div class="card"><div class="ep"><b>GET</b><code>/api/v1/managers/{sleeperUserId}</code></div>
     <p style="margin-top:8px">How a manager trades this season, across every league in the database: trades, leagues, partners, the share of value they take in and send out by position, and their pricing (median gap, each trade valued on its own day; positive means they give more than they get).</p></div>
   <div class="card"><div class="ep"><b>GET</b><code>/api/v1/trades?player={id} | owner={userId} | league={id}</code></div><p style="margin-top:8px">Recent completed trades, newest first, with who got what. <code>limit</code> up to 200.</p></div>
+  <div class="card"><div class="ep"><b>GET</b><code>/api/v1/usage</code></div><p style="margin-top:8px">Your key's plan, today's calls and the last 30 days.</p></div>
   <div class="card"><div class="ep"><b>GET</b><code>/api/v1</code></div><p style="margin-top:8px">Status, endpoints and the latest values day. No key needed.</p></div>
 
   <h2>How values are made</h2>
   <div class="card wide"><table>
     <tr><th>Field</th><th>Meaning</th></tr>
-    <tr><td><code>ffu</code></td><td>The FFU value: <code>market × factor</code>.</td></tr>
-    <tr><td><code>market</code></td><td>That day's market price for the league shape.</td></tr>
-    <tr><td><code>factor</code></td><td>What real trades in the FFU database pay against the market price, fit nightly with a pull toward 1.00 where trades are few. Checked every night on trades the fit never saw.</td></tr>
+    <tr><td><code>ffu</code></td><td>The FFU value: the market price adjusted by what real trades in the FFU database pay.</td></tr>
+    <tr><td><code>market</code></td><td>That day's market price for the league shape. Partner keys only.</td></tr>
+    <tr><td><code>factor</code></td><td>Partner keys only. What real trades in the FFU database pay against the market price, fit nightly with a pull toward 1.00 where trades are few. Checked every night on trades the fit never saw.</td></tr>
     <tr><td><code>n</code></td><td>Trades behind the factor.</td></tr>
     <tr><td><code>src</code></td><td><code>trades</code> (5+ trades behind it) or <code>market</code> (fewer).</td></tr>
   </table></div>
   <p class="note">Shapes: <code>sf</code> = Superflex / 2QB, <code>oneqb</code> = one quarterback. Player ids are Sleeper ids; picks are <code>2027-1</code>, with tiers <code>2027-1-early</code> / <code>-mid</code> / <code>-late</code>. Partner beta: endpoints and fields may still change, with notice. Data may not be resold without an FFU data license.</p>
+
+  <h2>Terms, in plain words</h2>
+  <div class="card"><ul style="margin:0;padding-left:18px;color:var(--ink-2)">
+    <li>Show “Values: Fantasy Football Universe” wherever FFU values appear.</li>
+    <li>Don't resell the data, mirror it in bulk, or offer it as your own API. A Partner license covers commercial use.</li>
+    <li>One key per person or project. Don't share keys or put them in public client-side code.</li>
+    <li>The data is provided as is, without guarantees. Values are estimates, not advice.</li>
+    <li>We can change limits, fields or these terms with notice, and revoke keys that break them.</li>
+  </ul></div>
 </main>
+<script>
+const f = document.getElementById("signup"), msg = document.getElementById("signupMsg");
+f.addEventListener("submit", async e => {
+  e.preventDefault(); const btn = f.querySelector("button"), data = Object.fromEntries(new FormData(f));
+  msg.className = ""; msg.textContent = ""; btn.disabled = true; btn.textContent = "Requesting…";
+  try {
+    const r = await fetch("/api/v1/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }), j = await r.json().catch(() => ({}));
+    if (!r.ok) { msg.className = "err"; msg.textContent = j.error || "Something went wrong. Try again."; return; }
+    if (!j.key) { msg.className = "ok"; msg.textContent = "Thanks, we've got your request."; return; }
+    msg.innerHTML = '<p class="ok" style="margin:0"></p><div class="keybox"><code id="theKey"></code><button class="btn" type="button" id="copyKey">Copy</button></div>';
+    msg.querySelector("p").textContent = j.note; document.getElementById("theKey").textContent = j.key;
+    document.getElementById("copyKey").onclick = async ev => { try { await navigator.clipboard.writeText(j.key); ev.target.textContent = "Copied"; } catch { const sel = getSelection(), rg = document.createRange(); rg.selectNodeContents(document.getElementById("theKey")); sel.removeAllRanges(); sel.addRange(rg); ev.target.textContent = "Selected: press Copy"; } };
+    f.querySelectorAll("input,textarea").forEach(x => x.disabled = true); btn.hidden = true;
+  } catch { msg.className = "err"; msg.textContent = "Couldn't reach the server. Check your connection and try again."; }
+  finally { btn.disabled = false; btn.textContent = "Request a key"; }
+});
+</script>
 </body>
 </html>

@@ -130,6 +130,7 @@ function renderMenu(){
       <button class="mtile" data-go="rankings">${svgI("rankings",18)}Rankings</button>
       <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
       <button class="mtile" data-nav="teams:value">${svgI("reviews",18)}Now vs future</button>
+      <button class="mtile" data-go="live">${svgI("live",18)}Live scores</button>
       <button class="mtile" data-go="edges">${svgI("edges",18)}Scoring edges</button>
       <button class="mtile" data-nav="teams:odds">${svgI("diagnose",18)}Playoff odds${dirI.badge ? ` <span class="ct warn">${dirI.badge}</span>` : ""}</button>
     </div></div>
