@@ -938,6 +938,7 @@ body.cc .lab{font-family:var(--display);font-weight:700;letter-spacing:.1em}
 .ccmgr{padding:14px;border-radius:16px;display:flex;flex-direction:column;gap:10px;animation:ccrise .45s var(--ease) both;animation-delay:calc(var(--i,0)*28ms)}
 .ccmgr-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .ccmgr-h b{display:block;font-family:var(--display);font-size:17px;font-weight:700}.ccmgr-h small{display:block;color:var(--ink-3);font-size:12.5px}
+.ccmgr-h .ccx{margin-top:4px;color:#FFC29A;font-size:12px}
 .ccfit{text-align:right;flex:none}.ccfit b{font-size:26px;line-height:1}.ccfit small{font-size:11px}
 .ccmgr dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:0;font-size:13.5px}
 .ccmgr dt{color:var(--ink-3)}.ccmgr dd{margin:0;text-align:right;font-weight:600}
@@ -5564,7 +5565,7 @@ async function buildManagers(){
           const g = pmOf(got), s = pmOf(gave); if(g > 0 && s > 0) prem.push((s - g)/Math.max(g, s)); }
         const top = o => { const e = Object.entries(o).sort((a,b)=>b[1]-a[1])[0]; return e && e[1] > 0 ? e[0] : null; };
         let buys = top(recv), sells = top(sent), pm = prem.length ? median(prem) : null, n = mine.length, lgs = 1, pmN = prem.length, buyPm = null, buyShare = null, src = "local";
-        const dir = ARCH_DIR(t.arch), prof = db && db.users && t.owner ? db.users[t.owner] : null;
+        const dir = ARCH_DIR(t.arch), prof = db && db.users && t.owner ? db.users[t.owner] : null, exd = db && db.excluded && t.owner ? db.excluded[t.owner] : null;
         if(prof && prof[0] >= n){   // the whole FFU database, valued on each trade's own day
           const arg = a => { const m = Math.max(...a); return m > 0 ? a.indexOf(m) : -1; }, bi = arg(prof[6]), si2 = arg(prof[7]);
           n = prof[0]; last = Math.max(last, prof[1]*864e5); lgs = prof[2]; pm = prof[4] == null ? null : prof[4]/1000; pmN = prof[5];
@@ -5578,7 +5579,7 @@ async function buildManagers(){
         let pitch = null;
         if(buys && buys !== "Picks" && surplus){ const at = b.me.pl.filter(p=>p.pos === buys).sort((a,c)=>c.v - a.v); const pk = at[1] && at[1].v >= 800 ? at[1] : null; if(pk) pitch = {txt:`Shop ${pname(pk.id)} (${buys})`, give:[{uid:pk.id, id:pk.id}]}; }
         else if(buys === "Picks" && myDir === "Contender" && b.me.picks.length){ const pk = b.me.picks.slice().sort((a,c)=>c.val - a.val)[0]; pitch = {txt:`Shop your ${pickLabel(pk)}`, give:[{uid:`PK:${pk.season}-${pk.round}-${pk.orig}`, id:"PICK:" + pickLabel(pk)}]}; }
-        rows.push({lid, lg:lg.name, rid:t.rid, name:t.name, rec:t.rec, dir, n, lgs, last, buys, buyShare, buyPm, sells, pm, pmN, src, fit, pitch, more:Math.max(0, (owners[t.owner] || 1) - 1)});
+        rows.push({lid, lg:lg.name, rid:t.rid, name:t.name, rec:t.rec, dir, n, lgs, last, buys, buyShare, buyPm, sells, pm, pmN, src, fit, pitch, ex:exd, more:Math.max(0, (owners[t.owner] || 1) - 1)});
       }
     }
     MG.data = rows;
@@ -5595,10 +5596,10 @@ function viewManagers(){
   const rows = MG.data.slice().sort((a,b)=> MG.sort === "n" ? b.n - a.n || b.fit - a.fit : MG.sort === "pm" ? ((b.pm ?? -9) - (a.pm ?? -9)) : b.fit - a.fit).slice(0, 30);
   const price = pm => pm == null ? "No trades to judge yet" : pm > .05 ? `Pays ~${Math.round(pm*100)}% over` : pm < -.05 ? `Wins trades by ~${Math.round(-pm*100)}%` : "Trades near even";
   h += `<div class="ccgrid">${rows.map((m, i)=>{ const col = m.fit >= 70 ? "var(--ok)" : m.fit >= 45 ? "var(--warn)" : "var(--crit)";
-    return `<article class="glass ccmgr" style="--i:${i}"><div class="ccmgr-h"><div><b>${esc(m.name)}</b><small>${esc(m.lg)} · ${m.dir}${m.rec ? " · " + esc(m.rec) : ""}${m.more ? ` · in ${m.more + 1} of your leagues` : ""}</small></div><div class="ccfit"><b class="num" style="color:${col}">${m.fit}</b><small>trade fit</small></div></div>
+    return `<article class="glass ccmgr" style="--i:${i}"><div class="ccmgr-h"><div><b>${esc(m.name)}</b><small>${esc(m.lg)} · ${m.dir}${m.rec ? " · " + esc(m.rec) : ""}${m.more ? ` · in ${m.more + 1} of your leagues` : ""}</small>${m.ex ? `<small class="ccx">High-volume account: ${m.ex[0]} trades in ${m.ex[1]} leagues this season, so it's left out of FFU values</small>` : ""}</div><div class="ccfit"><b class="num" style="color:${col}">${m.fit}</b><small>trade fit</small></div></div>
       <dl><dt>Trades this season</dt><dd class="num">${m.n}${m.src === "db" && m.lgs > 1 ? ` in ${m.lgs} leagues` : ""}${m.last ? ` · last ${esc(ago(m.last))}` : ""}</dd><dt>Buys</dt><dd>${m.buys ? m.buys + (m.buyShare ? ` · ${m.buyShare}% of value in` : "") : "–"}</dd><dt>Sells</dt><dd>${m.sells || "–"}</dd><dt>Pricing</dt><dd>${price(m.pm)}${m.pmN ? ` <small class="sub">(${m.pmN})</small>` : ""}</dd>${m.buyPm != null && m.buys ? `<dt>Buying ${m.buys}</dt><dd>${price(m.buyPm)}</dd>` : ""}</dl>
       <div class="ccpitch">${m.pitch ? `<span><small>Best pitch</small>${esc(m.pitch.txt)}</span><button class="ghost tint" data-edbuild="${esc(JSON.stringify({lid:m.lid, rid:m.rid, give:m.pitch.give, get:[]}))}">Build it</button>` : `<span><small>Best pitch</small>${m.n ? "Nothing of yours lines up with what they buy" : "No trades this season: low odds"}</span><button class="ghost" data-edbuild="${esc(JSON.stringify({lid:m.lid, rid:m.rid, give:[], get:[]}))}">Open</button>`}</div></article>`; }).join("")}</div>`;
-  h += `<div class="glass ccnote"><b>How this is worked out</b><span>${MG.db ? `Trades: every completed trade this season in the FFU database (${MG.db.trades.toLocaleString()} trades, ${MG.db.n.toLocaleString()} managers), not just your leagues. Pricing: the median gap in their trades, each valued with the market on the day it happened, so later value swings don't count against them (number in brackets = trades priced). Managers we haven't crawled yet fall back to your leagues at today's values.` : `Trades: completed trades this season in your leagues. Pricing: the median gap in their trades at today's values.`} Buys and sells: the positions (or picks) they've taken in and sent out most, by value. Trade fit (0–100): 35% how often they trade, 30% whether their direction complements yours, 20% whether you're strong where they buy, 15% how recently they traded.</span></div>`;
+  h += `<div class="glass ccnote"><b>How this is worked out</b><span>${MG.db ? `Trades: every completed trade this season in the FFU database (${MG.db.trades.toLocaleString()} trades, ${MG.db.n.toLocaleString()} managers), not just your leagues. Pricing: the median gap in their trades, each valued with the market on the day it happened, so later value swings don't count against them (number in brackets = trades priced). Managers we haven't crawled yet fall back to your leagues at today's values.` : `Trades: completed trades this season in your leagues. Pricing: the median gap in their trades at today's values.`} Buys and sells: the positions (or picks) they've taken in and sent out most, by value. Accounts trading at extreme volume (hundreds of trades across dozens of leagues) are left out of FFU values and profiles; their card uses your leagues only. Trade fit (0–100): 35% how often they trade, 30% whether their direction complements yours, 20% whether you're strong where they buy, 15% how recently they traded.</span></div>`;
   return h;
 }
 

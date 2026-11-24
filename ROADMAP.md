@@ -209,6 +209,11 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - Findings: Superflex QBs trade at ×1.22 of 1QB; rank correlation with the market 0.87 (players with 5+ trades). Value trends per player tested and left off (helped held-out trades slightly, hurt validation).
 - `dp.mjs` now also writes `player-facts.json` (ids, birthdates, NFL draft slots; facts, no valuations).
 
+## Cleaning: extreme accounts and lopsided trades (Nov 24, 2026)
+- `backend/clean.mjs`, applied by the crawl and every valuation job: (1) accounts with trades this season more than 4 robust SDs above the typical manager on a log scale and at least 150 trades are discarded (threshold 244 trades on Nov 24: 17 accounts, 9,821 trades), removed from the trade database and never written to Supabase (deleted if already there), listed in `excluded.json`, sticky once excluded, seed users exempt; (2) remaining heavy traders are weighted down to count like the 99th percentile (75 trades; 102 accounts); (3) lopsided trades (gap over 75% at market, priced on both sides) are left out of fitting and manager pricing (840).
+- After cleaning (held out, never fitted): market 15.8% / 18.7%, FFU values 13.6% / 16.9%; Index 16.6% / 18.8% vs market 15.6% / 18.6%.
+- Managers view labels excluded league-mates ("left out of FFU values") and uses the user's leagues for them.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.

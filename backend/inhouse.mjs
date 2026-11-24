@@ -17,6 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { readJSON } from "./db.mjs";
+import { tradeFilter, lopsided } from "./clean.mjs";
 
 const DIR = process.env.DATA_DIR || process.argv[2] || "data-branch";
 const P = 1.45, HALF_LIFE = 90, HUBER = 0.35, FLOOR_SHARE = 0.5, CLAMP = 0.7;
@@ -40,9 +41,11 @@ let crawled = { leagues: {}, trades: [] };
 crawled = readJSON(DIR, "trades-db.json", null) || (console.log("no trades-db.json yet: own leagues only"), crawled);
 const shapes = { ...crawled.leagues, ...market.leagues };
 const all = new Map(); for (const t of market.tx.concat(crawled.trades)) if (t.type === "trade" && !all.has(t.id)) all.set(t.id, t);
+const CL = tradeFilter(DIR); let dropEx = 0, dropLop = 0;
 const trades = [];
 for (const t of all.values()) {
   if (!t.rids || t.rids.length !== 2) continue;
+  if (!CL.keep(t)) { dropEx++; continue; }                                        // extreme-volume accounts (clean.mjs)
   const meta = shapes[t.lid] || {}; if (meta.type === 0) continue;               // redraft trades don't price dynasty value
   const shape = meta.qbs === 2 ? "sf" : "oneqb";
   const snap = snapFor(t.ts); const vals = snap[shape]; if (!vals) continue;
@@ -51,11 +54,14 @@ for (const t of all.values()) {
   for (const pk of t.picks || []) if (sides[pk.to]) { const k = `FP_${pk.season}_${pk.round}`; sides[pk.to].push({ key: `K:${pk.season}-${pk.round}`, price: vals[k] > 0 ? vals[k] : floor, priced: vals[k] > 0 }); }
   const A = sides[t.rids[0]], B = sides[t.rids[1]];
   if (!A.length || !B.length || !A.some(x => x.priced) || !B.some(x => x.priced)) continue;   // need a real price on each side
-  trades.push({ ts: t.ts, A, B, shape });
+  const pmP = S => Math.pow(S.reduce((s, x) => s + Math.pow(x.price, P), 0), 1 / P), ga = pmP(A), gb = pmP(B);
+  if (lopsided(Math.abs(ga - gb) / Math.max(ga, gb))) { dropLop++; continue; }   // dumps, collusion, mistakes
+  trades.push({ ts: t.ts, A, B, shape, cw: CL.weight(t) });
 }
+console.log(`cleaning: ${dropEx} trades with excluded accounts and ${dropLop} lopsided trades left out; ${CL.capped} heavy traders capped`);
 trades.sort((a, b) => a.ts - b.ts);
 const now = Date.now();
-for (const t of trades) t.w = Math.pow(0.5, (now - t.ts) / 864e5 / HALF_LIFE);
+for (const t of trades) t.w = Math.pow(0.5, (now - t.ts) / 864e5 / HALF_LIFE) * t.cw;
 
 // ---- fit
 const logpm = (S, a) => { let s = 0; for (const x of S) s += Math.pow(x.price * Math.exp(a.get(x.key) || 0), P); return Math.log(s) / P; };

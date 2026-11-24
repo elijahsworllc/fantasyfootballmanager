@@ -8,7 +8,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { getJSON, pool } from "./sleeper.mjs";
-import { upsert, safely, dbOn, readJSON, writeGz } from "./db.mjs";
+import { upsert, remove, safely, dbOn, readJSON, writeGz } from "./db.mjs";
+import { decide } from "./clean.mjs";
 
 const OUT = process.env.OUT_DIR || "out";
 const SEEDS = (process.env.SEED_USERS || process.env.SLEEPER_USERNAME || "jahswor").split(",").map(s => s.trim()).filter(Boolean);
@@ -73,6 +74,15 @@ await pool(needOwn, 10, async lid => {
   state.leagues[lid].own = own; state.leagues[lid].ownAt = Date.now();
 });
 db.owners = {}; for (const lid of tradeLids) if (state.leagues[lid] && state.leagues[lid].own) db.owners[lid] = state.leagues[lid].own;
+
+// 5b) cleaning: discard extreme-volume accounts (clean.mjs); their trades leave the database
+const seeds = new Set(Object.entries(state.users).filter(([, u]) => u.seed).map(([id]) => id));
+const prevEx = read("excluded.json", {}), ex = decide(market.tx.concat(db.trades), db.owners, seeds, prevEx);
+fs.writeFileSync(path.join(OUT, "excluded.json"), JSON.stringify(ex));
+const isOut = t => (t.rids || []).some(r => ex.users[((db.owners[t.lid] || {})[r])]);
+const before = db.trades.length; db.trades = db.trades.filter(t => !isOut(t));
+const newlyOut = Object.keys(ex.users).filter(u => !(prevEx.users || {})[u]);
+console.log(`cleaning: ${ex.stats.excluded} accounts excluded (threshold ${ex.rule.threshold} trades; ${newlyOut.length} new), ${before - db.trades.length} of their trades removed; ${ex.stats.capped} accounts capped at ${ex.cap} trades`);
 db.built = Date.now();
 writeGz(OUT, "trades-db.json", db);
 writeGz(OUT, "crawl-state.json", state);
@@ -86,8 +96,10 @@ await safely("database", async () => {
   const trRows = db.trades.filter(t => full || newIds.has(t.id) || (state.leagues[t.lid] && (state.leagues[t.lid].ownAt || 0) > since))
     .map(t => { const own = (state.leagues[t.lid] || {}).own || {}; return { id: t.id, league_id: t.lid, season: +season, ts: new Date(t.ts).toISOString(), rids: t.rids, owners: t.rids.map(r => own[r] || null), adds: t.adds, picks: t.picks }; });
   const a = await upsert("ffu_leagues", lgRows, { onConflict: "league_id" }), b = await upsert("ffu_trades", trRows, { onConflict: "id" });
+  // anything already stored from an account excluded since: delete it (owners overlap the excluded list)
+  const purge = full ? [] : newlyOut; for (let i = 0; i < purge.length; i += 50) await remove("ffu_trades", `owners=ov.{${purge.slice(i, i + 50).join(",")}}`);
   state.dbSync = Date.now(); writeGz(OUT, "crawl-state.json", state);
-  return `${a} leagues, ${b} trades upserted${full ? " (first full load)" : ""}`;
+  return `${a} leagues, ${b} trades upserted${full ? " (first full load)" : ""}${purge.length ? `; trades of ${purge.length} newly excluded accounts deleted` : ""}`;
 });
 const users = Object.keys(state.users).length, crawled = Object.values(state.users).filter(u => u.at).length;
 console.log(`crawl: ${calls} API calls; ${Object.keys(state.leagues).length} leagues known; ${crawled}/${users} users crawled; trades-db ${db.trades.length} trades from ${Object.keys(db.leagues).length} leagues; owners for ${Object.keys(db.owners).length} leagues`);

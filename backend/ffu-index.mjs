@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getJSON } from "./sleeper.mjs";
 import { readJSON } from "./db.mjs";
+import { tradeFilter, lopsided } from "./clean.mjs";
 
 const DIR = process.env.DATA_DIR || process.argv[2] || "data-branch";
 const SLOPE = +(process.env.INDEX_SLOPE ?? 0);   // ridge on each asset's 30-day trend; 0 = off (Nov 24 test: trends helped held-out trades slightly but hurt validation)
@@ -56,17 +57,22 @@ function asset(key) {
 
 // ---- trades: dynasty two-team trades; each side is a list of items {a: asset, lm: log market price that day}
 const all = new Map(); for (const t of market.tx.concat(crawled.trades)) if (t.type === "trade" && (!t.status || t.status === "complete") && !all.has(t.id)) all.set(t.id, t);
-const trades = [];
+const marketGap = t => { const L = S => { const z = S.map(x => P * x.lm), m = Math.max(...z); return (m + Math.log(z.reduce((s, v) => s + Math.exp(v - m), 0))) / P; }; return 1 - Math.exp(-Math.abs(L(t.A) - L(t.B))); };
+const trades = [], CL = tradeFilter(DIR); let dropEx = 0, dropLop = 0;
 for (const t of all.values()) {
   if (!t.rids || t.rids.length !== 2) continue;
+  if (!CL.keep(t)) { dropEx++; continue; }
   const meta = shapes[t.lid] || {}; if (meta.type === 0) continue;
   const sf = meta.qbs === 2 ? 1 : 0, vals = snapFor(t.ts)[sf ? "sf" : "oneqb"] || {}, fl = floorOf(vals);
   const side = { [t.rids[0]]: [], [t.rids[1]]: [] }; let priced = { [t.rids[0]]: 0, [t.rids[1]]: 0 };
   for (const [pid, rid] of Object.entries(t.adds || {})) if (side[rid]) { const v = vals[pid]; side[rid].push({ a: asset("P:" + pid), lm: Math.log(v > 0 ? v : fl) }); if (v > 0) priced[rid]++; }
   for (const pk of t.picks || []) if (side[pk.to]) { const v = vals[`FP_${pk.season}_${pk.round}`]; side[pk.to].push({ a: asset(`K:${pk.season}-${pk.round}`), lm: Math.log(v > 0 ? v : fl) }); if (v > 0) priced[pk.to]++; }
   const A = side[t.rids[0]], B = side[t.rids[1]]; if (!A.length || !B.length) continue;
-  trades.push({ ts: t.ts, sf, A, B, mk: priced[t.rids[0]] > 0 && priced[t.rids[1]] > 0 });
+  const mk = priced[t.rids[0]] > 0 && priced[t.rids[1]] > 0, tr = { ts: t.ts, sf, A, B, mk, cw: CL.weight(t) };
+  if (mk && lopsided(marketGap(tr))) { dropLop++; continue; }
+  trades.push(tr);
 }
+console.log(`cleaning: ${dropEx} trades with excluded accounts and ${dropLop} lopsided trades left out; ${CL.capped} heavy traders capped`);
 trades.sort((a, b) => a.ts - b.ts);
 const NA = ASSET.size, NF = FEAT.size, assets = [...ASSET.values()];
 
@@ -77,7 +83,7 @@ function fit(train0, mode, lambda, iters = ITERS, hl = HALF_LIFE) {
   // the anchored comparison is fitted exactly like inhouse.mjs: only trades with a market price on each side, factors capped at e^±0.7
   const train = mode === "anchored" ? train0.filter(t => t.mk) : train0;
   const now = train.length ? train[train.length - 1].ts : Date.now();
-  for (const t of train) t.w = Math.pow(0.5, (now - t.ts) / 864e5 / hl);
+  for (const t of train) t.w = Math.pow(0.5, (now - t.ts) / 864e5 / hl) * (t.cw ?? 1);
   const d = new Float64Array(NA), w = new Float64Array(NF), o = new Float64Array(CATS.length), sl = new Float64Array(NA);   // o: Superflex offset by category; sl: trend per 30 days
   const adam = n => ({ m: new Float64Array(n), v: new Float64Array(n) }), Ad = adam(NA), Aw = adam(NF), Ao = adam(CATS.length), As = adam(NA);
   const TREND = mode === "index" && SLOPE > 0, ago = t => (t.ts - now) / (30 * 864e5);
@@ -102,7 +108,6 @@ function fit(train0, mode, lambda, iters = ITERS, hl = HALF_LIFE) {
   return { gap: (t) => { tAgo = TREND ? Math.max(0, ago(t)) : 0; const L = S => { const z = S.map(x => P * th(x, t.sf)), m = Math.max(...z); return (m + Math.log(z.reduce((s, v) => s + Math.exp(v - m), 0))) / P; }; return 1 - Math.exp(-Math.abs(L(t.A) - L(t.B))); },
     theta: (a, sf) => mode === "index" ? a.feats.reduce((s, f) => s + w[f], 0) + d[a.i] + (sf ? o[a.c] : 0) : null, w, o, sl, d };
 }
-const marketGap = t => { const L = S => { const z = S.map(x => P * x.lm), m = Math.max(...z); return (m + Math.log(z.reduce((s, v) => s + Math.exp(v - m), 0))) / P; }; return 1 - Math.exp(-Math.abs(L(t.A) - L(t.B))); };
 const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
 const mean = a => a.reduce((s, x) => s + x, 0) / (a.length || 1);
 const score = (set, g) => { const v = set.map(g); return { median: +median(v).toFixed(4), mean: +mean(v).toFixed(4) }; };

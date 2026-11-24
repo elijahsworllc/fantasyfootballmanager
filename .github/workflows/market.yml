@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/ffu-index.mjs", "backend/db.mjs", ".github/workflows/market.yml"]
+    paths: ["backend/market.mjs", "backend/sleeper.mjs", "backend/inhouse.mjs", "backend/dp.mjs", "backend/managers.mjs", "backend/ffu-values.mjs", "backend/ffu-index.mjs", "backend/db.mjs", "backend/clean.mjs", ".github/workflows/market.yml"]
 permissions:
   contents: write
 concurrency:

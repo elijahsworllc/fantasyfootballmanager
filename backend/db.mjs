@@ -31,6 +31,13 @@ export async function upsert(table, rows, { onConflict, batch = 500 } = {}) {
   return done;
 }
 
+export async function remove(table, filter) {
+  if (!dbOn) return 0;
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, { method: "DELETE", headers: { ...headers(), Prefer: "return=minimal" } });
+  if (!r.ok) throw new Error(`${table} delete ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  return 1;
+}
+
 // Run a database step without ever failing the nightly job: files stay the source of truth until cutover.
 export async function safely(label, fn) {
   if (!dbOn) { console.log(`${label}: skipped (no SUPABASE_SECRET_KEY)`); return; }

@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getJSON } from "./sleeper.mjs";
 import { readJSON, upsert, safely } from "./db.mjs";
+import { tradeFilter, lopsided } from "./clean.mjs";
 
 const DIR = process.env.DATA_DIR || process.argv[2] || "data-branch";
 const P = 1.45, FLOOR_SHARE = 0.5, CATS = ["QB", "RB", "WR", "TE", "Picks"];
@@ -37,9 +38,10 @@ const median = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
 
 const all = new Map(); for (const t of market.tx.concat(crawled.trades)) if (t.type === "trade" && (!t.status || t.status === "complete") && !all.has(t.id)) all.set(t.id, t);
 const U = new Map(), get = uid => { if (!U.has(uid)) U.set(uid, { n: 0, last: 0, lg: new Set(), pt: new Set(), prem: [], recv: [0, 0, 0, 0, 0], sent: [0, 0, 0, 0, 0], byBuy: {} }); return U.get(uid); };
-let used = 0, priced = 0;
+let used = 0, priced = 0, dropEx = 0, dropLop = 0; const CL = tradeFilter(DIR);
 for (const t of all.values()) {
   if (!t.rids || t.rids.length !== 2 || !snapDays.length) continue;
+  if (!CL.keep(t)) { dropEx++; continue; }
   const own = owners[t.lid]; if (!own) continue;
   const [ra, rb] = t.rids, ua = own[ra], ub = own[rb]; if (!ua || !ub || ua === ub) continue;
   const meta = shapes[t.lid] || {}, dyn = meta.type !== 0, vals = snapFor(t.ts)[meta.qbs === 2 ? "sf" : "oneqb"] || {}, fl = floor(vals);
@@ -48,7 +50,9 @@ for (const t of all.values()) {
   for (const pk of t.picks || []) { const s = side[pk.to]; if (!s) continue; const k = `FP_${pk.season}_${pk.round}`, v = vals[k] > 0 ? vals[k] : fl; s.got.push(v); if (vals[k] > 0) s.real++; s.cats[4] += v; }
   if (!side[ra].got.length || !side[rb].got.length) continue;
   used++;
-  const canPrice = dyn && side[ra].real && side[rb].real; if (canPrice) priced++;
+  let canPrice = dyn && side[ra].real && side[rb].real;
+  if (canPrice) { const ga = pm(side[ra].got), gb = pm(side[rb].got); if (lopsided(Math.abs(ga - gb) / Math.max(ga, gb))) { canPrice = false; dropLop++; } }   // still counts as activity, not pricing
+  if (canPrice) priced++;
   for (const [me, them, uid, other] of [[ra, rb, ua, ub], [rb, ra, ub, ua]]) {
     const u = get(uid), g = side[me], s = side[them];
     u.n++; u.last = Math.max(u.last, t.ts || 0); u.lg.add(t.lid); u.pt.add(other);
@@ -63,7 +67,9 @@ for (const [uid, u] of U) {
   const buy = share(u.recv), top = buy.indexOf(Math.max(...buy)), bp = u.byBuy[top] || [];
   users[uid] = [u.n, Math.floor(u.last / 864e5), u.lg.size, u.pt.size, u.prem.length ? Math.round(median(u.prem) * 1000) : null, u.prem.length, buy, share(u.sent), bp.length ? [Math.round(median(bp) * 1000), bp.length] : null];
 }
-const out = { built: Date.now(), season: crawled.season || market.season, trades: used, priced, cats: CATS, users };
+const exf = readJSON(DIR, "excluded.json", { users: {} });
+const excluded = Object.fromEntries(Object.entries(exf.users || {}).map(([u, x]) => [u, [x.trades, x.leagues]]));
+const out = { built: Date.now(), season: crawled.season || market.season, trades: used, priced, cats: CATS, users, excluded, cleaning: { excludedTrades: dropEx, lopsidedUnpriced: dropLop } };
 fs.writeFileSync(path.join(DIR, "managers.json"), JSON.stringify(out));
 await safely("database: manager profiles", async () => {
   const season = +(out.season || new Date().getFullYear()), now = new Date().toISOString();

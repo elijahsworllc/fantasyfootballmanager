@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["backend/crawl.mjs", "backend/db.mjs", ".github/workflows/crawl.yml"]
+    paths: ["backend/crawl.mjs", "backend/db.mjs", "backend/clean.mjs", ".github/workflows/crawl.yml"]
 permissions:
   contents: write
 concurrency:
