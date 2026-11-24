@@ -1,0 +1,17 @@
+name: Delete the old public data branch (one-time)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/delete-data-branch.yml"]
+permissions:
+  contents: write
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete data and private-store branches
+        run: |
+          for b in data private-store; do
+            if git ls-remote --exit-code --heads origin "$b" >/dev/null; then git push origin --delete "$b" && echo "deleted $b"; else echo "$b already gone"; fi
+          done
