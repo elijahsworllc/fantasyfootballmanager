@@ -15,7 +15,12 @@ const SLP = {
 // moves only go out for the Sleeper account this screen is showing
 function slpOn(){ const u = SLP.user(); return !!(SLP.tok() && u && S.userId && String(u.user_id) === String(S.userId)); }
 async function slp(op, variables){
-  const r = await fetch(FFU_API + "/api/sleeper", {method:"POST", headers:{"Content-Type":"application/json", "x-sleeper-token":SLP.tok()}, body:JSON.stringify({op, variables})});
+  const ctl = typeof AbortController === "function" ? new AbortController() : null, tm = ctl && setTimeout(() => ctl.abort(), 25000);
+  const headers = {"Content-Type":"application/json"}; if(SLP.tok()) headers["x-sleeper-token"] = SLP.tok();
+  let r;
+  try{ r = await fetch(FFU_API + "/api/sleeper", {method:"POST", headers, body:JSON.stringify({op, variables}), signal: ctl ? ctl.signal : undefined, cache:"no-store"}); }
+  catch(e){ throw Object.assign(new Error(e.name === "AbortError" ? "Sleeper didn't answer in time. Try again in a minute." : `Couldn't reach the FFU server (${e.message || e.name}). Check your connection and try again.`), {code:"network"}); }
+  finally{ if(tm) clearTimeout(tm); }
   const j = await r.json().catch(()=>({}));
   if(r.status === 401 && op !== "login"){ SLP.clear(); render(); }
   if(!r.ok) throw Object.assign(new Error(j.error || `Sleeper request failed (${r.status})`), {code:j.code, status:r.status});

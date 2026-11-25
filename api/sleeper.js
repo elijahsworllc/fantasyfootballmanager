@@ -67,11 +67,15 @@ module.exports = async (req, res) => {
   const headers = { accept: "application/json", "content-type": "application/json", origin: "https://sleeper.com", referer: "https://sleeper.com/",
     "user-agent": "FFU Command Center (+https://fantasyfootballuniverse.com)", "x-sleeper-graphql-op": op };
   if (!def.anon) headers.authorization = token;
-  let r;
-  try { r = await fetch(GQL, { method: "POST", headers, body: JSON.stringify({ operationName: op, variables: vars, query: def.q }) }); }
-  catch { return out(502, { error: "Couldn't reach Sleeper. Try again in a minute." }); }
+  // one line per call for troubleshooting: the operation, Sleeper's status and the time taken (never the token or the body)
+  const t0 = Date.now(), note = (st, extra) => console.log(`sleeper ${op} -> ${st} in ${Date.now() - t0}ms${extra ? " " + extra : ""}`);
+  let r; const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 12000);
+  try { r = await fetch(GQL, { method: "POST", headers, body: JSON.stringify({ operationName: op, variables: vars, query: def.q }), signal: ctl.signal }); }
+  catch (e) { note("network", e.name); return out(504, { error: e.name === "AbortError" ? "Sleeper took too long to answer. Try again in a minute." : "Couldn't reach Sleeper. Try again in a minute." }); }
+  finally { clearTimeout(timer); }
   const text = await r.text(); let j = {};
-  try { j = text ? JSON.parse(text) : {}; } catch { return out(502, { error: `Sleeper answered with something unexpected (HTTP ${r.status}).` }); }
+  try { j = text ? JSON.parse(text) : {}; } catch { note(r.status, "non-json " + (r.headers.get("content-type") || "")); return out(502, { error: `Sleeper answered with something unexpected (HTTP ${r.status}).` }); }
+  note(r.status, (j.errors || [])[0] ? "error " + String((j.errors[0].code || j.errors[0].message || "")).slice(0, 60) : "");
   const err = (j.errors || [])[0];
   if (r.status === 401 || (err && err.code === "unauthorized")) return out(401, { error: "Sleeper signed you out. Connect again.", code: "unauthorized" });
   if (r.status === 429) return out(429, { error: "Sleeper is rate-limiting. Wait a minute and try again." });
