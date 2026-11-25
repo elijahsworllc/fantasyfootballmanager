@@ -526,7 +526,7 @@ function viewFix(){
   let h = `<section class="pagehead"><h1 class="h1">Lineups</h1>
     <div class="sub">${{fix:"Must fix: starters who can't play (out, bye or an empty slot), soonest lock first. Open jumps straight to that team in Sleeper.", monitor:"Game-time: Questionable starters and healthy players stuck in IR slots, soonest lock first.", startsit:"Upgrades: a bench player projects more than a starter in that league's own scoring, soonest lock first."}[S.fixTab]}</div></section>
     <div class="seg" role="tablist" style="--n:3;--i:${ti}">${tabs.map(([k,l,n])=>`<button role="tab" data-fixtab="${k}" aria-selected="${S.fixTab===k}">${l}<span class="ct">${n}</span></button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="statusline" id="statusline"></div>${linkTestHTML()}${runEntryHTML()}`;
+    <div class="statusline" id="statusline"></div>${linkTestHTML()}${slpBar()}${runEntryHTML()}`;
   if(S.fixTab === "fix"){
     const groups = outGroups(), lids = [...new Set(groups.flatMap(g=>g.rows.map(x=>x.r.league.league_id)))], left = lids.filter(id=>!isDone(id)).length;
     if(!groups.length) return h + `<div class="empty">No starter is out, on bye or empty. Every lineup can play.</div>`;
@@ -539,7 +539,7 @@ function viewFix(){
           ${g.rows.map(x=>{ const id = x.r.league.league_id, d = isDone(id);
             return `<div class="fixrow${d?" done":""}"><button class="check" data-done="${id}" aria-pressed="${d}" aria-label="Mark ${esc(x.r.league.name)} done">${d?ICON.tick:""}</button>
               <span class="t"><span class="nm">${esc(x.r.league.name)}</span><span class="fx${x.sub?"":" w"}">${x.sub ? `Start ${esc(x.sub.full)} at ${x.slot} · ${x.gain >= 0 ? "+" : ""}${fmt(x.gain)} pts <span class="when">· plays ${esc(kickLabel(x.subK))}</span>` : "No healthy bench option · check waivers"}</span></span>
-              <a class="openbtn" href="${leagueLink(id)}" target="_blank" rel="noopener">Open ${ICON.ext}</a></div>`; }).join("")}</section>`;
+              ${slpOn() && x.sub && !d ? `<button class="openbtn slpset" data-slplineup="${id}">Set</button>` : ""}<a class="openbtn" href="${leagueLink(id)}" target="_blank" rel="noopener">${slpOn() && x.sub && !d ? ICON.ext : `Open ${ICON.ext}`}</a></div>`; }).join("")}</section>`;
       }
     });
     return h + `<p class="src">Ordered by when each decision locks: the earlier kickoff of the player who's out and his replacement. ${exact ? "Kickoff times from ESPN's NFL schedule." : "Exact kickoff times weren't available, so games are ordered by date with Thursday first."} Injury status from Sleeper.</p>`;

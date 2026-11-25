@@ -21,7 +21,7 @@ const OUT = process.argv[2] || "/tmp/shots";
   const step = async (name, fn) => { try { await fn(); } catch (e) { errs.push(`step ${name}: ${e.message.split("\n")[0]}`); } };
 
   // first run: connect screen
-  await page.goto("http://localhost:8765/index.html");
+  await page.goto("http://localhost:8765/index.html?home=classic");   // the classic home has the most moving parts to test; Launcher is checked below
   await page.waitForTimeout(1800); await shot("01-connect");
   await step("connect", async () => { await page.fill("#uname", "jahswor"); await shot("01b-connect-ready"); await page.click("#connectBtn"); });
   await page.waitForTimeout(450); await page.screenshot({ path: `${OUT}/02a-warp-early.png` });
@@ -54,6 +54,7 @@ const OUT = process.argv[2] || "/tmp/shots";
   await step("compare", async () => { await page.evaluate(() => window.scrollTo(0, 0)); await page.click('[data-tool="compare"]'); await page.waitForTimeout(300); await page.click("[data-add]"); await page.waitForTimeout(200); await page.click("[data-add]"); });
   await page.waitForTimeout(4200); await shot("10c-compare");
   await page.evaluate(() => window.scrollTo(0, 650)); await shot("10d-compare-rows");
+  await step("launcher home", async () => { await page.evaluate(() => { HOME_V.set("launcher"); go("home"); }); await page.waitForSelector(".tgrid .ttile", {timeout: 8000}); const n = await page.$$eval(".tgrid .ttile", x => x.length); if(n !== 8) throw new Error("tiles: " + n); await page.evaluate(() => { HOME_V.set("classic"); go("home"); }); await page.waitForTimeout(500); });
   await step("brief", async () => { await page.click('.navb[data-go="home"]'); await page.waitForTimeout(400); await page.click('.pstep[data-go="brief"]'); await page.waitForTimeout(400); await page.click('[data-brief]'); });
   await page.waitForTimeout(1800); await shot("10-brief");
   await step("waivers", async () => { await page.evaluate(() => go("waivers")); await page.waitForSelector(".card, .empty, .err", { timeout: 30000 }); });

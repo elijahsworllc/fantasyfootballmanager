@@ -84,8 +84,8 @@ function renderRun(){
     ${!mv.length && !checks.length ? `<div class="empty">Nothing to change here anymore.</div>` : ""}
     <div class="ractions">
       ${RUN.back ? `<div class="backq">Back from Sleeper. Is this one set?</div>` : ""}
-      <a class="primary open" href="${leagueLink(id)}" target="_blank" rel="noopener">Open in Sleeper ${ICON.ext}</a>
-      ${LINK.mode() === "app" ? `<div class="sub openhint">Opens this league in the Sleeper app. Tap <b>Team</b>, make the moves above, then come back.</div>` : ""}
+      ${slpOn() && mv.length ? `<button class="primary open" data-slplineup="${id}">Make these moves in Sleeper</button><a class="ghost wide" href="${leagueLink(id)}" target="_blank" rel="noopener">Open in Sleeper instead ${ICON.ext}</a>` : `<a class="primary open" href="${leagueLink(id)}" target="_blank" rel="noopener">Open in Sleeper ${ICON.ext}</a>`}
+      ${!slpOn() && LINK.mode() === "app" ? `<div class="sub openhint">Opens this league in the Sleeper app. Tap <b>Team</b>, make the moves above, then come back.</div>` : ""}
       <div class="row"><button class="ghost tint${RUN.back ? " pulse2" : ""}" data-rundone="1">Done ✓ · next</button><button class="ghost" data-runskip="1">Skip</button>${mv.length ? `<button class="ghost" data-copy="${esc(movesText(r))}" data-label="Copy moves">Copy moves</button>` : ""}</div>
     </div>
     <p class="src">Moves use this league's scoring and each player's injury status. Questionable counts at 85%.</p></div>`;

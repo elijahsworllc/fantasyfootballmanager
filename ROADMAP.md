@@ -237,6 +237,16 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - **Home layouts to try** (Settings → Home layout, or `?home=focus|launcher|hub`): Focus (up next + top 6 tools + teams), Launcher (8 tools with live status first), League hub (every league with Lineup / Trades / Sleeper buttons and search). Tools sort by use on the device; Lineups is pinned first when something must be fixed. Classic stays the default until a pick.
 - **Next (pending decision):** Sign in with Sleeper (beta) for lineups, waivers and trades through Sleeper's private GraphQL (`update_matchup_leg`, `submit_waiver_claim`, `propose_trade`), token on the device only, a pass-through relay, preview + confirm + read-back on every move.
 
+## V4 chrome and Sign in with Sleeper (beta) (Nov 25, 2026)
+- **Launcher is the default home** (8 tools with live status, then the teams that need you). Classic, Focus and League hub stay in Settings.
+- **Jump rail** replaces the desktop tool list: 64px of icons that expands on hover or focus and tucks away on leave. It never repeats the screen: Home, Jump (⌘K / Ctrl+K opens the searchable menu; "/" focuses the crystal ball), what needs you, tools related to the current page (recent tools on Home), and a map of the page's sections.
+- **Header**: FFU lockup (orb + FFU / Fantasy Football Universe), the crystal ball inline on desktop, a status chip (Live, or the next lock countdown), week, account. The right column on Home drops "Next lock" (the header and tiles show it).
+- **Sign in with Sleeper (beta)** (`src/ui12.js`, `api/sleeper.js`): connect with the Sleeper username and password (sent straight to Sleeper; only Sleeper's session is kept, on this device, in `ffu:slpTok`, never in the synced `cc:` store; only for the account the app is showing).
+  - Lineups: "Set" on each must-fix row, "Make these moves in Sleeper" in the game-day run, and "Review N" to set every lineup at once. Each write reads `matchup_legs` first (refuses if the lineup changed in Sleeper since loading), sends `update_matchup_leg` with the optimal starters in slot order, reads back and marks done only on a match.
+  - Waivers: "Claim $bid" on each fill and stash (`submit_waiver_claim`, drop = lowest-value bench player when the roster is full).
+  - Trades: "Send this offer in Sleeper" in the trade builder (`propose_trade`, players only; trades with picks still go through Sleeper).
+  - Relay: only nine named operations (query text lives server-side), site origins only, token in a header, nothing stored or logged.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
