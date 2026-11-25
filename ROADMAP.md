@@ -230,6 +230,13 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - **Live** (rail and menu): every matchup you're in, with live scores (Sleeper), game clocks (ESPN), projected finals (points so far + each starter's projection × the share of his game left) and win chance (normal model; each starter's remaining points can miss by ~70%). Coin flips first and outlined. Refreshes every minute while games are on; rail badge and a side-panel summary while live; a toast and haptic tap when one of your matchups jumps 6+ points.
 - **Reactive sky**: tints warmer as your week goes well and cooler when it doesn't, flares with a meteor on big scoring moments, leans with the pointer or phone tilt and drifts as you scroll. All motion respects reduced-motion settings.
 
+## Polish sweep and home options (Nov 25, 2026)
+- **Open in Sleeper:** Sleeper's app only claims `/channels/*`, `/topics/*`, `/topic/*` and `/message/*` (Apple's cached app-site-association, read Nov 25). League pages always open the website, a login wall on phones. Phones and tablets now get `sleeper.com/channels/{league}` (opens the league in the app), computers the team page; Settings → "Open in Sleeper goes to" overrides. The link-test card is gone.
+- **Dropdowns, not bubble rows:** `chipSelect()` (src/ui10.js) replaces the home sort and filter, trade partner and position, rankings position, team lanes, Exposure and playoff-odds filters, firing the same action the bubble did.
+- **No clipped text** in the next-lock card and rankings rows on phones.
+- **Home layouts to try** (Settings → Home layout, or `?home=focus|launcher|hub`): Focus (up next + top 6 tools + teams), Launcher (8 tools with live status first), League hub (every league with Lineup / Trades / Sleeper buttons and search). Tools sort by use on the device; Lineups is pinned first when something must be fixed. Classic stays the default until a pick.
+- **Next (pending decision):** Sign in with Sleeper (beta) for lineups, waivers and trades through Sleeper's private GraphQL (`update_matchup_leg`, `submit_waiver_claim`, `propose_trade`), token on the device only, a pass-through relay, preview + confirm + read-back on every move.
+
 ## Next up (proposed order)
 1. **Payout spots per league** — read payouts from the league's early chat/description, or a per-league override, so bubble risk means "one spot out of the money."
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
