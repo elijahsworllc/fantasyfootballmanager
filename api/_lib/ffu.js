@@ -57,7 +57,7 @@ async function storeJSON(name, ttlMs = 20 * 60e3) {
   const buf = Buffer.from(await r.arrayBuffer()), data = JSON.parse((name.endsWith(".gz") ? zlib.gunzipSync(buf) : buf).toString("utf8"));
   memo.set(name, { at: Date.now(), data }); return data;
 }
-const SITE = /^https:\/\/((www\.)?fantasyfootballuniverse\.com|[a-z0-9-]+-elijah-00f2\.vercel\.app|fantasyfootballuniverse\.vercel\.app)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+const SITE = /^https:\/\/((www\.)?fantasyfootballuniverse\.com|[a-z0-9-]+-elijah-00f2\.vercel\.app|fantasyfootballuniverse\.vercel\.app|elijahsworllc\.github\.io)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 function appEndpoint(fn, { methods = ["GET"] } = {}) {
   return async (req, res) => {
     const origin = String(req.headers.origin || ""), cors = SITE.test(origin) ? { "Access-Control-Allow-Origin": origin, Vary: "Origin" } : { "Access-Control-Allow-Origin": "https://fantasyfootballuniverse.com" };

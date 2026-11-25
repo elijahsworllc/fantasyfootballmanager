@@ -22,7 +22,7 @@ const OPS = {
   accept_trade: { q: `mutation accept_trade($league_id: Snowflake!, $transaction_id: Snowflake!, $leg: Int!) { accept_trade(league_id: $league_id, transaction_id: $transaction_id, leg: $leg) { ${TX} } }` },
   reject_trade: { q: `mutation reject_trade($league_id: Snowflake!, $transaction_id: Snowflake!, $leg: Int!) { reject_trade(league_id: $league_id, transaction_id: $transaction_id, leg: $leg) { ${TX} } }` },
 };
-const SITE = /^https:\/\/((www\.)?fantasyfootballuniverse\.com|[a-z0-9-]+-elijah-00f2\.vercel\.app|fantasyfootballuniverse\.vercel\.app)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+const SITE = /^https:\/\/((www\.)?fantasyfootballuniverse\.com|[a-z0-9-]+-elijah-00f2\.vercel\.app|fantasyfootballuniverse\.vercel\.app|elijahsworllc\.github\.io)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const ID = /^\d{1,24}$/;
 
 async function body(req) {
