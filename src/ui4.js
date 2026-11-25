@@ -157,7 +157,7 @@ function viewRankings(){
   const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
   let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Rankings</h1><div class="sub">Tiers, 30-day value moves and the case for every spot. Tap a player for the why; drag the handle to make the list yours.</div></section>
     <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
+    <div class="chips cselrow">${chipSelect("Position", "rkpos", posOpts.map(p=>[p, p==="ALL" ? "Overall" : p]), RK.pos)}
       ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
       <button class="chip" data-rkmine="1" aria-pressed="${RK.mine}">My players</button></div>`;
   const data = rkCompute(), src = data && rkSourceAll();

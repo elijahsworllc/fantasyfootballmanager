@@ -981,6 +981,54 @@ body.cc .lab{font-family:var(--display);font-weight:700;letter-spacing:.1em}
 .lvfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
 .lvfoot span:last-child{color:var(--ink-2)}
 .lvdot{display:inline-block;width:6px;height:6px;margin-left:4px;border-radius:50%;background:#FF4D6D;vertical-align:middle}
+/* Polish sweep (Nov 25): compact dropdowns instead of bubble rows; no clipped words on phones */
+.cselrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.csel{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
+.cselbox{position:relative;display:inline-flex;min-width:0;max-width:100%}
+.cselbox::after{content:"";position:absolute;right:12px;top:50%;width:7px;height:7px;margin-top:-5px;border-right:2px solid var(--ink-2);border-bottom:2px solid var(--ink-2);transform:rotate(45deg);pointer-events:none}
+.csel select{appearance:none;-webkit-appearance:none;height:38px;border:0;border-radius:12px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--hair-2);padding:0 34px 0 12px;font-size:14px;font-weight:600;color:var(--ink);max-width:100%;text-overflow:ellipsis;cursor:pointer}
+.csel select:focus-visible{outline:2px solid var(--cyan,#5FE3FF);outline-offset:2px}
+.csel select option{background:#0E1426;color:#E9EEFF}
+.chips.cselrow{flex-wrap:wrap;overflow:visible}
+.brow .t span{white-space:normal;overflow:visible;text-overflow:clip;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rkmain .t small{white-space:normal;overflow:visible;text-overflow:clip}
+.openhint{margin-top:2px;text-align:center}
+/* Home layouts (Nov 25) */
+body.homealt .ccattn{display:none}
+.hhead{display:flex;flex-direction:column;gap:4px}
+.hsec{display:flex;flex-direction:column;gap:10px}
+.linkb{background:none;border:0;padding:4px 0;color:var(--cyan,#5FE3FF);font-weight:600;font-size:13.5px;cursor:pointer}
+.linkb:hover{text-decoration:underline}
+.also{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;font-size:13.5px;color:var(--ink-3)}
+.also > span{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.runbtn{width:100%;justify-content:center;min-height:48px;font-size:15.5px}
+.tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:720px){.tgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.tgrid.big{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.ttile{position:relative;display:flex;align-items:flex-start;gap:10px;text-align:left;padding:14px;border:0;border-radius:18px;cursor:pointer;min-height:76px;transition:transform .18s var(--ease,ease),box-shadow .18s}
+.ttile:hover{transform:translateY(-2px);box-shadow:0 0 0 1px color-mix(in srgb,var(--tc) 40%,transparent),0 14px 30px -18px var(--tc)}
+.ttile:active{transform:scale(.98)}
+.tgrid.big .ttile{flex-direction:column;min-height:116px;padding:16px}
+.ttile .tic{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:12px;color:var(--tc);background:color-mix(in srgb,var(--tc) 16%,transparent)}
+.ttile .tt{display:grid;gap:3px;min-width:0}
+.ttile b{font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);line-height:1.2}
+.tgrid.big .ttile b{font-size:17.5px}
+.ttile small{font-size:12.5px;color:var(--ink-3);line-height:1.3}
+.ttile.crit small{color:#FF9DAE}.ttile.warn small{color:#FFD08A}.ttile.live small{color:#FF9DB0}.ttile.info small{color:#B9A6FF}
+.ttile .ccb{position:absolute;top:10px;right:10px}
+.hubbar{display:grid;gap:12px;padding:14px}
+.hubbar .pills{display:flex;flex-wrap:wrap;gap:8px}
+.hubbar .pill{border:0;cursor:pointer;font-size:13px;padding:6px 10px}
+.hublist{display:grid;gap:10px}
+@media (min-width:900px){.hublist{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hubrow{display:grid;gap:10px;padding:12px 14px}
+.hubmain{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit}
+.hubmain .t{display:grid;gap:2px;min-width:0}
+.hubmain b{font-family:var(--display);font-size:16px;font-weight:700}
+.hubmain small{font-size:12.5px;color:var(--ink-3)}
+.hubact{display:flex;flex-wrap:wrap;gap:8px}
+.hubact .sm{padding:7px 12px;font-size:13px;min-height:34px}
+.runbtn,.runbtn *{color:#06111C !important;-webkit-text-fill-color:#06111C}
+.trow .tr{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--crit)}
 </style>
 </head>
 <body>
@@ -2247,7 +2295,7 @@ function renderDirList(){
   const avgBub = all.length ? all.reduce((s,L)=>s+L.me.odds.bub,0)/all.length : 0;
   let h = `<section class="summary dirsum"><h3>Where every team stands</h3>
     <p><b>${limbo.length} of ${all.length}</b> teams are in limbo: 20–60% playoff odds without a real title shot. Those come first, sorted by the chance you finish one spot outside the playoffs (average ${pct(avgBub)} across your teams).</p>
-    <div class="chips"><button class="chip" data-dlf="" aria-pressed="${!f}">All · ${all.length}</button><button class="chip" data-dlf="limbo" aria-pressed="${f==="limbo"}">Limbo · ${limbo.length}</button>${DIR_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-dlf="${k}" aria-pressed="${f===k}">${DIR[k].label} · ${counts[k]}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Show", "dlf", [["", `All · ${all.length}`], ["limbo", `Limbo · ${limbo.length}`]].concat(DIR_ORDER.filter(k=>counts[k]).map(k=>[k, `${DIR[k].label} · ${counts[k]}`])), f || "")}</div>
     <p>Each season is simulated 1,000 times from your real record, the remaining schedule and every team's projected lineup in that league's scoring. Playoff spots stand in for payout spots.</p></section>`;
   h += list.map(L=>{ const t = L.me, d = DIR[t.dir], id = L.lg.league_id;
     return `<article class="card s-${d.sev}"><div class="chead"><div class="t"><div class="lname">${esc(L.lg.name)}</div>
@@ -2371,7 +2419,6 @@ function renderStatus(){
     (gain>0 ? `<span><b class="num">+${fmt(gain)}</b> pts sitting on benches</span>` : "") +
     (S.loadedAt ? `<span>Updated ${S.loadedAt.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</span>` : "");
 }
-function leagueLink(id){ return `https://sleeper.com/leagues/${id}/team`; }
 
 function cardHTML(r, full){
   const lg = r.league, id = lg.league_id, done = isDone(id);
@@ -2458,7 +2505,7 @@ function renderPlayers(){
   if(S.playerFilter==="mismatch") list = list.filter(e=>e.wrong>0);
   list.sort((a,b)=>b.leagues.length-a.leagues.length || b.f.raw-a.f.raw);
   const chips = [["all","Most rostered"],["hurt","Injured or bye"],["mismatch","Start/sit mismatch"]].map(([k,l])=>`<button class="chip" data-pf="${k}" aria-pressed="${S.playerFilter===k}">${l}</button>`).join("");
-  let h = `<input class="search" id="q" type="search" placeholder="Find a player or team (e.g. Puka, KC)" value="${esc(S.query)}" autocomplete="off"><div class="chips">${chips}</div>`;
+  let h = `<input class="search" id="q" type="search" placeholder="Find a player or team (e.g. Puka, KC)" value="${esc(S.query)}" autocomplete="off"><div class="cselrow">${chipSelect("Show", "pf", [["all","Most rostered"],["hurt","Injured or bye"],["mismatch","Start/sit mismatch"]], S.playerFilter || "all")}</div>`;
   if(!list.length) return h + `<div class="empty">No players match.</div>`;
   h += `<div class="plist">` + list.slice(0, q ? 60 : 40).map(e=>{
     const f = e.f; const g = f.game;
@@ -2513,7 +2560,7 @@ function renderBlueprints(){
   list = list.slice().sort((a,b)=>ARCH_ORDER.indexOf(a.me.arch)-ARCH_ORDER.indexOf(b.me.arch) || a.me.nowRank-b.me.nowRank);
   let h = `<section class="summary"><h3>Your dynasty portfolio</h3>
     <p>${all.length} teams reviewed (leagues still drafting are skipped). Most common weak spot: ${worst[0]}, graded D or F in ${worst[1]} leagues.</p>
-    <div class="chips">${ARCH_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-arch="${k}" aria-pressed="${S.bpArch===k}">${ARCH[k].label} · ${counts[k]}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Show", "arch", [["", `All teams · ${all.length}`]].concat(ARCH_ORDER.filter(k=>counts[k]).map(k=>[k, `${ARCH[k].label} · ${counts[k]}`])), S.bpArch || "")}</div>
     <p>Dynasty values from <a href="https://fantasycalc.com" target="_blank" rel="noopener">FantasyCalc</a>, matched to each league's QB, size and PPR settings. Grades rank your starters' value at each position against the league. The 2-season outlook applies age curves and is a rough estimate.</p></section>`;
   h += list.map(bpCardHTML).join("");
   return h;
@@ -3050,8 +3097,7 @@ function teamsSectionHTML(locks){
   const meta = x => { const f = F[x.id]; if(!x.b) return x.meta + " · " + DIR3[x.dir];
     return [x.r.bestBall ? "Best ball" : x.rec, `Now ${ord(f.now)}`, `Future ${ord(f.fut)}`, `Age ${f.age.toFixed(1)}`, DIR3[x.dir]].join(" · "); };
   return `<section style="display:flex;flex-direction:column;gap:10px" id="myteams"><div class="sec"><h2 class="h2">My teams</h2><span class="sub">${S.bpLoading ? "Scoring teams…" : `${list.length} shown`}</span></div>
-    <div class="chips" role="tablist" aria-label="Sort teams"><span class="chiplab">Sort</span>${TSORTS.map(([k,l])=>`<button class="chip sortchip" role="tab" data-sort="${k}" aria-selected="${S.sort===k}" aria-pressed="${S.sort===k}">${l}</button>`).join("")}</div>
-    <div class="chips" aria-label="Filter teams"><span class="chiplab">Show</span>${filters.filter(([k])=>k === "all" || counts[k]).map(([k,l])=>`<button class="chip" data-dirf="${k}" aria-pressed="${S.dirF===k}">${l} · ${counts[k]}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Sort", "sort", TSORTS, S.sort)}${chipSelect("Show", "dirf", filters.filter(([k])=>k === "all" || counts[k]).map(([k,l])=>[k, `${l} · ${counts[k]}`]), S.dirF)}</div>
     <p class="scorenote"><b style="color:var(--ink-2)">${esc(sumLine)}.</b> ${TSORT_NOTE[S.sort]}</p>
     <div class="teamrow-list">${list.map(x=>`<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert==="crit"?"var(--crit)":x.alert==="warn"?"var(--warn)":"transparent"};box-shadow:${x.alert?"0 0 8px currentColor":"none"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(meta(x))}</span></span>${right(x)}</button>`).join("") || `<div class="empty" style="margin:0">No teams in this group.</div>`}</div></section>`;
 }
@@ -3630,7 +3676,7 @@ function tradeHTML(){
   let h = (TR.inbox ? `<div class="inboxnote glass"><b>Logging an offer you received.</b> Pick the league and who sent it. <i>You send</i> is what they asked for, <i>You get</i> is what they're offering. Then save it.</div>` : "") + `<div class="cbbox"><label for="trLeague">League</label><select id="trLeague">${lgs.map(y=>`<option value="${y.lg.league_id}" ${TR.lid===y.lg.league_id?"selected":""}>${esc(y.lg.name)}</option>`).join("")}</select></div>`;
   if(!b || !TR.fc){ if(TR.lid) setTimeout(trEnsure, 0); return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading rosters and values for this league…</div>`; }
   const me = b.me, partner = TR.partner != null ? b.teams.find(t=>t.rid === TR.partner) : null;
-  h += `<div class="lab" style="margin-top:2px">Trading with</div><div class="chips partners">${b.teams.filter(t=>t.rid !== me.rid).map(t=>`<button class="chip${TR.partner===t.rid?" sel":""}" data-partner="${t.rid}" aria-pressed="${TR.partner===t.rid}">${esc(t.name)} <small>${t.rec} · ${ARCH[t.arch].short}</small></button>`).join("")}</div>`;
+  h += `<div class="cselrow">${chipSelect("Trading with", "partner", [["", "Pick a team…"]].concat(b.teams.filter(t=>t.rid !== me.rid).map(t=>[t.rid, `${t.name} · ${t.rec} · ${ARCH[t.arch].short}`])), TR.partner ?? "")}</div>`;
   if(!partner) return h + `<div class="empty">Pick who you're trading with. Their roster and picks load as side 2.</div>`;
   const sv = tradeValue(TR.give), gv = tradeValue(TR.get), tot = Math.max(sv + gv, 1), diff = (gv - sv)/Math.max(sv, gv, 1);
   const verdict = !TR.give.length || !TR.get.length ? "Add players to both sides" : Math.abs(diff) < .05 ? "Even trade" : diff > 0 ? `You win by ${Math.round(diff*100)}%` : `You overpay by ${Math.round(-diff*100)}%`;
@@ -3647,7 +3693,7 @@ function tradeHTML(){
   if(TR.pos !== "ALL") assets = assets.filter(a=>TR.pos === "PICK" ? a.pk : TR.pos === "STASH" ? !!a.slot : a.pos === TR.pos);
   if(q) assets = assets.filter(a=>a.name.toLowerCase().includes(q));
   h += `<section class="picker glass"><div class="sec"><b class="h2" style="font-size:16px">${TR.side === "give" ? "Your roster" : esc(partner.name) + "'s roster"}</b><span class="sub">tap to add</span></div>
-    <div class="chips">${["ALL","QB","RB","WR","TE","PICK","STASH"].map(p=>`<button class="chip" data-trpos="${p}" aria-pressed="${TR.pos===p}">${p === "PICK" ? "Picks" : p === "ALL" ? "All" : p === "STASH" ? "IR / Taxi" : p}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Show", "trpos", ["ALL","QB","RB","WR","TE","PICK","STASH"].map(p=>[p, p === "PICK" ? "Picks" : p === "ALL" ? "All positions" : p === "STASH" ? "IR / Taxi" : p]), TR.pos)}</div>
     ${playerSearch("trq", TR.q, "Search this roster")}
     <div class="plist2">${assets.map(a=>`<button class="prow-btn" data-tradd="${esc(a.uid)}">${a.pk ? `<span class="mini pk">PK</span>` : headshot(a.id,"mini")}<span class="t"><b>${esc(a.name)}${trTag(a)}</b><small>${a.pk ? "Draft pick" : `${a.pos}${a.age ? " · " + Math.floor(a.age) : ""}${a.v ? "" : " · no market value"}`}</small></span><span class="v">${Math.round(a.v).toLocaleString()}</span><b class="why" data-trwhy="pool|${esc(a.uid)}" role="button" aria-label="How ${esc(a.name)}'s value is built">?</b></button>`).join("") || `<p class="note">Nothing left to add here.</p>`}</div></section>
     <button class="askbtn" id="trCheck" ${TR.give.length && TR.get.length && !TR.busy ? "" : "disabled"}>${TR.busy ? "Reading the league…" : "Run the full trade check"}</button>
@@ -3938,7 +3984,7 @@ function viewRankings(){
   const mi = RK_MODES.findIndex(m=>m[0] === RK.mode);
   let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Rankings</h1><div class="sub">Tiers, 30-day value moves and the case for every spot. Tap a player for the why; drag the handle to make the list yours.</div></section>
     <div class="seg" role="tablist" style="--n:3;--i:${mi}">${RK_MODES.map(([k,l])=>`<button role="tab" data-rkmode="${k}" aria-selected="${RK.mode===k}">${k==="week"?`Week ${S.week}`:l}</button>`).join("")}<i aria-hidden="true"></i></div>
-    <div class="chips">${posOpts.map(p=>`<button class="chip" data-rkpos="${p}" aria-pressed="${RK.pos===p}">${p==="ALL"?"Overall":p}</button>`).join("")}
+    <div class="chips cselrow">${chipSelect("Position", "rkpos", posOpts.map(p=>[p, p==="ALL" ? "Overall" : p]), RK.pos)}
       ${RK.mode !== "week" ? `<button class="chip" data-rkqb="${RK.qb===2?1:2}" aria-pressed="false">${RK.qb===2?"Superflex":"1QB"} ⇄</button>` : ""}
       <button class="chip" data-rkmine="1" aria-pressed="${RK.mine}">My players</button></div>`;
   const data = rkCompute(), src = data && rkSourceAll();
@@ -4390,11 +4436,11 @@ function renderSettings(){
   return `<details class="settings"><summary>Settings</summary>
     <div class="srow"><label for="thr">Flag upgrades worth at least</label><select id="thr">${[0.5,1,1.5,2,3,5].map(v=>`<option value="${v}" ${+S.threshold===v?"selected":""}>${v} pts</option>`).join("")}</select></div>
     <div class="srow"><label for="hd">Hide leagues marked done</label><input type="checkbox" id="hd" ${S.hideDone?"checked":""}></div>
+    <div class="srow"><label for="homeSel">Home layout <small style="display:block;color:var(--ink-3)">Try each: your tools sort themselves by what you use</small></label><select id="homeSel">${[["classic","Classic"],["focus","Focus: up next + top tools"],["launcher","Launcher: tools first"],["hub","League hub: your leagues first"]].map(([v,l])=>`<option value="${v}" ${HOME_V.get()===v?"selected":""}>${l}</option>`).join("")}</select></div>
     <div class="srow"><label for="lookSel">Look</label><select id="lookSel"><option value="cc" ${store.get("look","cc")!=="classic"?"selected":""}>Command center (photographic sky)</option><option value="classic" ${store.get("look","cc")==="classic"?"selected":""}>Classic</option></select></div>
     <div class="srow"><label for="valSrc">Trade values</label><select id="valSrc"><option value="ffu" ${store.get("valSrc","ffu")==="ffu"?"selected":""}>FFU in-house (from real trades)</option><option value="market" ${store.get("valSrc","ffu")==="market"?"selected":""}>Market only (FantasyCalc)</option></select></div>
     <div class="srow"><label for="adjOn">Price trades by league scoring <small style="display:block;color:var(--ink-3)">Off is recommended: your leagues trade at market prices</small></label><input type="checkbox" id="adjOn" ${store.get("adjPrice", false) ? "checked" : ""}></div>
-    <div class="srow"><label for="lkm">Open Sleeper links as</label><select id="lkm"><option value="web" ${LINK.mode()==="web"?"selected":""}>Website (team page)</option><option value="app" ${LINK.mode()==="app"?"selected":""}>App (league chat)</option></select></div>
-    <div class="srow"><span>Not sure which works?</span><button class="ghost" data-linkretest="1">Test links again</button></div>
+    <div class="srow"><label for="lkm">Open in Sleeper goes to <small style="display:block;color:var(--ink-3)">Automatic: the Sleeper app on phones, the website on computers</small></label><select id="lkm">${[["auto","Automatic"],["app","Sleeper app (league)"],["web","Sleeper website (team page)"]].map(([v,l])=>`<option value="${v}" ${LINK.pref()===v?"selected":""}>${l}</option>`).join("")}</select></div>
     <div class="srow"><span>Sleeper: <b>${esc(S.displayName||S.username)}</b></span><button class="ghost" id="switch">Switch user</button></div>
     ${acct}
     <p class="note">Projections come from Sleeper (Rotowire) and are rescored with each league's settings. Questionable players count at 85% and Doubtful at 20% when comparing options. Sleeper doesn't share whether you've set an auto-sub, so Questionable starters stay flagged until you swap them.</p></details>`;
@@ -4976,21 +5022,17 @@ window.addEventListener("popstate", e=>{
    V2.3 · offers inbox, game-day run, Sleeper links that land
    ===================================================================== */
 
-/* ---------- Sleeper links ----------
-   Sleeper's app links (sleeper.com/.well-known/apple-app-site-association)
-   only cover /topics, /channels, /topic and /message. League pages open the
-   website, which asks you to log in on a phone. "App" mode links the league's
-   chat channel, which the app claims; "Website" keeps the team page. */
-const LINK = { mode(){ return store.get("linkMode", "web"); }, tested(){ return store.get("linkTested", false); } };
-function leagueLink(id){ return LINK.mode() === "app" ? `https://sleeper.com/channels/${id}` : `https://sleeper.com/leagues/${id}/team`; }
-function linkTestHTML(){
-  if(LINK.tested()) return "";
-  const r = S.results.find(x=>x.league && x.sev !== "off"); if(!r) return "";
-  const id = r.league.league_id;
-  return `<section class="linktest glass"><div class="t"><b>Make Open land in the right place</b><span>On this phone, try both links for ${esc(r.league.name)}, then keep the one that opened your league.</span></div>
-    <div class="row"><a class="ghost" href="https://sleeper.com/channels/${id}" target="_blank" rel="noopener" data-nolog="1">Try app link ${ICON.ext}</a><a class="ghost" href="https://sleeper.com/leagues/${id}/team" target="_blank" rel="noopener" data-nolog="1">Try website ${ICON.ext}</a></div>
-    <div class="row"><span class="sub">Which worked?</span><button class="ghost tint" data-linkmode="app">App link</button><button class="ghost tint" data-linkmode="web">Website</button><button class="ghost" data-linkmode="none">Neither</button></div></section>`;
-}
+/* ---------- Sleeper links (rewritten Nov 25, 2026) ----------
+   What actually opens the Sleeper app (checked Nov 25 against Apple's copy of sleeper.com's
+   apple-app-site-association): only /channels/*, /topics/*, /topic/* and /message/*. League pages
+   (/leagues/{id}/team) always open the website, which on a phone means a login wall in the browser.
+   So: phones and tablets get the league's channel link, which opens the league inside the Sleeper app
+   (the Team tab is one tap away); computers get the website team page. Settings can override. */
+const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const LINK = { pref(){ return store.get("sleeperLinks", "auto"); },
+  mode(){ const p = this.pref(); return p === "auto" ? (IS_PHONE ? "app" : "web") : p; } };
+function leagueLink(id, page){ return LINK.mode() === "app" ? `https://sleeper.com/channels/${id}` : `https://sleeper.com/leagues/${id}/${page || "team"}`; }
+function linkTestHTML(){ return ""; }   // the old "try both links" card: replaced by automatic links
 
 /* ---------- the exact moves for one league, slot by slot ---------- */
 function movesFor(r){
@@ -5063,6 +5105,7 @@ function renderRun(){
     <div class="ractions">
       ${RUN.back ? `<div class="backq">Back from Sleeper. Is this one set?</div>` : ""}
       <a class="primary open" href="${leagueLink(id)}" target="_blank" rel="noopener">Open in Sleeper ${ICON.ext}</a>
+      ${LINK.mode() === "app" ? `<div class="sub openhint">Opens this league in the Sleeper app. Tap <b>Team</b>, make the moves above, then come back.</div>` : ""}
       <div class="row"><button class="ghost tint${RUN.back ? " pulse2" : ""}" data-rundone="1">Done ✓ · next</button><button class="ghost" data-runskip="1">Skip</button>${mv.length ? `<button class="ghost" data-copy="${esc(movesText(r))}" data-label="Copy moves">Copy moves</button>` : ""}</div>
     </div>
     <p class="src">Moves use this league's scoring and each player's injury status. Questionable counts at 85%.</p></div>`;
@@ -5190,7 +5233,7 @@ function loadIntoBuilder(d, run){
 document.addEventListener("click", e=>{
   const el = e.target.closest("[data-linkmode],[data-backdone],[data-backx],[data-runstart],[data-runx],[data-rundone],[data-runskip],#trSave,[data-oftab],[data-oflog],[data-ofview],[data-ofi],[data-ofset],[data-ofdel],[data-ofrecheck],[data-ofcheck],[data-ofcounter]"); if(!el) return;
   const d = el.dataset;
-  if(d.linkmode){ if(d.linkmode !== "none") store.set("linkMode", d.linkmode); store.set("linkTested", true); showToast(d.linkmode === "app" ? "Open buttons now use the app link" : d.linkmode === "web" ? "Open buttons use the website" : "Kept the website link. Tell us what happened"); render(); return; }
+
   if(d.backdone){ store.set(doneKey(d.backdone), true); hideBackBar(); showToast("Marked done"); render(); return; }
   if(d.backx){ hideBackBar(); return; }
   if(d.runstart){ startRun(); return; }
@@ -5210,8 +5253,8 @@ document.addEventListener("click", e=>{
   if(d.ofcheck){ try{ loadIntoBuilder(JSON.parse(d.ofcheck), true); }catch(_){} return; }
   if(d.ofcounter){ setTimeout(()=>{ const a = INBOX.all(), o = a.find(z=>z.key === d.ofcounter); if(o && o.status === "open"){ o.status = "countered"; INBOX.save(a); showToast("Counter copied · offer marked countered"); render(); } }, 700); return; }
 });
-document.addEventListener("change", e=>{ if(e.target.id === "lkm"){ store.set("linkMode", e.target.value); store.set("linkTested", true); render(); } });
-document.addEventListener("click", e=>{ if(e.target.closest("[data-linkretest]")){ store.set("linkTested", false); go("fix"); } });
+document.addEventListener("change", e=>{ if(e.target.id === "lkm"){ store.set("sleeperLinks", e.target.value); render(); } });
+
 
 /* ---------- recent trades across every league, and what each one did ----------
    Rosters today already include the trade, so "after" is the current state and
@@ -5512,7 +5555,7 @@ function ccSideHTML(){
   if(open) q.push(["var(--violet)", `${open} offer${open>1?"s":""} waiting`, "Logged in your inbox", `data-go="offers"`]);
   const wi = stepInfo("waivers"); q.push(["var(--ok)", "Waivers", wi.line || "Holes to fill and bids", `data-go="waivers"`]);
   let h = typeof liveSideHTML === "function" ? liveSideHTML() : "";
-  h += `<section class="glass ccs"><h2>Needs attention</h2>${q.map(x=>`<button class="ccq" ${x[3]}><i style="background:${x[0]};box-shadow:0 0 10px ${x[0]}"></i><span><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></button>`).join("")}</section>`;
+  h += `<section class="glass ccs ccattn"><h2>Needs attention</h2>${q.map(x=>`<button class="ccq" ${x[3]}><i style="background:${x[0]};box-shadow:0 0 10px ${x[0]}"></i><span><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></button>`).join("")}</section>`;
   if(nl) h += `<section class="glass ccs"><h2>Next lock</h2><div class="ccnext"><b class="num">${esc(kickLabel(nl.k))}</b><small>${nl.n} league${nl.n > 1 ? "s" : ""} with a decision lock then${nl.fix ? ` · ${nl.fix} must fix` : ""}</small></div></section>`;
   const mv = ccMovers();
   if(mv.length) h += `<section class="glass ccs"><h2>Your movers · 30 days</h2>${mv.map(m=>`<div class="ccmv"><span>${esc(m.name)} <small>${m.pos}</small></span><b class="num ${m.p > 0 ? "up" : "dn"}">${m.p > 0 ? "+" : ""}${Math.round(m.p*100)}%</b></div>`).join("")}</section>`;
@@ -5648,7 +5691,7 @@ function viewManagers(){
   const price = pm => pm == null ? "No trades to judge yet" : pm > .05 ? `Pays ~${Math.round(pm*100)}% over` : pm < -.05 ? `Wins trades by ~${Math.round(-pm*100)}%` : "Trades near even";
   h += `<div class="ccgrid">${rows.map((m, i)=>{ const col = m.fit >= 70 ? "var(--ok)" : m.fit >= 45 ? "var(--warn)" : "var(--crit)";
     return `<article class="glass ccmgr" style="--i:${i}"><div class="ccmgr-h"><div><b>${esc(m.name)}</b><small>${esc(m.lg)} · ${m.dir}${m.rec ? " · " + esc(m.rec) : ""}${m.more ? ` · in ${m.more + 1} of your leagues` : ""}</small>${m.ex ? `<small class="ccx">High-volume account: ${m.ex[0]} trades in ${m.ex[1]} leagues this season, so it's left out of FFU values</small>` : ""}</div><div class="ccfit"><b class="num" style="color:${col}">${m.fit}</b><small>trade fit</small></div></div>
-      <dl><dt>Trades this season</dt><dd class="num">${m.n}${m.src === "db" && m.lgs > 1 ? ` in ${m.lgs} leagues` : ""}${m.last ? ` · last ${esc(ago(m.last))}` : ""}</dd><dt>Buys</dt><dd>${m.buys ? m.buys + (m.buyShare ? ` · ${m.buyShare}% of value in` : "") : "–"}</dd><dt>Sells</dt><dd>${m.sells || "–"}</dd><dt>Pricing</dt><dd>${price(m.pm)}${m.pmN ? ` <small class="sub">(${m.pmN})</small>` : ""}</dd>${m.buyPm != null && m.buys ? `<dt>Buying ${m.buys}</dt><dd>${price(m.buyPm)}</dd>` : ""}</dl>
+      <dl><dt>Trades this season</dt><dd class="num">${m.n}${m.src === "db" && m.lgs > 1 ? ` in ${m.lgs} leagues` : ""}${m.last ? ` · last ${esc(ago(m.last))}` : ""}</dd><dt>Buys</dt><dd>${m.buys ? m.buys + (m.buyShare ? ` · ${m.buyShare}% of what they get` : "") : "–"}</dd><dt>Sells</dt><dd>${m.sells || "–"}</dd><dt>Pricing</dt><dd>${price(m.pm)}${m.pmN ? ` <small class="sub">(${m.pmN})</small>` : ""}</dd>${m.buyPm != null && m.buys ? `<dt>Buying ${m.buys}</dt><dd>${price(m.buyPm)}</dd>` : ""}</dl>
       <div class="ccpitch">${m.pitch ? `<span><small>Best pitch</small>${esc(m.pitch.txt)}</span><button class="ghost tint" data-edbuild="${esc(JSON.stringify({lid:m.lid, rid:m.rid, give:m.pitch.give, get:[]}))}">Build it</button>` : `<span><small>Best pitch</small>${m.n ? "Nothing of yours lines up with what they buy" : "No trades this season: low odds"}</span><button class="ghost" data-edbuild="${esc(JSON.stringify({lid:m.lid, rid:m.rid, give:[], get:[]}))}">Open</button>`}</div></article>`; }).join("")}</div>`;
   h += `<div class="glass ccnote"><b>How this is worked out</b><span>${MG.db ? `Trades: every completed trade this season in the FFU database (${MG.db.trades.toLocaleString()} trades, ${MG.db.n.toLocaleString()} managers), not just your leagues. Pricing: the median gap in their trades, each valued with the market on the day it happened, so later value swings don't count against them (number in brackets = trades priced). Managers we haven't crawled yet fall back to your leagues at today's values.` : `Trades: completed trades this season in your leagues. Pricing: the median gap in their trades at today's values.`} Buys and sells: the positions (or picks) they've taken in and sent out most, by value. Accounts trading at extreme volume (hundreds of trades across dozens of leagues) are left out of FFU values and profiles; their card uses your leagues only. Trade fit (0–100): 35% how often they trade, 30% whether their direction complements yours, 20% whether you're strong where they buy, 15% how recently they traded.</span></div>`;
   return h;
@@ -5780,6 +5823,120 @@ function liveSideHTML(){
 document.addEventListener("click", e => { const t = e.target.closest("[data-liverefresh]"); if(!t) return; liveRefresh(true); });
 // on game days, check once after load so the rail badge, side panel and sky know games are on
 setTimeout(()=>{ const d = new Date().getDay(); if([0, 1, 4].includes(d) && S.raw && S.raw.length && !LIVE.data) liveRefresh(); }, 6000);
+
+/* =====================================================================
+   Polish sweep (Nov 25, 2026)
+   - Long rows of option bubbles become one compact dropdown (chipSelect). Picking an option fires the
+     same click the bubble used to, so every view keeps its own logic.
+   ===================================================================== */
+function chipSelect(label, attr, opts, cur, extra){
+  return `<label class="csel"><span class="chiplab">${esc(label)}</span><span class="cselbox"><select data-chipsel="${attr}" aria-label="${esc(label)}">${opts.map(([v, l])=>`<option value="${esc(v)}" ${String(v) === String(cur ?? "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></span>${extra || ""}</label>`;
+}
+document.addEventListener("change", e => {
+  const s = e.target.closest("select[data-chipsel]"); if(!s) return;
+  const attr = s.dataset.chipsel;
+  if(attr === "arch"){ S.bpArch = s.value || null; render(); return; }   // the bubble toggled; the dropdown sets
+  const b = document.createElement("button"); b.type = "button"; b.hidden = true; b.setAttribute("data-" + attr, s.value);
+  s.closest(".csel").appendChild(b); b.click(); b.remove();
+});
+
+/* =====================================================================
+   Home layouts (Nov 25, 2026): three low-cost options built from existing parts.
+   classic = today's home · focus = one "up next" card + your top tools + teams
+   launcher = your tools first, each with a live status line · hub = your leagues as the home, with actions
+   Pick with ?home=focus|launcher|hub (remembered) or Settings → Home layout.
+   Tools order themselves by how often you open them on this device.
+   ===================================================================== */
+const HOME_V = { get(){ return store.get("homeV", "classic"); }, set(v){ store.set("homeV", v); } };
+(()=>{ const q = new URLSearchParams(location.search).get("home"); if(q && ["classic","focus","launcher","hub"].includes(q)) HOME_V.set(q); })();
+const TOOL_ORDER = ["fix","live","trades","trade","waivers","ask","offers","start","run","teams","rankings","managers","edges","exposure","compare","brief"];
+function toolDefs(){ const m = {}; for(const [, items] of CC_TOOLS) for(const [id, label, ic, col, how] of items) m[id] = {id, label, ic, col, how}; return m; }
+const USE = { all(){ return store.get("toolUse", {}); }, hit(id){ if(!id) return; const u = this.all(); u[id] = (u[id] || 0) + 1; store.set("toolUse", u); } };
+// count what people open, from the rail, the dock, the menu or a tool tile
+document.addEventListener("click", e => { const el = e.target.closest("[data-go],[data-opentool],[data-nav]"); if(!el || el.closest(".plan")) return;
+  const d = el.dataset, id = d.opentool || (d.nav ? ({"teams:value":"teams","players:exposure":"exposure","players:rankings":"rankings"}[d.nav] || d.nav.split(":")[0]) : d.go === "direction" ? "teams" : d.go);
+  if(id && id !== "home") USE.hit(id); }, true);
+function toolStatus(id){
+  const c = fixCounts(), nl = nextLock(), inb = INBOX.all().filter(x=>x.status === "open").length;
+  switch(id){
+    case "fix": return c.fix ? {t:`${c.fix} must fix${c.monitor ? ` · ${c.monitor} game-time` : ""}`, hot:"crit"} : c.monitor ? {t:`${c.monitor} game-time call${c.monitor > 1 ? "s" : ""}`, hot:"warn"} : {t:"All lineups set"};
+    case "live": return typeof LIVE !== "undefined" && LIVE.anyLive ? {t:"Games on now", hot:"live"} : {t: nl ? `Next kickoff ${kickLabel(nl.k)}` : "Scores when games start"};
+    case "run": { const q = typeof runQueue === "function" ? runQueue().length : 0; return q ? {t:`${q} league${q > 1 ? "s" : ""}, one at a time`, hot:"warn"} : {t:"Nothing to run"}; }
+    case "offers": return inb ? {t:`${inb} waiting on an answer`, hot:"info"} : {t:"Track offers you send"};
+    case "waivers": return {t:"Holes to fill, bids that win"};
+    case "trades": return {t:"Trades built for each team"};
+    case "trade": return {t:"Grade any offer"};
+    case "ask": return {t:"Ask anything about your teams"};
+    case "start": return {t:"Who to start, side by side"};
+    case "teams": return {t:"Contend or rebuild, per team"};
+    case "rankings": return {t:"Tiers you can reorder"};
+    case "managers": return {t:"Who trades, and how"};
+    case "edges": return {t:"Players your scoring rewards"};
+    case "exposure": return {t:"Every player across leagues"};
+    case "compare": return {t:"Two players, long term"};
+    case "brief": return {t:"Your week in two minutes"};
+  }
+  return {t:""};
+}
+function topTools(n){
+  const defs = toolDefs(), use = USE.all(), inSeason = S.results.some(r=>r.league && r.league.status === "in_season");
+  return TOOL_ORDER.filter(id => defs[id] && (id !== "live" || inSeason))
+    .map((id, i) => ({id, i, u: use[id] || 0, pin: id === "fix" && fixCounts().fix ? 1 : 0}))
+    .sort((a, b) => b.pin - a.pin || b.u - a.u || a.i - b.i).slice(0, n).map(x => defs[x.id]);
+}
+function toolAttr(how){ return how.go ? `data-go="${how.go}"` : how.tool ? `data-opentool="${how.tool}"` : how.nav ? `data-nav="${how.nav}"` : `data-ccrun="1"`; }
+function toolTiles(n, big){
+  return `<div class="tgrid${big ? " big" : ""}">${topTools(n).map(t => { const st = toolStatus(t.id);
+    return `<button class="ttile glass${st.hot ? " " + st.hot : ""}" style="--tc:${t.col}" ${toolAttr(t.how)}><span class="tic">${svgI(t.ic, big ? 22 : 20)}</span><span class="tt"><b>${esc(t.label)}</b><small>${esc(st.t)}</small></span>${ccBadge(t.id)}</button>`; }).join("")}</div>`;
+}
+function homeHead(){
+  const c = fixCounts();
+  return `<section class="hhead"><div class="sub">${S.displayName ? esc(S.displayName) + " · " : ""}${S.season} · week ${S.week}${S.week !== S.nflWeek ? " (next)" : ""}</div>
+    <h1 class="h1">${c.fix ? `${c.fix} lineup${c.fix > 1 ? "s" : ""} need${c.fix > 1 ? "" : "s"} you` : "Every lineup is set"}</h1></section>`;
+}
+function homeFoot(){
+  return `${accountCardHTML()}${renderSettings()}<p class="src">Sources: Sleeper (leagues, rosters, injuries, projections rescored with each league's settings) · ESPN (kickoffs) · FFU values from real trades.</p>`;
+}
+function alsoLine(){
+  const items = weekItems().filter(x => !x.calm && !/lineup/i.test(x.title || ""));
+  return items.length ? `<div class="also"><span>Also this week</span>${items.slice(0, 3).map(x => `<button class="linkb" ${x.nav ? `data-nav="${x.nav}"` : `data-go="${x.go}"`}>${esc(x.title)}</button>`).join("")}</div>` : "";
+}
+function runButton(){
+  const q = typeof runQueue === "function" ? runQueue().length : 0; if(!q) return "";
+  return `<button class="primary runbtn" data-runstart="1">Start game-day run · ${q} league${q > 1 ? "s" : ""} →</button>`;
+}
+function viewHomeFocus(){
+  return homeHead() + nowCardHTML() + runButton() + alsoLine()
+    + `<section class="hsec"><div class="sec"><h2 class="h2">Your tools</h2><button class="linkb" data-menu="1">All tools</button></div>${toolTiles(6)}</section>`
+    + `<div class="statusline" id="statusline"></div>` + teamsSectionHTML(lockMap()) + homeFoot();
+}
+function viewHomeLauncher(){
+  const atn = teamList().filter(x => x.alert === "crit" || x.alert === "warn").slice(0, 3);
+  return homeHead() + toolTiles(8, true)
+    + (atn.length ? `<section class="hsec"><div class="sec"><h2 class="h2">Needs you first</h2><button class="linkb" data-go="direction">All teams</button></div><div class="teamrow-list">${atn.map(x => `<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert === "crit" ? "var(--crit)" : "var(--warn)"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(x.meta || "")}</span></span><span class="tr">${x.alert === "crit" ? "Fix" : "Check"}</span></button>`).join("")}</div></section>` : "")
+    + `<div class="statusline" id="statusline"></div>` + homeFoot();
+}
+const HUB = {q:""};
+function viewHomeHub(){
+  const c = fixCounts(), list = teamList(), q = HUB.q.trim().toLowerCase();
+  const shown = list.filter(x => !q || x.name.toLowerCase().includes(q));
+  const rank = x => x.alert === "crit" ? 0 : x.alert === "warn" ? 1 : x.alert ? 2 : 3;
+  shown.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+  const pills = [c.fix ? `<button class="pill p-crit" data-go="fix" data-tab="fix">${c.fix} must fix</button>` : "", c.monitor ? `<button class="pill p-warn" data-go="fix" data-tab="monitor">${c.monitor} game-time</button>` : "", c.startsit ? `<button class="pill p-up" data-go="fix" data-tab="startsit">${c.startsit} upgrade${c.startsit > 1 ? "s" : ""}</button>` : ""].join("");
+  let h = homeHead() + `<section class="hubbar glass"><div class="pills">${pills || `<span class="sub">Nothing urgent</span>`}</div>${runButton()}</section>`;
+  h += `<section class="hsec"><div class="sec"><h2 class="h2">Your leagues</h2><span class="sub">${shown.length} of ${list.length}</span></div>
+    <input class="search" id="hubq" type="search" placeholder="Find a league" value="${esc(HUB.q)}" autocomplete="off">
+    <div class="hublist">${shown.map(x => { const tag = x.alert === "crit" ? `<span class="pill p-crit">Fix</span>` : x.alert === "warn" ? `<span class="pill p-warn">Check</span>` : x.alert === "up" ? `<span class="pill p-up">Upgrade</span>` : "";
+      return `<article class="hubrow glass"><button class="hubmain" data-team="${x.id}"><span class="t"><b>${esc(x.name)}</b><small>${esc(x.meta || "")}</small></span>${tag}</button>
+        <div class="hubact">${x.alert ? `<button class="ghost tint sm" data-go="fix">Lineup</button>` : ""}<button class="ghost sm" data-team="${x.id}" data-from="trades">Trades</button><a class="ghost sm" href="${leagueLink(x.id)}" target="_blank" rel="noopener">Sleeper ${ICON.ext}</a></div></article>`; }).join("") || `<div class="empty">No leagues match.</div>`}</div></section>`;
+  return h + `<div class="statusline" id="statusline"></div>` + homeFoot();
+}
+document.addEventListener("input", e => { if(e.target.id === "hubq"){ HUB.q = e.target.value; render(); } });
+document.addEventListener("change", e => { if(e.target.id === "homeSel"){ HOME_V.set(e.target.value); window.scrollTo({top:0}); render(); } });
+document.addEventListener("click", e => { if(e.target.closest("[data-menu]")){ const m = document.getElementById("menuBtn") || document.querySelector("[data-openmenu],#menu"); if(m) m.click(); } });
+const _viewHomeClassic = viewHome;
+viewHome = function(){ const v = HOME_V.get(); document.body.classList.toggle("homealt", v !== "classic");
+  return v === "focus" ? viewHomeFocus() : v === "launcher" ? viewHomeLauncher() : v === "hub" ? viewHomeHub() : _viewHomeClassic(); };
 
 SPACE.init();
 ORB.init();

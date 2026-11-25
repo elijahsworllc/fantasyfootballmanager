@@ -2,21 +2,17 @@
    V2.3 · offers inbox, game-day run, Sleeper links that land
    ===================================================================== */
 
-/* ---------- Sleeper links ----------
-   Sleeper's app links (sleeper.com/.well-known/apple-app-site-association)
-   only cover /topics, /channels, /topic and /message. League pages open the
-   website, which asks you to log in on a phone. "App" mode links the league's
-   chat channel, which the app claims; "Website" keeps the team page. */
-const LINK = { mode(){ return store.get("linkMode", "web"); }, tested(){ return store.get("linkTested", false); } };
-function leagueLink(id){ return LINK.mode() === "app" ? `https://sleeper.com/channels/${id}` : `https://sleeper.com/leagues/${id}/team`; }
-function linkTestHTML(){
-  if(LINK.tested()) return "";
-  const r = S.results.find(x=>x.league && x.sev !== "off"); if(!r) return "";
-  const id = r.league.league_id;
-  return `<section class="linktest glass"><div class="t"><b>Make Open land in the right place</b><span>On this phone, try both links for ${esc(r.league.name)}, then keep the one that opened your league.</span></div>
-    <div class="row"><a class="ghost" href="https://sleeper.com/channels/${id}" target="_blank" rel="noopener" data-nolog="1">Try app link ${ICON.ext}</a><a class="ghost" href="https://sleeper.com/leagues/${id}/team" target="_blank" rel="noopener" data-nolog="1">Try website ${ICON.ext}</a></div>
-    <div class="row"><span class="sub">Which worked?</span><button class="ghost tint" data-linkmode="app">App link</button><button class="ghost tint" data-linkmode="web">Website</button><button class="ghost" data-linkmode="none">Neither</button></div></section>`;
-}
+/* ---------- Sleeper links (rewritten Nov 25, 2026) ----------
+   What actually opens the Sleeper app (checked Nov 25 against Apple's copy of sleeper.com's
+   apple-app-site-association): only /channels/*, /topics/*, /topic/* and /message/*. League pages
+   (/leagues/{id}/team) always open the website, which on a phone means a login wall in the browser.
+   So: phones and tablets get the league's channel link, which opens the league inside the Sleeper app
+   (the Team tab is one tap away); computers get the website team page. Settings can override. */
+const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const LINK = { pref(){ return store.get("sleeperLinks", "auto"); },
+  mode(){ const p = this.pref(); return p === "auto" ? (IS_PHONE ? "app" : "web") : p; } };
+function leagueLink(id, page){ return LINK.mode() === "app" ? `https://sleeper.com/channels/${id}` : `https://sleeper.com/leagues/${id}/${page || "team"}`; }
+function linkTestHTML(){ return ""; }   // the old "try both links" card: replaced by automatic links
 
 /* ---------- the exact moves for one league, slot by slot ---------- */
 function movesFor(r){
@@ -89,6 +85,7 @@ function renderRun(){
     <div class="ractions">
       ${RUN.back ? `<div class="backq">Back from Sleeper. Is this one set?</div>` : ""}
       <a class="primary open" href="${leagueLink(id)}" target="_blank" rel="noopener">Open in Sleeper ${ICON.ext}</a>
+      ${LINK.mode() === "app" ? `<div class="sub openhint">Opens this league in the Sleeper app. Tap <b>Team</b>, make the moves above, then come back.</div>` : ""}
       <div class="row"><button class="ghost tint${RUN.back ? " pulse2" : ""}" data-rundone="1">Done ✓ · next</button><button class="ghost" data-runskip="1">Skip</button>${mv.length ? `<button class="ghost" data-copy="${esc(movesText(r))}" data-label="Copy moves">Copy moves</button>` : ""}</div>
     </div>
     <p class="src">Moves use this league's scoring and each player's injury status. Questionable counts at 85%.</p></div>`;
@@ -216,7 +213,7 @@ function loadIntoBuilder(d, run){
 document.addEventListener("click", e=>{
   const el = e.target.closest("[data-linkmode],[data-backdone],[data-backx],[data-runstart],[data-runx],[data-rundone],[data-runskip],#trSave,[data-oftab],[data-oflog],[data-ofview],[data-ofi],[data-ofset],[data-ofdel],[data-ofrecheck],[data-ofcheck],[data-ofcounter]"); if(!el) return;
   const d = el.dataset;
-  if(d.linkmode){ if(d.linkmode !== "none") store.set("linkMode", d.linkmode); store.set("linkTested", true); showToast(d.linkmode === "app" ? "Open buttons now use the app link" : d.linkmode === "web" ? "Open buttons use the website" : "Kept the website link. Tell us what happened"); render(); return; }
+
   if(d.backdone){ store.set(doneKey(d.backdone), true); hideBackBar(); showToast("Marked done"); render(); return; }
   if(d.backx){ hideBackBar(); return; }
   if(d.runstart){ startRun(); return; }
@@ -236,8 +233,8 @@ document.addEventListener("click", e=>{
   if(d.ofcheck){ try{ loadIntoBuilder(JSON.parse(d.ofcheck), true); }catch(_){} return; }
   if(d.ofcounter){ setTimeout(()=>{ const a = INBOX.all(), o = a.find(z=>z.key === d.ofcounter); if(o && o.status === "open"){ o.status = "countered"; INBOX.save(a); showToast("Counter copied · offer marked countered"); render(); } }, 700); return; }
 });
-document.addEventListener("change", e=>{ if(e.target.id === "lkm"){ store.set("linkMode", e.target.value); store.set("linkTested", true); render(); } });
-document.addEventListener("click", e=>{ if(e.target.closest("[data-linkretest]")){ store.set("linkTested", false); go("fix"); } });
+document.addEventListener("change", e=>{ if(e.target.id === "lkm"){ store.set("sleeperLinks", e.target.value); render(); } });
+
 
 /* ---------- recent trades across every league, and what each one did ----------
    Rosters today already include the trade, so "after" is the current state and

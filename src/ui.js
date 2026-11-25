@@ -516,8 +516,7 @@ function teamsSectionHTML(locks){
   const meta = x => { const f = F[x.id]; if(!x.b) return x.meta + " · " + DIR3[x.dir];
     return [x.r.bestBall ? "Best ball" : x.rec, `Now ${ord(f.now)}`, `Future ${ord(f.fut)}`, `Age ${f.age.toFixed(1)}`, DIR3[x.dir]].join(" · "); };
   return `<section style="display:flex;flex-direction:column;gap:10px" id="myteams"><div class="sec"><h2 class="h2">My teams</h2><span class="sub">${S.bpLoading ? "Scoring teams…" : `${list.length} shown`}</span></div>
-    <div class="chips" role="tablist" aria-label="Sort teams"><span class="chiplab">Sort</span>${TSORTS.map(([k,l])=>`<button class="chip sortchip" role="tab" data-sort="${k}" aria-selected="${S.sort===k}" aria-pressed="${S.sort===k}">${l}</button>`).join("")}</div>
-    <div class="chips" aria-label="Filter teams"><span class="chiplab">Show</span>${filters.filter(([k])=>k === "all" || counts[k]).map(([k,l])=>`<button class="chip" data-dirf="${k}" aria-pressed="${S.dirF===k}">${l} · ${counts[k]}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Sort", "sort", TSORTS, S.sort)}${chipSelect("Show", "dirf", filters.filter(([k])=>k === "all" || counts[k]).map(([k,l])=>[k, `${l} · ${counts[k]}`]), S.dirF)}</div>
     <p class="scorenote"><b style="color:var(--ink-2)">${esc(sumLine)}.</b> ${TSORT_NOTE[S.sort]}</p>
     <div class="teamrow-list">${list.map(x=>`<button class="trow" data-team="${x.id}"><span class="dotx" style="background:${x.alert==="crit"?"var(--crit)":x.alert==="warn"?"var(--warn)":"transparent"};box-shadow:${x.alert?"0 0 8px currentColor":"none"}"></span><span class="t"><span class="nm">${esc(x.name)}</span><span class="mt">${esc(meta(x))}</span></span>${right(x)}</button>`).join("") || `<div class="empty" style="margin:0">No teams in this group.</div>`}</div></section>`;
 }

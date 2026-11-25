@@ -1573,7 +1573,7 @@ function renderDirList(){
   const avgBub = all.length ? all.reduce((s,L)=>s+L.me.odds.bub,0)/all.length : 0;
   let h = `<section class="summary dirsum"><h3>Where every team stands</h3>
     <p><b>${limbo.length} of ${all.length}</b> teams are in limbo: 20–60% playoff odds without a real title shot. Those come first, sorted by the chance you finish one spot outside the playoffs (average ${pct(avgBub)} across your teams).</p>
-    <div class="chips"><button class="chip" data-dlf="" aria-pressed="${!f}">All · ${all.length}</button><button class="chip" data-dlf="limbo" aria-pressed="${f==="limbo"}">Limbo · ${limbo.length}</button>${DIR_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-dlf="${k}" aria-pressed="${f===k}">${DIR[k].label} · ${counts[k]}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Show", "dlf", [["", `All · ${all.length}`], ["limbo", `Limbo · ${limbo.length}`]].concat(DIR_ORDER.filter(k=>counts[k]).map(k=>[k, `${DIR[k].label} · ${counts[k]}`])), f || "")}</div>
     <p>Each season is simulated 1,000 times from your real record, the remaining schedule and every team's projected lineup in that league's scoring. Playoff spots stand in for payout spots.</p></section>`;
   h += list.map(L=>{ const t = L.me, d = DIR[t.dir], id = L.lg.league_id;
     return `<article class="card s-${d.sev}"><div class="chead"><div class="t"><div class="lname">${esc(L.lg.name)}</div>
@@ -1697,7 +1697,6 @@ function renderStatus(){
     (gain>0 ? `<span><b class="num">+${fmt(gain)}</b> pts sitting on benches</span>` : "") +
     (S.loadedAt ? `<span>Updated ${S.loadedAt.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</span>` : "");
 }
-function leagueLink(id){ return `https://sleeper.com/leagues/${id}/team`; }
 
 function cardHTML(r, full){
   const lg = r.league, id = lg.league_id, done = isDone(id);
@@ -1784,7 +1783,7 @@ function renderPlayers(){
   if(S.playerFilter==="mismatch") list = list.filter(e=>e.wrong>0);
   list.sort((a,b)=>b.leagues.length-a.leagues.length || b.f.raw-a.f.raw);
   const chips = [["all","Most rostered"],["hurt","Injured or bye"],["mismatch","Start/sit mismatch"]].map(([k,l])=>`<button class="chip" data-pf="${k}" aria-pressed="${S.playerFilter===k}">${l}</button>`).join("");
-  let h = `<input class="search" id="q" type="search" placeholder="Find a player or team (e.g. Puka, KC)" value="${esc(S.query)}" autocomplete="off"><div class="chips">${chips}</div>`;
+  let h = `<input class="search" id="q" type="search" placeholder="Find a player or team (e.g. Puka, KC)" value="${esc(S.query)}" autocomplete="off"><div class="cselrow">${chipSelect("Show", "pf", [["all","Most rostered"],["hurt","Injured or bye"],["mismatch","Start/sit mismatch"]], S.playerFilter || "all")}</div>`;
   if(!list.length) return h + `<div class="empty">No players match.</div>`;
   h += `<div class="plist">` + list.slice(0, q ? 60 : 40).map(e=>{
     const f = e.f; const g = f.game;
@@ -1839,7 +1838,7 @@ function renderBlueprints(){
   list = list.slice().sort((a,b)=>ARCH_ORDER.indexOf(a.me.arch)-ARCH_ORDER.indexOf(b.me.arch) || a.me.nowRank-b.me.nowRank);
   let h = `<section class="summary"><h3>Your dynasty portfolio</h3>
     <p>${all.length} teams reviewed (leagues still drafting are skipped). Most common weak spot: ${worst[0]}, graded D or F in ${worst[1]} leagues.</p>
-    <div class="chips">${ARCH_ORDER.filter(k=>counts[k]).map(k=>`<button class="chip" data-arch="${k}" aria-pressed="${S.bpArch===k}">${ARCH[k].label} · ${counts[k]}</button>`).join("")}</div>
+    <div class="cselrow">${chipSelect("Show", "arch", [["", `All teams · ${all.length}`]].concat(ARCH_ORDER.filter(k=>counts[k]).map(k=>[k, `${ARCH[k].label} · ${counts[k]}`])), S.bpArch || "")}</div>
     <p>Dynasty values from <a href="https://fantasycalc.com" target="_blank" rel="noopener">FantasyCalc</a>, matched to each league's QB, size and PPR settings. Grades rank your starters' value at each position against the league. The 2-season outlook applies age curves and is a rough estimate.</p></section>`;
   h += list.map(bpCardHTML).join("");
   return h;
