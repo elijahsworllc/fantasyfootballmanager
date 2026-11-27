@@ -1223,6 +1223,34 @@ body.cc .top.scrolled::after{background:linear-gradient(90deg,transparent,rgba(9
   body.cc.cc-ready .top .hfeed{order:7;flex:1 0 100%}
 }
 @media (prefers-reduced-motion:reduce){.holo .hl,.holo .hs,.top .askbar,.top button.miniorb::before,.top button.miniorb::after,.hft,.top .askbar .go svg,.hpod .hp,.top.alert .mark::after{animation:none !important}.hfly{display:none}}
+/* Weather Watch */
+.wxcard{padding:14px 16px;display:grid;gap:8px;animation:ccrise .45s var(--ease) both;animation-delay:calc(var(--i,0)*40ms);border:1px solid transparent}
+.wxcard.high{border-color:rgba(255,122,156,.42);box-shadow:0 0 0 1px rgba(255,122,156,.12),0 10px 30px -18px rgba(255,122,156,.55)}
+.wxcard.mid{border-color:rgba(255,193,92,.32)}
+.wxtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.wxgame{font-family:var(--display);font-size:16px;font-weight:700}
+.wxkick{color:var(--ink-3);font-size:12.5px;white-space:nowrap}
+.wxroof{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.wxroof .pill{margin:0}
+.wxp-in{--c:var(--ink-3)}.wxp-out{--c:#5FD6E6}
+.wxlv.high{--c:#FF7A9C}.wxlv.mid{--c:#FFC15C}.wxlv.low{--c:var(--ink-2)}
+.wxfc{font-size:13.5px;color:var(--ink-2)}
+.wxfx{display:flex;flex-wrap:wrap;gap:6px}
+.wxfx span{font-size:12px;font-weight:700;border-radius:8px;padding:2px 7px;background:var(--sunk)}
+.wxfx .dn,.wxadj.dn{color:#FF8A8A}.wxfx .up,.wxadj.up{color:var(--ok,#4BE3A0)}
+.wxmine{font-size:12.5px;color:var(--ink-3)}
+.wxlist{padding:14px 16px;margin:0 0 14px;display:grid;gap:4px}
+.wxlist .h2,.wxh{margin:4px 0 8px}
+.wxrow{display:flex;align-items:center;gap:12px;justify-content:space-between;text-align:left;padding:9px 4px;border:0;border-top:1px solid var(--hair-2);border-radius:0;box-shadow:none;background:none;color:inherit;width:100%;font:inherit;cursor:pointer}
+.wxmore summary{cursor:pointer;color:var(--ink-2);font-size:13px;padding:8px 4px}
+.wxrow:first-of-type{border-top:0}
+.wxrow .t{display:grid;gap:2px;min-width:0}
+.wxrow small{color:var(--ink-3);font-size:12.5px}
+.wxadj{font-family:var(--display);font-weight:700;font-size:16px;white-space:nowrap}
+.wxhow{margin:14px 0;padding:12px 16px}
+.wxhow summary{cursor:pointer;font-weight:700}
+.wxhow p{color:var(--ink-2);font-size:13.5px}
+.wxhow .mini td,.wxhow .mini th{padding:5px 6px;font-size:12.5px}
 </style>
 </head>
 <body>

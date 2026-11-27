@@ -663,7 +663,7 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive, optimizer:viewOptimizer}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive, optimizer:viewOptimizer, weather:viewWeather}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;
@@ -680,6 +680,7 @@ function render(){
   S.arrive = false;
   // background work the home screen needs
   if(S.results.length && S.week && !S.kick[S.week]) loadKick();
+  if(S.results.length && S.kick[S.week] && S.kick[S.week].ok) loadWeekWx();
   if(S.results.length && !S.loading && !S.bp && !S.bpLoading && !S.bpError) setTimeout(loadBlueprints, 60);
 }
 

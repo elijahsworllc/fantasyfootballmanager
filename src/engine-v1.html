@@ -436,7 +436,7 @@ function pinfo(pid, league){
   else if(g.status === "canceled") reason = "Game canceled";
   const locked = !!(g && (g.status === "complete" || g.status === "in_game"));
   const raw = e && e.stats ? leagueScore(e.stats, league.scoring_settings || {}, pos) : 0;
-  let eff = raw * (status && FACTOR[status] != null ? FACTOR[status] : 1);
+  let eff = raw * (status && FACTOR[status] != null ? FACTOR[status] : 1) * wxMult(pos, team);
   if(reason) eff = 0;
   return {pid, name, full, pos, elig: p.fantasy_positions && p.fantasy_positions.length ? p.fantasy_positions : [pos], team, status, reason, locked, raw, eff, game:g};
 }
@@ -860,7 +860,7 @@ function pmeta(pid){ const p = S.proj[pid] && S.proj[pid].player || {}; return (
 function weekInfo(pid, x){
   if(x) return (x.cache ||= {})[pid] ||= pinfo(pid, x.lg);
   const f = pinfo(pid, {scoring_settings:{}}); const e = S.proj[pid];
-  const raw = e && e.stats && e.stats.pts_ppr || 0; f.raw = raw; f.eff = f.reason ? 0 : raw*(f.status && FACTOR[f.status]!=null ? FACTOR[f.status] : 1); return f;
+  const raw = e && e.stats && e.stats.pts_ppr || 0; f.raw = raw; f.eff = f.reason ? 0 : raw*(f.status && FACTOR[f.status]!=null ? FACTOR[f.status] : 1)*wxMult(f.pos, f.team); return f;
 }
 function cbOptions(side){
   const x = cbLg(), q = (side==="a"?CB.qa:CB.qb).trim().toLowerCase(), chosen = new Set(CB.a.concat(CB.b).map(o=>o.id));

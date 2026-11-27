@@ -1223,6 +1223,34 @@ body.cc .top.scrolled::after{background:linear-gradient(90deg,transparent,rgba(9
   body.cc.cc-ready .top .hfeed{order:7;flex:1 0 100%}
 }
 @media (prefers-reduced-motion:reduce){.holo .hl,.holo .hs,.top .askbar,.top button.miniorb::before,.top button.miniorb::after,.hft,.top .askbar .go svg,.hpod .hp,.top.alert .mark::after{animation:none !important}.hfly{display:none}}
+/* Weather Watch */
+.wxcard{padding:14px 16px;display:grid;gap:8px;animation:ccrise .45s var(--ease) both;animation-delay:calc(var(--i,0)*40ms);border:1px solid transparent}
+.wxcard.high{border-color:rgba(255,122,156,.42);box-shadow:0 0 0 1px rgba(255,122,156,.12),0 10px 30px -18px rgba(255,122,156,.55)}
+.wxcard.mid{border-color:rgba(255,193,92,.32)}
+.wxtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.wxgame{font-family:var(--display);font-size:16px;font-weight:700}
+.wxkick{color:var(--ink-3);font-size:12.5px;white-space:nowrap}
+.wxroof{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.wxroof .pill{margin:0}
+.wxp-in{--c:var(--ink-3)}.wxp-out{--c:#5FD6E6}
+.wxlv.high{--c:#FF7A9C}.wxlv.mid{--c:#FFC15C}.wxlv.low{--c:var(--ink-2)}
+.wxfc{font-size:13.5px;color:var(--ink-2)}
+.wxfx{display:flex;flex-wrap:wrap;gap:6px}
+.wxfx span{font-size:12px;font-weight:700;border-radius:8px;padding:2px 7px;background:var(--sunk)}
+.wxfx .dn,.wxadj.dn{color:#FF8A8A}.wxfx .up,.wxadj.up{color:var(--ok,#4BE3A0)}
+.wxmine{font-size:12.5px;color:var(--ink-3)}
+.wxlist{padding:14px 16px;margin:0 0 14px;display:grid;gap:4px}
+.wxlist .h2,.wxh{margin:4px 0 8px}
+.wxrow{display:flex;align-items:center;gap:12px;justify-content:space-between;text-align:left;padding:9px 4px;border:0;border-top:1px solid var(--hair-2);border-radius:0;box-shadow:none;background:none;color:inherit;width:100%;font:inherit;cursor:pointer}
+.wxmore summary{cursor:pointer;color:var(--ink-2);font-size:13px;padding:8px 4px}
+.wxrow:first-of-type{border-top:0}
+.wxrow .t{display:grid;gap:2px;min-width:0}
+.wxrow small{color:var(--ink-3);font-size:12.5px}
+.wxadj{font-family:var(--display);font-weight:700;font-size:16px;white-space:nowrap}
+.wxhow{margin:14px 0;padding:12px 16px}
+.wxhow summary{cursor:pointer;font-weight:700}
+.wxhow p{color:var(--ink-2);font-size:13.5px}
+.wxhow .mini td,.wxhow .mini th{padding:5px 6px;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -1353,7 +1381,7 @@ function pinfo(pid, league){
   else if(g.status === "canceled") reason = "Game canceled";
   const locked = !!(g && (g.status === "complete" || g.status === "in_game"));
   const raw = e && e.stats ? leagueScore(e.stats, league.scoring_settings || {}, pos) : 0;
-  let eff = raw * (status && FACTOR[status] != null ? FACTOR[status] : 1);
+  let eff = raw * (status && FACTOR[status] != null ? FACTOR[status] : 1) * wxMult(pos, team);
   if(reason) eff = 0;
   return {pid, name, full, pos, elig: p.fantasy_positions && p.fantasy_positions.length ? p.fantasy_positions : [pos], team, status, reason, locked, raw, eff, game:g};
 }
@@ -1777,7 +1805,7 @@ function pmeta(pid){ const p = S.proj[pid] && S.proj[pid].player || {}; return (
 function weekInfo(pid, x){
   if(x) return (x.cache ||= {})[pid] ||= pinfo(pid, x.lg);
   const f = pinfo(pid, {scoring_settings:{}}); const e = S.proj[pid];
-  const raw = e && e.stats && e.stats.pts_ppr || 0; f.raw = raw; f.eff = f.reason ? 0 : raw*(f.status && FACTOR[f.status]!=null ? FACTOR[f.status] : 1); return f;
+  const raw = e && e.stats && e.stats.pts_ppr || 0; f.raw = raw; f.eff = f.reason ? 0 : raw*(f.status && FACTOR[f.status]!=null ? FACTOR[f.status] : 1)*wxMult(f.pos, f.team); return f;
 }
 function cbOptions(side){
   const x = cbLg(), q = (side==="a"?CB.qa:CB.qb).trim().toLowerCase(), chosen = new Set(CB.a.concat(CB.b).map(o=>o.id));
@@ -3439,7 +3467,7 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive, optimizer:viewOptimizer}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive, optimizer:viewOptimizer, weather:viewWeather}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;
@@ -3456,6 +3484,7 @@ function render(){
   S.arrive = false;
   // background work the home screen needs
   if(S.results.length && S.week && !S.kick[S.week]) loadKick();
+  if(S.results.length && S.kick[S.week] && S.kick[S.week].ok) loadWeekWx();
   if(S.results.length && !S.loading && !S.bp && !S.bpLoading && !S.bpError) setTimeout(loadBlueprints, 60);
 }
 
@@ -3726,25 +3755,13 @@ const STADIUM = {ARI:[33.5276,-112.2626],ATL:[33.7554,-84.4009],BAL:[39.2780,-76
 const CITY = {"London":[51.5560,-0.2796],"Tottenham":[51.6043,-0.0664],"Frankfurt":[50.0686,8.6455],"Munich":[48.2188,11.6247],"Berlin":[52.5147,13.2395],"Madrid":[40.4531,-3.6883],"Saint-Denis":[48.9245,2.3602],"Paris":[48.9245,2.3602],
   "Dublin":[53.3352,-6.2286],"Mexico City":[19.3029,-99.1505],"São Paulo":[-23.5453,-46.4742],"Sao Paulo":[-23.5453,-46.4742],"Melbourne":[-37.8200,144.9834],"Rio de Janeiro":[-22.9122,-43.2302]};
 function gameOf(team){ const k = kickoff(team); return k && !k.approx ? k : null; }
-function loadWx(team){
-  const g = gameOf(team); if(!g || g.indoor) return null;
-  const key = g.short; if(CTX.wx[key]) return CTX.wx[key].p;
-  const ll = (g.intl && (CITY[g.city] || CITY[g.vcity])) || STADIUM[g.home]; if(!ll) return null;
-  if(g.ts - Date.now() > 15*864e5 || g.ts < Date.now() - 6*3.6e6) return null;   // forecasts reach about 16 days out
-  const e = CTX.wx[key] = {}, day = new Date(g.ts).toISOString().slice(0,10);
-  e.p = getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${ll[0]}&longitude=${ll[1]}&hourly=temperature_2m,precipitation_probability,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=UTC&start_date=${day}&end_date=${day}`, {cache:"network"})
-    .then(j=>{ const h = j.hourly, i = new Date(g.ts).getUTCHours(); if(!h || h.time[i] == null) return;
-      e.v = {temp: Math.round(h.temperature_2m[i]), rain: h.precipitation_probability[i], wind: Math.round(h.wind_speed_10m[i])}; })
-    .catch(()=>{ e.err = true; });
-  return e.p;
-}
+function loadWx(team){ return loadWeekWx(); }
 function venueText(team){
-  const g = gameOf(team); if(!g) return null;
-  if(g.indoor) return {text:"Indoors", bad:false};
-  const w = CTX.wx[g.short] && CTX.wx[g.short].v;
-  if(!w) return {text:"Outdoors", bad:false};
-  const bad = w.wind >= 15 || w.rain >= 50;
-  return {text:`Outdoors · ${w.temp}°F · wind ${w.wind} mph · ${w.rain}% rain`, bad, w};
+  const x = gameWx(team); if(!x) return null;
+  if(x.indoor) return {text: RETRACT.has(x.g.home) ? "Retractable roof" : "Indoors", bad:false};
+  const w = x.w; if(!w) return {text:"Outdoors", bad:false};
+  const bad = w.wind >= 15 || w.rain >= 60 || w.temp <= 20;
+  return {text:`Outdoors · ${w.temp}°F · wind ${w.wind} mph · ${w.rain}% ${w.snow ? "snow" : "rain"}`, bad, w};
 }
 function oppText(f){
   if(!f || !f.game) return f && f.reason ? f.reason : "—";
@@ -3785,6 +3802,7 @@ function startSitHTML(){
   const fa = weekInfo(A.id, x), fb = weekInfo(B.id, x);
   const ra = rankStart([A.id, B.id], x), win = ra.w.id === A.id ? 0 : 1, gap = Math.abs(fa.eff - fb.eff);
   const la = logSummary(A.id), lb = logSummary(B.id), da = defRank(fa), db = defRank(fb), va = venueText(fa.team), vb = venueText(fb.team);
+  const wa = wxFactor(fa.pos, va && va.w), wb = wxFactor(fb.pos, vb && vb.w);
   const ka = kickoff(fa.team), kb = kickoff(fb.team);
   const row = (label, a, b, better, note) => `<div class="crow"><span class="l${better===0?" w":""}">${a}</span><span class="k">${label}</span><span class="r${better===1?" w":""}">${b}</span></div>`;
   const cmp = (a, b, hi=true, min=0) => a == null || b == null || Math.abs(a-b) <= min ? null : (a > b) === hi ? 0 : 1;
@@ -3794,7 +3812,8 @@ function startSitHTML(){
     + row("Opponent", esc(oppText(fa)), esc(oppText(fb)), null)
     + row(`Opp allows to pos`, da ? `${da.per.toFixed(1)} <small>${ord(da.rank)} most</small>` : "—", db ? `${db.per.toFixed(1)} <small>${ord(db.rank)} most</small>` : "—", da && db && fa.pos === fb.pos ? cmp(da.rank, db.rank, false, 5) : da && db ? cmp(da.rank/da.n, db.rank/db.n, false, .15) : null)
     + row("Kickoff", ka ? esc(kickLabel(ka)) + (ka.intl ? ` <span class="intl">${esc(ka.city||"")}</span>` : "") : "—", kb ? esc(kickLabel(kb)) + (kb.intl ? ` <span class="intl">${esc(kb.city||"")}</span>` : "") : "—", null)
-    + row("Venue", va ? esc(va.text) : "—", vb ? esc(vb.text) : "—", va && vb && va.bad !== vb.bad ? (va.bad ? 1 : 0) : null)
+    + row("Venue", va ? esc(va.text) : "—", vb ? esc(vb.text) : "—", null)
+    + (wa.m !== 1 || wb.m !== 1 ? row("Weather adj", esc(wxPct(wa.m)), esc(wxPct(wb.m)), cmp(wa.m, wb.m, true, .01)) : "")
     + row("Season PPR/g", la && la.games ? fmt(la.avg) : "—", lb && lb.games ? fmt(lb.avg) : "—", la && lb && la.games && lb.games ? cmp(la.avg, lb.avg, true, .5) : null)
     + row("Last 3 PPR/g", la && la.games ? fmt(la.last3) : "—", lb && lb.games ? fmt(lb.last3) : "—", la && lb && la.games && lb.games ? cmp(la.last3, lb.last3, true, .5) : null)
     + row("Usage/g", la && la.games ? `${la.tgt.toFixed(1)} tgt · ${la.car.toFixed(1)} car` : esc(usage(A.id) || "—"), lb && lb.games ? `${lb.tgt.toFixed(1)} tgt · ${lb.car.toFixed(1)} car` : esc(usage(B.id) || "—"), null)
@@ -3803,7 +3822,7 @@ function startSitHTML(){
   const diffs = [], N = [A.name, B.name];
   if(gap >= .5) diffs.push(`${N[win]} is projected ${fmt(gap)} pts higher${x ? " in this league's scoring" : " (PPR)"}.`);
   if(da && db && Math.abs(da.rank - db.rank) >= 8) { const e = da.rank < db.rank ? 0 : 1, d = e ? db : da, o = e ? da : db; diffs.push(`${N[e]} has the softer matchup: ${d.opp} allows ${d.per.toFixed(1)} PPR/g to ${(e?fb:fa).pos}s (${ord(d.rank)} most) vs ${o.per.toFixed(1)} (${ord(o.rank)}).`); }
-  [[fa,va,0],[fb,vb,1]].forEach(([f,v,i])=>{ if(v && v.bad && ["QB","WR","TE","K"].includes(f.pos)) diffs.push(`${N[i]} plays outdoors in ${v.w.wind >= 15 ? `${v.w.wind} mph wind` : ""}${v.w.wind >= 15 && v.w.rain >= 50 ? " and " : ""}${v.w.rain >= 50 ? `a ${v.w.rain}% chance of rain` : ""} at kickoff (Open-Meteo forecast).`); });
+  [[wa,va,0],[wb,vb,1]].forEach(([z,v,i])=>{ if(z.m !== 1) diffs.push(`${N[i]}'s projection is ${z.m < 1 ? "cut" : "raised"} ${Math.round(Math.abs(z.m-1)*100)}% for ${z.why.join(", ")} around kickoff (${v.w.src === "NWS" ? "National Weather Service" : v.w.src} forecast).`); });
   [[fa,0],[fb,1]].forEach(([f,i])=>{ if(f.status && f.status !== "Healthy") diffs.push(`${N[i]} is listed ${f.status} on Sleeper.`); });
   if(la && lb && la.games >= 3 && lb.games >= 3){ [[la,0],[lb,1]].forEach(([l,i])=>{ if(l.last3 - l.avg >= 4) diffs.push(`${N[i]} is trending up: ${fmt(l.last3)} PPR/g over his last 3 vs ${fmt(l.avg)} on the season.`); if(l.avg - l.last3 >= 4) diffs.push(`${N[i]} is trending down: ${fmt(l.last3)} PPR/g over his last 3 vs ${fmt(l.avg)} on the season.`); }); }
   h += `<section class="h2h glass rise">
@@ -3828,7 +3847,7 @@ function startSitHTML(){
       h += `<div class="lineup" style="margin:0"><table class="mini"><thead><tr><th>Your league</th><th>Start</th><th>Margin</th></tr></thead><tbody>${per.map(z=>`<tr${z.pick!==ra.w.id?' class="me"':""}><td>${esc(z.y.lg.name)}</td><td>${esc(pname(z.pick).split(" ").slice(-1)[0])}</td><td class="num">+${fmt(z.gap)}</td></tr>`).join("")}</tbody></table></div>`;
       if(per.some(z=>z.pick !== ra.w.id)) h += `<p class="note" style="margin:0">Highlighted leagues flip the call because of their scoring settings.</p>`; }
   }
-  h += `<p class="src">Projections: Sleeper (Rotowire)${x ? ", rescored with this league's settings" : ", PPR"}; Questionable counts at 85%, Doubtful at 20%. Matchups: PPR points allowed per game through week ${CTX.def && CTX.def.weeks || "—"}, Sleeper stats. Kickoff and roof: ESPN. Weather: Open-Meteo forecast for the stadium at kickoff. Model confidence assumes each projection can miss by about 45%.</p></section>`;
+  h += `<p class="src">Projections: Sleeper (Rotowire)${x ? ", rescored with this league's settings" : ", PPR"}; Questionable counts at 85%, Doubtful at 20%. Matchups: PPR points allowed per game through week ${CTX.def && CTX.def.weeks || "—"}, Sleeper stats. Kickoff and roof: ESPN. Weather: National Weather Service hourly forecast for the stadium (Open-Meteo abroad), already applied to projected points; full forecasts and roof calls at <a href="${MSW}" target="_blank" rel="noopener">mysportsweather.com</a>. Model confidence assumes each projection can miss by about 45%.</p></section>`;
   return h;
 }
 
@@ -4649,6 +4668,7 @@ function renderSettings(){
 VIEWS.add("direction"); VIEWS.add("trades"); VIEWS.add("offers");
 
 const NI = {
+  weather:`<path d="M7 17.5h9.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 6.6 11 3.25 3.25 0 0 0 7 17.5z"/><path d="M9 20.5l-.6 1.2M13 20.5l-.6 1.2"/>`,
   home:`<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>`,
   diagnose:`<path d="M3 12h4l2.2-5.5 4.2 11 2.4-5.5H21"/>`,
   trades:`<path d="M5 8h12l-3-3"/><path d="M19 16H7l3 3"/>`,
@@ -4775,6 +4795,7 @@ function renderMenu(){
       <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
       <button class="mtile" data-nav="teams:value">${svgI("reviews",18)}Now vs future</button>
       <button class="mtile" data-go="live">${svgI("live",18)}Live scores</button>
+      <button class="mtile" data-go="weather">${svgI("weather",18)}Weather Watch</button>
       <button class="mtile" data-go="edges">${svgI("edges",18)}Scoring edges</button>
       <button class="mtile" data-nav="teams:odds">${svgI("diagnose",18)}Playoff odds${dirI.badge ? ` <span class="ct warn">${dirI.badge}</span>` : ""}</button>
     </div></div>
@@ -5716,7 +5737,7 @@ function skyInit(){
 /* ---------- desktop rail and side column ---------- */
 const CC_TOOLS = [
   ["Overview", [["home","Home","home","#46E6F5",{go:"home"}], ["ask","Crystal Ball","orb","#B9A6FF",{go:"ask"}]]],
-  ["Game day", [["live","Live","live","#FF4D6D",{go:"live"}, 1], ["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
+  ["Game day", [["live","Live","live","#FF4D6D",{go:"live"}, 1], ["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["weather","Weather Watch","weather","#FF7A9C",{go:"weather"}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
   ["Trades", [["trades","Trade Finder","trades","#46E6F5",{go:"trades"}], ["trade","Trade Check","swaps","#5CE1E6",{tool:"trade"}], ["offers","Offers","offers","#9B7BFF",{go:"offers"}], ["managers","Managers","managers","#FF9A5C",{go:"managers"}, 1], ["compare","Compare","compare","#F25CD4",{tool:"compare"}]]],
   ["Teams", [["teams","Team Outlook","diagnose","#8B7BFF",{nav:"teams:value"}], ["edges","Scoring Edges","edges","#FFE066",{go:"edges"}, 1], ["exposure","Exposure","exposure","#FFB25C",{nav:"players:exposure"}], ["rankings","Rankings","rankings","#5CE1E6",{go:"rankings"}]]]
 ];
@@ -6046,7 +6067,7 @@ document.addEventListener("change", e => {
    ===================================================================== */
 const HOME_V = { get(){ return store.get("homeV", "classic"); }, set(v){ store.set("homeV", v); } };
 (()=>{ const q = new URLSearchParams(location.search).get("home"); if(q && ["classic","focus","launcher","hub"].includes(q)) HOME_V.set(q); })();
-const TOOL_ORDER = ["fix","live","trades","trade","waivers","ask","offers","start","run","teams","rankings","managers","edges","exposure","compare","brief"];
+const TOOL_ORDER = ["fix","live","trades","trade","waivers","ask","offers","start","run","weather","teams","rankings","managers","edges","exposure","compare","brief"];
 function toolDefs(){ const m = {}; for(const [, items] of CC_TOOLS) for(const [id, label, ic, col, how] of items) m[id] = {id, label, ic, col, how}; return m; }
 const USE = { all(){ return store.get("toolUse", {}); }, hit(id){ if(!id) return; const u = this.all(); u[id] = (u[id] || 0) + 1; store.set("toolUse", u); } };
 // count what people open, from the rail, the dock, the menu or a tool tile
@@ -6072,6 +6093,7 @@ function toolStatus(id){
     case "exposure": return {t:"Every player across leagues"};
     case "compare": return {t:"Two players, long term"};
     case "brief": return {t:"Your week in two minutes"};
+    case "weather": { const n = typeof wxStarters === "function" ? wxStarters().filter(e=>e.m < 1).length : 0; return n ? {t:`${n} starter${n > 1 ? "s" : ""} in rough weather`, hot:"warn"} : {t:"Kickoff forecasts for every game"}; }
   }
   return {t:""};
 }
@@ -6151,7 +6173,7 @@ Object.assign(NI, {
   anchor:'<path d="M5 7h14M5 12h10M5 17h6"/>',
   recent:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'});
 const RELATED = {
-  fix:["run","start","live","waivers"], live:["fix","run"], waivers:["fix","exposure","rankings"],
+  fix:["run","start","weather","live","waivers"], live:["fix","run","weather"], weather:["start","fix","live"], waivers:["fix","exposure","rankings"],
   trades:["trade","offers","managers","compare"], offers:["trade","trades","managers"], managers:["trades","trade","offers"],
   direction:["edges","rankings","trades"], team:["trades","trade","edges"], edges:["rankings","trades","teams"],
   rankings:["edges","exposure","start"], players:["rankings","waivers","fix"], brief:["fix","waivers","trades"], ask:["start","trade","compare"]
@@ -6488,13 +6510,13 @@ function optWeight(L, t){
   if(t === L.me){ const set = optDirSet(L.lg.league_id); if(set === "contend") return .85; if(set === "rebuild") return .15; }
   return OPT_W[t.dir] ?? .5;
 }
-function lev(t){ const p = t.odds.po; return 4*p*(1-p) + .55*p + .1; }   // how much a weekly point matters: most on the bubble, still a lot for favorites (title odds)
+function optLev(t){ const p = t.odds.po; return 4*p*(1-p) + .55*p + .1; }   // how much a weekly point matters: most on the bubble, still a lot for favorites (title odds)
 // cheap team value of losing `out` and gaining `inn`, in units of about one starter-level upgrade
 function teamU(L, t, out, inn, w){
   const outIds = new Set(out.filter(a=>a.pos !== "PICK").map(a=>a.id));
   const ids = t.ids.filter(id=>!outIds.has(id)).concat(inn.filter(a=>a.pos !== "PICK").map(a=>a.id));
   const dPts = lineupPts(L.lg, ids, L.cache).pts - t.proj;
-  const now = dPts/6*lev(t);
+  const now = dPts/6*optLev(t);
   const dY2 = inn.reduce((s,a)=>s + y2v(a), 0) - out.reduce((s,a)=>s + y2v(a), 0);
   const fut = dY2/Math.max(t.bp.y2/12, 500);
   return {u: w*now + (1-w)*fut, now, fut, dPts, dY2};
@@ -6861,6 +6883,150 @@ try{ document.fonts.ready.then(hbFit); }catch(e){}
 function hbFlicker(){ const m = $("markBtn"); if(!m || reduceMotion()) return; m.classList.remove("flick"); void m.offsetWidth; m.classList.add("flick"); }
 document.addEventListener("click", e => { if(e.target.closest("#markBtn")) hbFlicker(); }, true);
 { const top = $("top"); if(top){ let seen = !top.hidden; new MutationObserver(() => { if(!top.hidden && !seen){ seen = true; hbFit(); hbFlicker(); headerStatus(); hbTuck(); } else if(top.hidden) seen = false; }).observe(top, {attributes: true, attributeFilter: ["hidden"]}); } }
+
+/* ---------- game weather: National Weather Service hourly forecast for each outdoor game, applied to this week's projections ----------
+   Same forecast source mysportsweather.com uses (NWS). US games: api.weather.gov (public domain, CORS open).
+   International games and NWS outages: Open-Meteo. Domes and roofed stadiums (ESPN venue.indoor) get no adjustment.
+   The multiplier lands in pinfo()/weekInfo(), so lineups, the optimizer, Must fix swaps and Start/Sit all use it. */
+const WX = {wk:null, p:null, g:{}, at:0};
+const RETRACT = new Set(["ARI","ATL","DAL","HOU","IND"]);
+const MSW = "https://mysportsweather.com/nfl";
+const mphOf = s => { const n = String(s || "").match(/\d+/g); return n ? Math.max(...n.map(Number)) : 0; };
+// the game window: the kickoff hour and the two after it
+async function nwsAt(ll, ts){
+  const pt = await getJSON(`https://api.weather.gov/points/${ll[0].toFixed(4)},${ll[1].toFixed(4)}`, {cache:"prefer"});
+  const url = pt && pt.properties && pt.properties.forecastHourly; if(!url) return null;
+  const j = await getJSON(url, {cache:"network"}).catch(()=>getJSON(url, {cache:"only"}));
+  const win = ((j && j.properties && j.properties.periods) || []).filter(p=>{ const s = Date.parse(p.startTime); return s > ts - 3.6e6 && s < ts + 3*3.6e6; });
+  if(!win.length) return null;
+  const words = win.map(p=>p.shortForecast || "").join(" ").toLowerCase();
+  return {temp: Math.round(win[0].temperature), wind: Math.max(...win.map(p=>mphOf(p.windSpeed))), rain: Math.max(...win.map(p=>(p.probabilityOfPrecipitation || {}).value || 0)),
+    snow: /snow|flurr|sleet|wintry/.test(words), sky: win[0].shortForecast || "", src:"NWS"};
+}
+async function meteoAt(ll, ts){
+  const day = new Date(ts).toISOString().slice(0,10), next = new Date(ts + 864e5).toISOString().slice(0,10);
+  const j = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${ll[0]}&longitude=${ll[1]}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,snowfall&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=UTC&start_date=${day}&end_date=${next}`, {cache:"network"});
+  const h = j && j.hourly, i = new Date(ts).getUTCHours(); if(!h || !h.temperature_2m || h.temperature_2m[i] == null) return null;
+  const at = (a, k) => (a || []).slice(i, i + k).filter(v=>v != null);
+  return {temp: Math.round(h.temperature_2m[i]), wind: Math.round(Math.max(...at(h.wind_speed_10m, 3), 0)), rain: Math.max(...at(h.precipitation_probability, 3), 0),
+    snow: at(h.snowfall, 3).some(v=>v > 0), sky:"", src:"Open-Meteo"};
+}
+function loadWeekWx(){
+  const k = S.kick[S.week]; if(!k || !k.ok) return null;
+  if(WX.p) return WX.p;
+  if(WX.wk === S.week && Date.now() - WX.at < 30*60e3) return null;   // refresh every 30 minutes while the app is open
+  WX.wk = S.week; WX.at = Date.now();
+  const now = Date.now(), todo = k.games.filter(g=>!g.indoor && g.ts > now - 3*3.6e6 && g.ts - now < 15*864e5);   // Open-Meteo reaches about 16 days, NWS hourly about 7
+  WX.p = pool(todo, 4, async g=>{
+    const ll = (g.intl && (CITY[g.city] || CITY[g.vcity])) || STADIUM[g.home]; if(!ll) return;
+    let v = g.intl || g.ts - Date.now() > 6.5*864e5 ? null : await nwsAt(ll, g.ts).catch(()=>null);
+    if(!v) v = await meteoAt(ll, g.ts).catch(()=>null);
+    if(v) WX.g[g.short] = {v, at: Date.now()};
+  }).then(()=>{ WX.p = null; wxApply(); });
+  return WX.p;
+}
+function wxApply(){
+  (S.raw || []).forEach(x=>{ if(x) x.cache = null; });
+  if(S.results.length) runAnalysis();
+  render();
+}
+function gameWx(team){
+  const g = team && gameOf(team); if(!g) return null;
+  if(g.indoor) return {g, indoor:true};
+  const e = WX.g[g.short]; return {g, w: e && e.v};
+}
+// Weather multipliers on projected points. Wind is the big one (passing and kicking), heavy rain/snow next, extreme cold last.
+// Rough sizes from public NFL weather splits; tune here.
+const WX_WIND = {QB:[.97,.92,.86,.80], WR:[.98,.94,.89,.84], TE:[.98,.95,.91,.86], K:[.95,.88,.80,.72], RB:[1,1.01,1.02,1.03], DEF:[1,1.03,1.06,1.08]};
+const WX_WET = {QB:.96, WR:.96, TE:.97, K:.93, RB:1.02, DEF:1.03}, WX_SNOW = {QB:.97, WR:.97, TE:.98, K:.92}, WX_COLD = {QB:.97, WR:.97, TE:.98, K:.94};
+function wxFactor(pos, w){
+  if(!w) return {m:1, why:[]};
+  let m = 1; const why = [], W = w.wind, b = W >= 25 ? 3 : W >= 20 ? 2 : W >= 15 ? 1 : W >= 12 ? 0 : -1;
+  if(b >= 0 && WX_WIND[pos] && WX_WIND[pos][b] !== 1){ m *= WX_WIND[pos][b]; why.push(`${W} mph wind`); }
+  if(w.rain >= 60 && WX_WET[pos]){ m *= WX_WET[pos]; if(w.snow && WX_SNOW[pos]) m *= WX_SNOW[pos]; why.push(`${w.rain}% chance of ${w.snow ? "snow" : "rain"}`); }
+  if(w.temp <= 20 && WX_COLD[pos]){ m *= WX_COLD[pos]; why.push(`${w.temp}°F`); }
+  return {m: +Math.max(.65, Math.min(1.12, m)).toFixed(3), why};
+}
+function wxMult(pos, team){
+  const x = gameWx(team); return x && x.w ? wxFactor(pos, x.w).m : 1;
+}
+const wxPct = m => m === 1 ? "None" : `${m > 1 ? "+" : "−"}${Math.round(Math.abs(m - 1)*100)}%`;
+
+/* ---------- Weather Watch (Game day): every game this week by weather impact, and your starters it moves ---------- */
+const WX_POS = ["QB","WR","TE","RB","K","DEF"];
+function wxRoof(g){ return g.indoor ? (RETRACT.has(g.home) ? "Retractable roof" : "Dome") : "Open air"; }
+// severity of a game's forecast: how much it cuts the most-hit position (kickers aside)
+function wxSeverity(w){ if(!w) return 0; return 1 - Math.min(...["QB","WR","TE"].map(p=>wxFactor(p, w).m)); }
+function wxLevel(w){ const s = wxSeverity(w); return s >= .1 ? "high" : s >= .04 ? "mid" : s > 0 ? "low" : "none"; }
+// one-line flag for any card that shows a game (home spotlight, lineups): null when the weather doesn't matter
+function wxGameFlag(team){
+  const x = gameWx(team); if(!x || x.indoor || !x.w || wxLevel(x.w) === "none") return null;
+  const w = x.w, bits = [];
+  if(w.wind >= 15) bits.push(`${w.wind} mph wind`);
+  if(w.rain >= 60) bits.push(w.snow ? "snow" : "rain");
+  if(w.temp <= 20) bits.push(`${w.temp}°F`);
+  return {text: bits.join(" · ") || `${w.wind} mph wind`, level: wxLevel(w)};
+}
+// every starter whose projection the weather moves, grouped by player across leagues
+function wxStarters(){
+  const by = {};
+  for(const r of S.results || []){
+    if(!r.current || r.sev === "off") continue;
+    for(const pid of r.current){
+      if(!pid || pid === "0") continue;
+      const f = r._c && r._c[pid] || pinfo(pid, r.league); if(!f || f.reason || f.locked) continue;
+      const m = wxMult(f.pos, f.team); if(m === 1) continue;
+      const e = by[pid] ||= {pid, f, m, why: wxFactor(f.pos, gameWx(f.team).w).why, leagues: [], delta: 0};
+      e.leagues.push(r.league.name); e.delta += f.eff - f.eff / m;
+    }
+  }
+  return Object.values(by).sort((a, b) => a.m - b.m);
+}
+function wxGameCard(g, mine, i){
+  const x = gameWx(g.teams[0]) || {g}, w = x.w, lvl = g.indoor ? "none" : wxLevel(w);
+  const fx = w ? WX_POS.map(p=>[p, wxFactor(p, w).m]).filter(([, m]) => m !== 1) : [];
+  const fc = !w ? (g.indoor ? "No weather inside" : g.ts - Date.now() > 15*864e5 ? "Forecast opens closer to kickoff" : WX.p ? "Loading forecast…" : "No forecast yet")
+    : `${w.temp}°F · wind ${w.wind} mph · ${w.rain}% ${w.snow ? "snow" : "rain"}${w.sky ? " · " + esc(w.sky) : ""}`;
+  return `<article class="glass wxcard ${lvl}" style="--i:${i}">
+    <div class="wxtop"><b class="wxgame">${esc(g.short || g.teams.join(" @ "))}</b><span class="wxkick">${esc(kickLabel(g))}</span></div>
+    <div class="wxroof"><span class="pill wxp-${g.indoor ? "in" : "out"}">${wxRoof(g)}</span>${g.intl ? `<span class="intl">${esc(g.city || "Intl")}</span>` : ""}${lvl !== "none" ? `<span class="pill wxlv ${lvl}">${{high:"Big impact", mid:"Some impact", low:"Slight impact"}[lvl]}</span>` : ""}</div>
+    <div class="wxfc">${fc}</div>
+    ${fx.length ? `<div class="wxfx">${fx.map(([p, m]) => `<span class="${m < 1 ? "dn" : "up"}">${p} ${wxPct(m)}</span>`).join("")}</div>` : ""}
+    ${mine.length ? `<div class="wxmine">Your starters: ${mine.slice(0, 4).map(id => esc(pname(id))).join(", ")}${mine.length > 4 ? ` +${mine.length - 4}` : ""}</div>` : ""}
+  </article>`;
+}
+function viewWeather(){
+  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Weather Watch</h1><div class="sub">Kickoff forecasts for every outdoor game, and how much they move your starters' projections.</div></section>`;
+  const k = S.kick[S.week];
+  if(!k || k.loading) return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading this week's games…</div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:240px"></i></div>`;
+  if(!k.ok) return h + `<div class="glass ccempty">Couldn't load this week's kickoff times, so there's no weather to match yet.</div>`;
+  loadWeekWx();
+  const hit = wxStarters(), mineBy = {};
+  for(const r of S.results || []) for(const pid of r.current || []){ const f = pid && pid !== "0" && (r._c && r._c[pid] || pinfo(pid, r.league)); if(f && f.team) (mineBy[f.team] ||= new Set()).add(pid); }
+  const games = k.games.filter(g => g.ts > Date.now() - 4*3.6e6), outdoor = games.filter(g => !g.indoor);
+  const rough = outdoor.filter(g => { const x = gameWx(g.teams[0]); return x && x.w && wxLevel(x.w) !== "none"; });
+  const lost = hit.reduce((s, e) => s + Math.min(0, e.delta), 0);
+  h += `<section class="glass lvsum"><span class="lvsoon">Week ${S.week} forecast</span><div class="lvstats">
+    <div><b class="num">${rough.length}<small>/${outdoor.length}</small></b><span>outdoor games with weather</span></div>
+    <div><b class="num">${hit.length}</b><span>of your starters affected</span></div>
+    <div><b class="num">${lost ? lost.toFixed(1) : "0"}</b><span>projected pts from weather</span></div></div>
+    <small class="lvat">${WX.p ? "Updating forecasts…" : WX.at ? `Updated ${new Date(WX.at).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})} · refreshes every 30 minutes` : ""}</small></section>`;
+  const wxRow = e => `<button class="wxrow" data-opentool="start"><span class="t"><b>${esc(pname(e.pid))}</b><small>${esc(pmeta(e.pid))} · ${esc(e.why.join(", "))} · ${e.leagues.length} league${e.leagues.length > 1 ? "s" : ""}</small></span><span class="wxadj ${e.m < 1 ? "dn" : "up"}">${wxPct(e.m)}</span></button>`;
+  // biggest moves first: everyone cut by weather, then the few it helps; the long tail folds away
+  const top = hit.slice().sort((a, b) => Math.abs(b.m - 1) - Math.abs(a.m - 1)).slice(0, 6), rest = hit.filter(e => !top.includes(e));
+  if(hit.length) h += `<section class="glass wxlist"><h2 class="h2">Your starters in the weather</h2>${top.map(wxRow).join("")}${rest.length ? `<details class="wxmore"><summary>Show all ${hit.length}</summary>${rest.map(wxRow).join("")}</details>` : ""}</section>`;
+  else if(!WX.p) h += `<div class="glass ccempty">None of your starters play in weather that moves their projection this week.</div>`;
+  const order = games.slice().sort((a, b) => { const sa = a.indoor ? -1 : wxSeverity((gameWx(a.teams[0]) || {}).w), sb = b.indoor ? -1 : wxSeverity((gameWx(b.teams[0]) || {}).w); return sb - sa || a.ts - b.ts; });
+  h += `<h2 class="h2 wxh">Every game this week</h2><div class="lvgrid">${order.map((g, i) => wxGameCard(g, [...new Set(g.teams.flatMap(t => [...(mineBy[t] || [])]))], i)).join("")}</div>`;
+  h += `<details class="glass wxhow"><summary>How the adjustment works</summary><p>For each outdoor game we read the hourly forecast for kickoff and the two hours after, then multiply each player's projection by position. Domes and closed roofs get no change.</p>
+    <table class="mini"><thead><tr><th>Condition</th><th>QB</th><th>WR</th><th>TE</th><th>K</th><th>RB</th><th>DEF</th></tr></thead><tbody>
+    ${[["Wind 12+ mph",0],["Wind 15+ mph",1],["Wind 20+ mph",2],["Wind 25+ mph",3]].map(([l, b]) => `<tr><td>${l}</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_WIND[p][b])}</td>`).join("")}</tr>`).join("")}
+    <tr><td>Rain or snow 60%+</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_WET[p])}</td>`).join("")}</tr>
+    <tr><td>Snow (extra)</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_SNOW[p] || 1)}</td>`).join("")}</tr>
+    <tr><td>20°F or colder</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_COLD[p] || 1)}</td>`).join("")}</tr></tbody></table></details>`;
+  h += `<p class="src">Forecasts: National Weather Service hourly forecast for each stadium (Open-Meteo for international games and games more than a week out). Roofs: ESPN. For meteorologist notes and live roof calls, see <a href="${MSW}" target="_blank" rel="noopener">mysportsweather.com</a>.</p>`;
+  return h;
+}
 
 SPACE.init();
 ORB.init();

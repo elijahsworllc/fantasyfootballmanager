@@ -14,7 +14,7 @@ Object.assign(NI, {
   anchor:'<path d="M5 7h14M5 12h10M5 17h6"/>',
   recent:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'});
 const RELATED = {
-  fix:["run","start","live","waivers"], live:["fix","run"], waivers:["fix","exposure","rankings"],
+  fix:["run","start","weather","live","waivers"], live:["fix","run","weather"], weather:["start","fix","live"], waivers:["fix","exposure","rankings"],
   trades:["trade","offers","managers","compare"], offers:["trade","trades","managers"], managers:["trades","trade","offers"],
   direction:["edges","rankings","trades"], team:["trades","trade","edges"], edges:["rankings","trades","teams"],
   rankings:["edges","exposure","start"], players:["rankings","waivers","fix"], brief:["fix","waivers","trades"], ask:["start","trade","compare"]

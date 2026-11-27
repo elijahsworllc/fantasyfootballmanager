@@ -79,7 +79,7 @@ function skyInit(){
 /* ---------- desktop rail and side column ---------- */
 const CC_TOOLS = [
   ["Overview", [["home","Home","home","#46E6F5",{go:"home"}], ["ask","Crystal Ball","orb","#B9A6FF",{go:"ask"}]]],
-  ["Game day", [["live","Live","live","#FF4D6D",{go:"live"}, 1], ["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
+  ["Game day", [["live","Live","live","#FF4D6D",{go:"live"}, 1], ["fix","Lineups","lineups","#FF5C7A",{go:"fix"}], ["start","Start / Sit","start","#5CB8FF",{tool:"start"}], ["waivers","Waivers","waivers","#4BE3A0",{go:"waivers"}], ["run","Game-day Run","run","#FFC15C",{run:1}], ["weather","Weather Watch","weather","#FF7A9C",{go:"weather"}], ["brief","Weekly Brief","brief","#7BE38F",{go:"brief"}]]],
   ["Trades", [["trades","Trade Finder","trades","#46E6F5",{go:"trades"}], ["trade","Trade Check","swaps","#5CE1E6",{tool:"trade"}], ["offers","Offers","offers","#9B7BFF",{go:"offers"}], ["managers","Managers","managers","#FF9A5C",{go:"managers"}, 1], ["compare","Compare","compare","#F25CD4",{tool:"compare"}]]],
   ["Teams", [["teams","Team Outlook","diagnose","#8B7BFF",{nav:"teams:value"}], ["edges","Scoring Edges","edges","#FFE066",{go:"edges"}, 1], ["exposure","Exposure","exposure","#FFB25C",{nav:"players:exposure"}], ["rankings","Rankings","rankings","#5CE1E6",{go:"rankings"}]]]
 ];

@@ -23,7 +23,7 @@ document.addEventListener("change", e => {
    ===================================================================== */
 const HOME_V = { get(){ return store.get("homeV", "classic"); }, set(v){ store.set("homeV", v); } };
 (()=>{ const q = new URLSearchParams(location.search).get("home"); if(q && ["classic","focus","launcher","hub"].includes(q)) HOME_V.set(q); })();
-const TOOL_ORDER = ["fix","live","trades","trade","waivers","ask","offers","start","run","teams","rankings","managers","edges","exposure","compare","brief"];
+const TOOL_ORDER = ["fix","live","trades","trade","waivers","ask","offers","start","run","weather","teams","rankings","managers","edges","exposure","compare","brief"];
 function toolDefs(){ const m = {}; for(const [, items] of CC_TOOLS) for(const [id, label, ic, col, how] of items) m[id] = {id, label, ic, col, how}; return m; }
 const USE = { all(){ return store.get("toolUse", {}); }, hit(id){ if(!id) return; const u = this.all(); u[id] = (u[id] || 0) + 1; store.set("toolUse", u); } };
 // count what people open, from the rail, the dock, the menu or a tool tile
@@ -49,6 +49,7 @@ function toolStatus(id){
     case "exposure": return {t:"Every player across leagues"};
     case "compare": return {t:"Two players, long term"};
     case "brief": return {t:"Your week in two minutes"};
+    case "weather": { const n = typeof wxStarters === "function" ? wxStarters().filter(e=>e.m < 1).length : 0; return n ? {t:`${n} starter${n > 1 ? "s" : ""} in rough weather`, hot:"warn"} : {t:"Kickoff forecasts for every game"}; }
   }
   return {t:""};
 }
