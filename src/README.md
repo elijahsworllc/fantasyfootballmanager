@@ -11,6 +11,8 @@
 - `ui3.js`: Start/sit, Trade and Compare tools
 - `ui4.js`: My Rankings and Team review
 - `ui5.js`: accounts (Supabase) and sync
+- `ui6.js` to `ui12.js`: later tools and chrome (see ROADMAP.md)
+- `ui13.js`: Trade Optimizer (best value-backed offers in every league)
 
 Tests (Playwright, all network mocked): serve the repo root on port 8765, then
 `node tools/run.js <shots dir>` (full app flow) and `node tools/auth.js <shots dir>` (accounts).
