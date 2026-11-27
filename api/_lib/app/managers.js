@@ -1,5 +1,5 @@
 // POST /api/app/managers {users:[sleeperUserId,...]}: FFU database trade profiles for the league-mates the app shows (max 2,000)
-const { appEndpoint, readBody, sb, storeJSON, okId } = require("../_lib/ffu.js");
+const { appEndpoint, readBody, sb, storeJSON, okId } = require("../ffu.js");
 const PROFILE = p => [null, p.lastDay, p.leagues, p.partners, p.pricing, p.pricedN, p.buy, p.sell, p.buyPricing];
 module.exports = appEndpoint(async (req, out) => {
   const body = await readBody(req), ids = [...new Set((body.users || []).map(String).filter(okId))].slice(0, 2000);
