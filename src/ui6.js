@@ -186,6 +186,7 @@ function viewTrades(){
   const pri = x => { const z = L && L[x.id] && L[x.id].me; if(z) return LIMBO.has(z.dir) ? 0 : x.dir === "none" ? 1 : 2; return x.dir === "none" ? 1 : 2; };
   const list = tl.filter(x=>x.b).sort((a,b)=>pri(a) - pri(b) || a.name.localeCompare(b.name));
   let h = `<section class="pagehead"><h1 class="h1">Trades</h1><div class="sub">Pick a team for recs built around its direction, check any offer, or see what a player actually cost.</div></section>
+    <button class="optcta glass" data-go="optimizer">${svgI("trades",24)}<span class="t"><b>Trade optimizer</b><small>The best value-backed offers in every league, matched to each league-mate's direction</small></span><span class="chev" aria-hidden="true">›</span></button>
     <section class="hub3">
       <button class="ttile glass" data-opentool="trade">${svgI("trades",24)}<b>Trade check</b><small>Build any offer and grade it</small></button>
       <button class="ttile glass" data-opentool="compare">${svgI("compare",24)}<b>Compare</b><small>Two players, long term</small></button>
