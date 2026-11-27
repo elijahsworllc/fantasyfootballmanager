@@ -11,7 +11,7 @@ assert kept.count(a)==1
 kept=kept.replace(a,'S.progress = ++done / leagues.length; (S.scanLog ||= []).unshift(lg.name); if(!quiet) renderStatus();')
 kept=kept.replace('${Math.round(m.win*100)}% win</div>','</div>',1)
 kept=kept.replace('<span class="num">${Math.round(a.conf*100)}% sure</span>','<span class="num" title="How often the projected leader outscores the other when each projection can miss by about 45%">${Math.round(a.conf*100)}% model confidence</span>',1)
-ui=open(B+'ui.js').read(); ui2=open(B+'ui2.js').read()+'\n'+open(B+'ui3.js').read()+'\n'+open(B+'ui4.js').read()+'\n'+open(B+'ui5.js').read()+'\n'+open(B+'ui6.js').read()+'\n'+open(B+'ui7.js').read()+'\n'+open(B+'ui8.js').read()+'\n'+open(B+'ui9.js').read()+'\n'+open(B+'ui10.js').read()+'\n'+open(B+'ui11.js').read()+'\n'+open(B+'ui12.js').read()+'\n'+open(B+'ui13.js').read()
+ui=open(B+'ui.js').read(); ui2=open(B+'ui2.js').read()+'\n'+open(B+'ui3.js').read()+'\n'+open(B+'ui4.js').read()+'\n'+open(B+'ui5.js').read()+'\n'+open(B+'ui6.js').read()+'\n'+open(B+'ui7.js').read()+'\n'+open(B+'ui8.js').read()+'\n'+open(B+'ui9.js').read()+'\n'+open(B+'ui10.js').read()+'\n'+open(B+'ui11.js').read()+'\n'+open(B+'ui12.js').read()+'\n'+open(B+'ui13.js').read()+'\n'+open(B+'ui14.js').read()
 assert ui.count('\nSPACE.init();')==1
 ui=ui.replace('\nSPACE.init();', '\n'+ui2+'\nSPACE.init();')
 out=open(B+'head.html').read()+kept+'\n'+ui+'\n</script>\n</body>\n</html>\n'
