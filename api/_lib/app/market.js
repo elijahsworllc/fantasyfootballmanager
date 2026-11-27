@@ -1,5 +1,5 @@
 // GET /api/app/market?leagues=a,b,c: the nightly transaction cache, only for the leagues asked about (max 150)
-const { appEndpoint, storeJSON, idList } = require("../_lib/ffu.js");
+const { appEndpoint, storeJSON, idList } = require("../ffu.js");
 module.exports = appEndpoint(async (req, out) => {
   const ids = idList((req.query || {}).leagues, 150); if (!ids.length) return out(400, { error: "leagues=id,id,... required" });
   const m = await storeJSON("market.json"), want = new Set(ids), leagues = {};
