@@ -5,6 +5,7 @@
 VIEWS.add("direction"); VIEWS.add("trades"); VIEWS.add("offers");
 
 const NI = {
+  weather:`<path d="M7 17.5h9.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 6.6 11 3.25 3.25 0 0 0 7 17.5z"/><path d="M9 20.5l-.6 1.2M13 20.5l-.6 1.2"/>`,
   home:`<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>`,
   diagnose:`<path d="M3 12h4l2.2-5.5 4.2 11 2.4-5.5H21"/>`,
   trades:`<path d="M5 8h12l-3-3"/><path d="M19 16H7l3 3"/>`,
@@ -131,6 +132,7 @@ function renderMenu(){
       <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
       <button class="mtile" data-nav="teams:value">${svgI("reviews",18)}Now vs future</button>
       <button class="mtile" data-go="live">${svgI("live",18)}Live scores</button>
+      <button class="mtile" data-go="weather">${svgI("weather",18)}Weather Watch</button>
       <button class="mtile" data-go="edges">${svgI("edges",18)}Scoring edges</button>
       <button class="mtile" data-nav="teams:odds">${svgI("diagnose",18)}Playoff odds${dirI.badge ? ` <span class="ct warn">${dirI.badge}</span>` : ""}</button>
     </div></div>

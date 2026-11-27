@@ -269,3 +269,5 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
   - 20°F or colder: QB/WR 0.97, TE 0.98, K 0.94. Combined multiplier is held between 0.65 and 1.12.
 - Start/Sit shows the forecast, the weather adjustment per player and a plain-words reason; source line links to mysportsweather.com for full forecasts and roof calls.
 - mysportsweather.com has no API and is all rights reserved, so we link to it rather than copy it. Licensing its feed (roof calls, meteorologist notes) is a possible later step.
+- **Weather Watch** (Game day; `viewWeather` in `src/weather.js`, route `weather`): week summary (outdoor games with weather, your starters affected, projected points the weather moves), your starters in the weather (biggest six, the rest folded), and every game this week sorted by impact with roof, forecast, per-position adjustment and which of your starters play in it. Listed in the rail (Game day), the menu and Launcher tiles; related to Start/Sit, Lineups and Live.
+- For other screens: `wxGameFlag(team)` returns `{text, level}` for a game whose weather matters (null otherwise), for the home "Today's games" spotlight and lineup cards.

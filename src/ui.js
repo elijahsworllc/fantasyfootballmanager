@@ -663,7 +663,7 @@ function render(){
   else if(v === "loading") body = viewLoading();
   else {
     if(S.error) body += `<div class="err">${esc(S.error)}</div>`;
-    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive, optimizer:viewOptimizer}[v]();
+    body += {home:viewHome, fix:viewFix, team:viewTeam, ask:viewAsk, brief:viewBrief, waivers:viewWaivers, players:viewPlayers, rankings:viewRankings, direction:viewDirection, trades:viewTrades, offers:viewOffers, edges:viewEdges, managers:viewManagers, live:viewLive, optimizer:viewOptimizer, weather:viewWeather}[v]();
   }
   main.className = (changed ? "flow " : "") + (ready ? "" : "bare");
   main.innerHTML = body;

@@ -65,3 +65,79 @@ function wxMult(pos, team){
   const x = gameWx(team); return x && x.w ? wxFactor(pos, x.w).m : 1;
 }
 const wxPct = m => m === 1 ? "None" : `${m > 1 ? "+" : "−"}${Math.round(Math.abs(m - 1)*100)}%`;
+
+/* ---------- Weather Watch (Game day): every game this week by weather impact, and your starters it moves ---------- */
+const WX_POS = ["QB","WR","TE","RB","K","DEF"];
+function wxRoof(g){ return g.indoor ? (RETRACT.has(g.home) ? "Retractable roof" : "Dome") : "Open air"; }
+// severity of a game's forecast: how much it cuts the most-hit position (kickers aside)
+function wxSeverity(w){ if(!w) return 0; return 1 - Math.min(...["QB","WR","TE"].map(p=>wxFactor(p, w).m)); }
+function wxLevel(w){ const s = wxSeverity(w); return s >= .1 ? "high" : s >= .04 ? "mid" : s > 0 ? "low" : "none"; }
+// one-line flag for any card that shows a game (home spotlight, lineups): null when the weather doesn't matter
+function wxGameFlag(team){
+  const x = gameWx(team); if(!x || x.indoor || !x.w || wxLevel(x.w) === "none") return null;
+  const w = x.w, bits = [];
+  if(w.wind >= 15) bits.push(`${w.wind} mph wind`);
+  if(w.rain >= 60) bits.push(w.snow ? "snow" : "rain");
+  if(w.temp <= 20) bits.push(`${w.temp}°F`);
+  return {text: bits.join(" · ") || `${w.wind} mph wind`, level: wxLevel(w)};
+}
+// every starter whose projection the weather moves, grouped by player across leagues
+function wxStarters(){
+  const by = {};
+  for(const r of S.results || []){
+    if(!r.current || r.sev === "off") continue;
+    for(const pid of r.current){
+      if(!pid || pid === "0") continue;
+      const f = r._c && r._c[pid] || pinfo(pid, r.league); if(!f || f.reason || f.locked) continue;
+      const m = wxMult(f.pos, f.team); if(m === 1) continue;
+      const e = by[pid] ||= {pid, f, m, why: wxFactor(f.pos, gameWx(f.team).w).why, leagues: [], delta: 0};
+      e.leagues.push(r.league.name); e.delta += f.eff - f.eff / m;
+    }
+  }
+  return Object.values(by).sort((a, b) => a.m - b.m);
+}
+function wxGameCard(g, mine, i){
+  const x = gameWx(g.teams[0]) || {g}, w = x.w, lvl = g.indoor ? "none" : wxLevel(w);
+  const fx = w ? WX_POS.map(p=>[p, wxFactor(p, w).m]).filter(([, m]) => m !== 1) : [];
+  const fc = !w ? (g.indoor ? "No weather inside" : g.ts - Date.now() > 15*864e5 ? "Forecast opens closer to kickoff" : WX.p ? "Loading forecast…" : "No forecast yet")
+    : `${w.temp}°F · wind ${w.wind} mph · ${w.rain}% ${w.snow ? "snow" : "rain"}${w.sky ? " · " + esc(w.sky) : ""}`;
+  return `<article class="glass wxcard ${lvl}" style="--i:${i}">
+    <div class="wxtop"><b class="wxgame">${esc(g.short || g.teams.join(" @ "))}</b><span class="wxkick">${esc(kickLabel(g))}</span></div>
+    <div class="wxroof"><span class="pill wxp-${g.indoor ? "in" : "out"}">${wxRoof(g)}</span>${g.intl ? `<span class="intl">${esc(g.city || "Intl")}</span>` : ""}${lvl !== "none" ? `<span class="pill wxlv ${lvl}">${{high:"Big impact", mid:"Some impact", low:"Slight impact"}[lvl]}</span>` : ""}</div>
+    <div class="wxfc">${fc}</div>
+    ${fx.length ? `<div class="wxfx">${fx.map(([p, m]) => `<span class="${m < 1 ? "dn" : "up"}">${p} ${wxPct(m)}</span>`).join("")}</div>` : ""}
+    ${mine.length ? `<div class="wxmine">Your starters: ${mine.slice(0, 4).map(id => esc(pname(id))).join(", ")}${mine.length > 4 ? ` +${mine.length - 4}` : ""}</div>` : ""}
+  </article>`;
+}
+function viewWeather(){
+  let h = `<section class="pagehead">${backBtn("home","Home")}<h1 class="h1">Weather Watch</h1><div class="sub">Kickoff forecasts for every outdoor game, and how much they move your starters' projections.</div></section>`;
+  const k = S.kick[S.week];
+  if(!k || k.loading) return h + `<div class="statusline"><span class="livedot" style="background:var(--violet)"></span>Loading this week's games…</div><div class="skel" aria-hidden="true"><i style="height:90px"></i><i style="height:240px"></i></div>`;
+  if(!k.ok) return h + `<div class="glass ccempty">Couldn't load this week's kickoff times, so there's no weather to match yet.</div>`;
+  loadWeekWx();
+  const hit = wxStarters(), mineBy = {};
+  for(const r of S.results || []) for(const pid of r.current || []){ const f = pid && pid !== "0" && (r._c && r._c[pid] || pinfo(pid, r.league)); if(f && f.team) (mineBy[f.team] ||= new Set()).add(pid); }
+  const games = k.games.filter(g => g.ts > Date.now() - 4*3.6e6), outdoor = games.filter(g => !g.indoor);
+  const rough = outdoor.filter(g => { const x = gameWx(g.teams[0]); return x && x.w && wxLevel(x.w) !== "none"; });
+  const lost = hit.reduce((s, e) => s + Math.min(0, e.delta), 0);
+  h += `<section class="glass lvsum"><span class="lvsoon">Week ${S.week} forecast</span><div class="lvstats">
+    <div><b class="num">${rough.length}<small>/${outdoor.length}</small></b><span>outdoor games with weather</span></div>
+    <div><b class="num">${hit.length}</b><span>of your starters affected</span></div>
+    <div><b class="num">${lost ? lost.toFixed(1) : "0"}</b><span>projected pts from weather</span></div></div>
+    <small class="lvat">${WX.p ? "Updating forecasts…" : WX.at ? `Updated ${new Date(WX.at).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})} · refreshes every 30 minutes` : ""}</small></section>`;
+  const wxRow = e => `<button class="wxrow" data-opentool="start"><span class="t"><b>${esc(pname(e.pid))}</b><small>${esc(pmeta(e.pid))} · ${esc(e.why.join(", "))} · ${e.leagues.length} league${e.leagues.length > 1 ? "s" : ""}</small></span><span class="wxadj ${e.m < 1 ? "dn" : "up"}">${wxPct(e.m)}</span></button>`;
+  // biggest moves first: everyone cut by weather, then the few it helps; the long tail folds away
+  const top = hit.slice().sort((a, b) => Math.abs(b.m - 1) - Math.abs(a.m - 1)).slice(0, 6), rest = hit.filter(e => !top.includes(e));
+  if(hit.length) h += `<section class="glass wxlist"><h2 class="h2">Your starters in the weather</h2>${top.map(wxRow).join("")}${rest.length ? `<details class="wxmore"><summary>Show all ${hit.length}</summary>${rest.map(wxRow).join("")}</details>` : ""}</section>`;
+  else if(!WX.p) h += `<div class="glass ccempty">None of your starters play in weather that moves their projection this week.</div>`;
+  const order = games.slice().sort((a, b) => { const sa = a.indoor ? -1 : wxSeverity((gameWx(a.teams[0]) || {}).w), sb = b.indoor ? -1 : wxSeverity((gameWx(b.teams[0]) || {}).w); return sb - sa || a.ts - b.ts; });
+  h += `<h2 class="h2 wxh">Every game this week</h2><div class="lvgrid">${order.map((g, i) => wxGameCard(g, [...new Set(g.teams.flatMap(t => [...(mineBy[t] || [])]))], i)).join("")}</div>`;
+  h += `<details class="glass wxhow"><summary>How the adjustment works</summary><p>For each outdoor game we read the hourly forecast for kickoff and the two hours after, then multiply each player's projection by position. Domes and closed roofs get no change.</p>
+    <table class="mini"><thead><tr><th>Condition</th><th>QB</th><th>WR</th><th>TE</th><th>K</th><th>RB</th><th>DEF</th></tr></thead><tbody>
+    ${[["Wind 12+ mph",0],["Wind 15+ mph",1],["Wind 20+ mph",2],["Wind 25+ mph",3]].map(([l, b]) => `<tr><td>${l}</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_WIND[p][b])}</td>`).join("")}</tr>`).join("")}
+    <tr><td>Rain or snow 60%+</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_WET[p])}</td>`).join("")}</tr>
+    <tr><td>Snow (extra)</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_SNOW[p] || 1)}</td>`).join("")}</tr>
+    <tr><td>20°F or colder</td>${["QB","WR","TE","K","RB","DEF"].map(p => `<td class="num">${wxPct(WX_COLD[p] || 1)}</td>`).join("")}</tr></tbody></table></details>`;
+  h += `<p class="src">Forecasts: National Weather Service hourly forecast for each stadium (Open-Meteo for international games and games more than a week out). Roofs: ESPN. For meteorologist notes and live roof calls, see <a href="${MSW}" target="_blank" rel="noopener">mysportsweather.com</a>.</p>`;
+  return h;
+}
