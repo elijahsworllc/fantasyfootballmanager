@@ -6488,13 +6488,13 @@ function optWeight(L, t){
   if(t === L.me){ const set = optDirSet(L.lg.league_id); if(set === "contend") return .85; if(set === "rebuild") return .15; }
   return OPT_W[t.dir] ?? .5;
 }
-function lev(t){ const p = t.odds.po; return 4*p*(1-p) + .55*p + .1; }   // how much a weekly point matters: most on the bubble, still a lot for favorites (title odds)
+function optLev(t){ const p = t.odds.po; return 4*p*(1-p) + .55*p + .1; }   // how much a weekly point matters: most on the bubble, still a lot for favorites (title odds)
 // cheap team value of losing `out` and gaining `inn`, in units of about one starter-level upgrade
 function teamU(L, t, out, inn, w){
   const outIds = new Set(out.filter(a=>a.pos !== "PICK").map(a=>a.id));
   const ids = t.ids.filter(id=>!outIds.has(id)).concat(inn.filter(a=>a.pos !== "PICK").map(a=>a.id));
   const dPts = lineupPts(L.lg, ids, L.cache).pts - t.proj;
-  const now = dPts/6*lev(t);
+  const now = dPts/6*optLev(t);
   const dY2 = inn.reduce((s,a)=>s + y2v(a), 0) - out.reduce((s,a)=>s + y2v(a), 0);
   const fut = dY2/Math.max(t.bp.y2/12, 500);
   return {u: w*now + (1-w)*fut, now, fut, dPts, dY2};
