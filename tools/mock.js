@@ -102,6 +102,15 @@ function route(url){
   if(p === "/api/app/dp"){ const out = {};
     players.forEach((p, i) => { const v = Math.round(p.pts * 300 * (1.5 - (p.age - 21)/22) * (i % 3 === 0 ? 1.35 : i % 3 === 1 ? 0.8 : 1)); out[p.id] = [v, Math.round(v * (p.pos === "QB" ? 1.4 : 0.9)), i + 1, i + 1, (i % 30) + 1, p.pos, p.first + " " + p.last, p.age]; });
     return {built:Date.now(), scraped:"2026-11-20", source:"mock", players:out}; }
+  if(u.hostname === "api.weather.gov"){
+    let m = p.match(/^\/points\/([\d.-]+),([\d.-]+)$/);
+    if(m) return {properties:{forecastHourly:`https://api.weather.gov/gridpoints/MOCK/${Math.round(+m[1]*100)},${Math.round(-m[2]*100)}/forecast/hourly`}};
+    m = p.match(/^\/gridpoints\/MOCK\/(\d+),(\d+)\/forecast\/hourly$/);
+    if(m){ const k = (3 * +m[1] + +m[2]) % 4, t0 = Math.floor(Date.now()/3.6e6)*3.6e6;   // four kinds of game weather, by stadium
+      const kind = [{w:"5 mph", pop:10, f:"Sunny", t:61}, {w:"15 to 22 mph", pop:20, f:"Breezy", t:44}, {w:"10 mph", pop:80, f:"Rain Showers", t:39}, {w:"18 mph", pop:70, f:"Snow Showers", t:18}][k];
+      return {properties:{periods: Array.from({length:24*8}, (_, i) => ({startTime: new Date(t0 + i*3.6e6).toISOString(), temperature: kind.t, windSpeed: kind.w, probabilityOfPrecipitation:{value: kind.pop}, shortForecast: kind.f}))}}; }
+    return null;
+  }
   if(u.hostname === "api.open-meteo.com"){ const n = 24; return {hourly:{time:Array.from({length:n},(_, i)=>i), temperature_2m:Array.from({length:n},()=>48), precipitation_probability:Array.from({length:n},()=>60), wind_speed_10m:Array.from({length:n},()=>17)}}; }
   if(u.hostname === "site.api.espn.com"){
     const wk = +u.searchParams.get("week"), games = schedule().filter(g=>g.week===wk);

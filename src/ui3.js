@@ -52,25 +52,13 @@ const STADIUM = {ARI:[33.5276,-112.2626],ATL:[33.7554,-84.4009],BAL:[39.2780,-76
 const CITY = {"London":[51.5560,-0.2796],"Tottenham":[51.6043,-0.0664],"Frankfurt":[50.0686,8.6455],"Munich":[48.2188,11.6247],"Berlin":[52.5147,13.2395],"Madrid":[40.4531,-3.6883],"Saint-Denis":[48.9245,2.3602],"Paris":[48.9245,2.3602],
   "Dublin":[53.3352,-6.2286],"Mexico City":[19.3029,-99.1505],"São Paulo":[-23.5453,-46.4742],"Sao Paulo":[-23.5453,-46.4742],"Melbourne":[-37.8200,144.9834],"Rio de Janeiro":[-22.9122,-43.2302]};
 function gameOf(team){ const k = kickoff(team); return k && !k.approx ? k : null; }
-function loadWx(team){
-  const g = gameOf(team); if(!g || g.indoor) return null;
-  const key = g.short; if(CTX.wx[key]) return CTX.wx[key].p;
-  const ll = (g.intl && (CITY[g.city] || CITY[g.vcity])) || STADIUM[g.home]; if(!ll) return null;
-  if(g.ts - Date.now() > 15*864e5 || g.ts < Date.now() - 6*3.6e6) return null;   // forecasts reach about 16 days out
-  const e = CTX.wx[key] = {}, day = new Date(g.ts).toISOString().slice(0,10);
-  e.p = getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${ll[0]}&longitude=${ll[1]}&hourly=temperature_2m,precipitation_probability,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=UTC&start_date=${day}&end_date=${day}`, {cache:"network"})
-    .then(j=>{ const h = j.hourly, i = new Date(g.ts).getUTCHours(); if(!h || h.time[i] == null) return;
-      e.v = {temp: Math.round(h.temperature_2m[i]), rain: h.precipitation_probability[i], wind: Math.round(h.wind_speed_10m[i])}; })
-    .catch(()=>{ e.err = true; });
-  return e.p;
-}
+function loadWx(team){ return loadWeekWx(); }
 function venueText(team){
-  const g = gameOf(team); if(!g) return null;
-  if(g.indoor) return {text:"Indoors", bad:false};
-  const w = CTX.wx[g.short] && CTX.wx[g.short].v;
-  if(!w) return {text:"Outdoors", bad:false};
-  const bad = w.wind >= 15 || w.rain >= 50;
-  return {text:`Outdoors · ${w.temp}°F · wind ${w.wind} mph · ${w.rain}% rain`, bad, w};
+  const x = gameWx(team); if(!x) return null;
+  if(x.indoor) return {text: RETRACT.has(x.g.home) ? "Retractable roof" : "Indoors", bad:false};
+  const w = x.w; if(!w) return {text:"Outdoors", bad:false};
+  const bad = w.wind >= 15 || w.rain >= 60 || w.temp <= 20;
+  return {text:`Outdoors · ${w.temp}°F · wind ${w.wind} mph · ${w.rain}% ${w.snow ? "snow" : "rain"}`, bad, w};
 }
 function oppText(f){
   if(!f || !f.game) return f && f.reason ? f.reason : "—";
@@ -111,6 +99,7 @@ function startSitHTML(){
   const fa = weekInfo(A.id, x), fb = weekInfo(B.id, x);
   const ra = rankStart([A.id, B.id], x), win = ra.w.id === A.id ? 0 : 1, gap = Math.abs(fa.eff - fb.eff);
   const la = logSummary(A.id), lb = logSummary(B.id), da = defRank(fa), db = defRank(fb), va = venueText(fa.team), vb = venueText(fb.team);
+  const wa = wxFactor(fa.pos, va && va.w), wb = wxFactor(fb.pos, vb && vb.w);
   const ka = kickoff(fa.team), kb = kickoff(fb.team);
   const row = (label, a, b, better, note) => `<div class="crow"><span class="l${better===0?" w":""}">${a}</span><span class="k">${label}</span><span class="r${better===1?" w":""}">${b}</span></div>`;
   const cmp = (a, b, hi=true, min=0) => a == null || b == null || Math.abs(a-b) <= min ? null : (a > b) === hi ? 0 : 1;
@@ -120,7 +109,8 @@ function startSitHTML(){
     + row("Opponent", esc(oppText(fa)), esc(oppText(fb)), null)
     + row(`Opp allows to pos`, da ? `${da.per.toFixed(1)} <small>${ord(da.rank)} most</small>` : "—", db ? `${db.per.toFixed(1)} <small>${ord(db.rank)} most</small>` : "—", da && db && fa.pos === fb.pos ? cmp(da.rank, db.rank, false, 5) : da && db ? cmp(da.rank/da.n, db.rank/db.n, false, .15) : null)
     + row("Kickoff", ka ? esc(kickLabel(ka)) + (ka.intl ? ` <span class="intl">${esc(ka.city||"")}</span>` : "") : "—", kb ? esc(kickLabel(kb)) + (kb.intl ? ` <span class="intl">${esc(kb.city||"")}</span>` : "") : "—", null)
-    + row("Venue", va ? esc(va.text) : "—", vb ? esc(vb.text) : "—", va && vb && va.bad !== vb.bad ? (va.bad ? 1 : 0) : null)
+    + row("Venue", va ? esc(va.text) : "—", vb ? esc(vb.text) : "—", null)
+    + (wa.m !== 1 || wb.m !== 1 ? row("Weather adj", esc(wxPct(wa.m)), esc(wxPct(wb.m)), cmp(wa.m, wb.m, true, .01)) : "")
     + row("Season PPR/g", la && la.games ? fmt(la.avg) : "—", lb && lb.games ? fmt(lb.avg) : "—", la && lb && la.games && lb.games ? cmp(la.avg, lb.avg, true, .5) : null)
     + row("Last 3 PPR/g", la && la.games ? fmt(la.last3) : "—", lb && lb.games ? fmt(lb.last3) : "—", la && lb && la.games && lb.games ? cmp(la.last3, lb.last3, true, .5) : null)
     + row("Usage/g", la && la.games ? `${la.tgt.toFixed(1)} tgt · ${la.car.toFixed(1)} car` : esc(usage(A.id) || "—"), lb && lb.games ? `${lb.tgt.toFixed(1)} tgt · ${lb.car.toFixed(1)} car` : esc(usage(B.id) || "—"), null)
@@ -129,7 +119,7 @@ function startSitHTML(){
   const diffs = [], N = [A.name, B.name];
   if(gap >= .5) diffs.push(`${N[win]} is projected ${fmt(gap)} pts higher${x ? " in this league's scoring" : " (PPR)"}.`);
   if(da && db && Math.abs(da.rank - db.rank) >= 8) { const e = da.rank < db.rank ? 0 : 1, d = e ? db : da, o = e ? da : db; diffs.push(`${N[e]} has the softer matchup: ${d.opp} allows ${d.per.toFixed(1)} PPR/g to ${(e?fb:fa).pos}s (${ord(d.rank)} most) vs ${o.per.toFixed(1)} (${ord(o.rank)}).`); }
-  [[fa,va,0],[fb,vb,1]].forEach(([f,v,i])=>{ if(v && v.bad && ["QB","WR","TE","K"].includes(f.pos)) diffs.push(`${N[i]} plays outdoors in ${v.w.wind >= 15 ? `${v.w.wind} mph wind` : ""}${v.w.wind >= 15 && v.w.rain >= 50 ? " and " : ""}${v.w.rain >= 50 ? `a ${v.w.rain}% chance of rain` : ""} at kickoff (Open-Meteo forecast).`); });
+  [[wa,va,0],[wb,vb,1]].forEach(([z,v,i])=>{ if(z.m !== 1) diffs.push(`${N[i]}'s projection is ${z.m < 1 ? "cut" : "raised"} ${Math.round(Math.abs(z.m-1)*100)}% for ${z.why.join(", ")} around kickoff (${v.w.src === "NWS" ? "National Weather Service" : v.w.src} forecast).`); });
   [[fa,0],[fb,1]].forEach(([f,i])=>{ if(f.status && f.status !== "Healthy") diffs.push(`${N[i]} is listed ${f.status} on Sleeper.`); });
   if(la && lb && la.games >= 3 && lb.games >= 3){ [[la,0],[lb,1]].forEach(([l,i])=>{ if(l.last3 - l.avg >= 4) diffs.push(`${N[i]} is trending up: ${fmt(l.last3)} PPR/g over his last 3 vs ${fmt(l.avg)} on the season.`); if(l.avg - l.last3 >= 4) diffs.push(`${N[i]} is trending down: ${fmt(l.last3)} PPR/g over his last 3 vs ${fmt(l.avg)} on the season.`); }); }
   h += `<section class="h2h glass rise">
@@ -154,7 +144,7 @@ function startSitHTML(){
       h += `<div class="lineup" style="margin:0"><table class="mini"><thead><tr><th>Your league</th><th>Start</th><th>Margin</th></tr></thead><tbody>${per.map(z=>`<tr${z.pick!==ra.w.id?' class="me"':""}><td>${esc(z.y.lg.name)}</td><td>${esc(pname(z.pick).split(" ").slice(-1)[0])}</td><td class="num">+${fmt(z.gap)}</td></tr>`).join("")}</tbody></table></div>`;
       if(per.some(z=>z.pick !== ra.w.id)) h += `<p class="note" style="margin:0">Highlighted leagues flip the call because of their scoring settings.</p>`; }
   }
-  h += `<p class="src">Projections: Sleeper (Rotowire)${x ? ", rescored with this league's settings" : ", PPR"}; Questionable counts at 85%, Doubtful at 20%. Matchups: PPR points allowed per game through week ${CTX.def && CTX.def.weeks || "—"}, Sleeper stats. Kickoff and roof: ESPN. Weather: Open-Meteo forecast for the stadium at kickoff. Model confidence assumes each projection can miss by about 45%.</p></section>`;
+  h += `<p class="src">Projections: Sleeper (Rotowire)${x ? ", rescored with this league's settings" : ", PPR"}; Questionable counts at 85%, Doubtful at 20%. Matchups: PPR points allowed per game through week ${CTX.def && CTX.def.weeks || "—"}, Sleeper stats. Kickoff and roof: ESPN. Weather: National Weather Service hourly forecast for the stadium (Open-Meteo abroad), already applied to projected points; full forecasts and roof calls at <a href="${MSW}" target="_blank" rel="noopener">mysportsweather.com</a>. Model confidence assumes each projection can miss by about 45%.</p></section>`;
   return h;
 }
 

@@ -11,6 +11,7 @@
 - `ui3.js`: Start/sit, Trade and Compare tools
 - `ui4.js`: My Rankings and Team review
 - `ui5.js`: accounts (Supabase) and sync
+- `ui13.js`: game weather (NWS forecast) and the projection multiplier it applies
 
 Tests (Playwright, all network mocked): serve the repo root on port 8765, then
 `node tools/run.js <shots dir>` (full app flow) and `node tools/auth.js <shots dir>` (accounts).

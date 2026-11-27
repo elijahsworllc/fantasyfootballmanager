@@ -680,6 +680,7 @@ function render(){
   S.arrive = false;
   // background work the home screen needs
   if(S.results.length && S.week && !S.kick[S.week]) loadKick();
+  if(S.results.length && S.kick[S.week] && S.kick[S.week].ok) loadWeekWx();
   if(S.results.length && !S.loading && !S.bp && !S.bpLoading && !S.bpError) setTimeout(loadBlueprints, 60);
 }
 

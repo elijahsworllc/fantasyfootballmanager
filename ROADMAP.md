@@ -252,3 +252,12 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 2. **Market data beyond your leagues** — FantasyCalc trade database (needs permission for commercial use) or our own crawl of public Sleeper dynasty leagues for comps.
 3. **Trade alerts** — nightly job flags when a league mate's direction flips (contender becomes a seller) and pushes the best offer.
 4. **Payments** when opening beyond the control group (accounts are live).
+
+## Game weather in projections (Nov 26, 2026)
+- Source: National Weather Service hourly forecast (api.weather.gov, public domain, the same data mysportsweather.com is built on) for each outdoor game's stadium, kickoff hour plus the next two. Open-Meteo covers international games and games more than ~6.5 days out. ESPN's `venue.indoor` marks domes and closed roofs: no adjustment there. Refreshes every 30 minutes while the app is open.
+- Adjustment: a multiplier on each player's projected points (`wxMult` in `src/ui13.js`, applied in `pinfo` and `weekInfo`), so lineups, the optimizer, Must fix swaps, Start/Sit and the Crystal Ball all use it.
+  - Wind (sustained mph, worst hour): 12+/15+/20+/25+ → QB 0.97/0.92/0.86/0.80, WR 0.98/0.94/0.89/0.84, TE 0.98/0.95/0.91/0.86, K 0.95/0.88/0.80/0.72, RB up to 1.03, DEF up to 1.08.
+  - Rain or snow ≥60%: QB/WR 0.96, TE 0.97, K 0.93, RB 1.02, DEF 1.03; snow takes a further 2–8% off passing and kicking.
+  - 20°F or colder: QB/WR 0.97, TE 0.98, K 0.94. Combined multiplier is held between 0.65 and 1.12.
+- Start/Sit shows the forecast, the weather adjustment per player and a plain-words reason; source line links to mysportsweather.com for full forecasts and roof calls.
+- mysportsweather.com has no API and is all rights reserved, so we link to it rather than copy it. Licensing its feed (roof calls, meteorologist notes) is a possible later step.
