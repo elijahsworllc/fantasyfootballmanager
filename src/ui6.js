@@ -121,15 +121,16 @@ function renderMenu(){
     <div class="mgroup"><div class="lab">Trades</div><div class="mgrid">
       <button class="mtile" data-go="trades">${svgI("trades",18)}Trade finder</button>
       <button class="mtile" data-opentool="trade">${svgI("swaps",18)}Trade check</button>
-      <button class="mtile" data-opentool="compare">${svgI("compare",18)}Compare</button>
-      <button class="mtile" data-go="offers">${svgI("offers",18)}Offers${INBOX.all().filter(x=>x.status === "open").length ? ` <span class="ct warn">${INBOX.all().filter(x=>x.status === "open").length}</span>` : ""}</button>
+      <button class="mtile" data-opentool="compare">${svgI("compare",18)}Compare players</button>
+      <button class="mtile" data-go="offers">${svgI("offers",18)}Offer tracker${INBOX.all().filter(x=>x.status === "open").length ? ` <span class="ct warn">${INBOX.all().filter(x=>x.status === "open").length}</span>` : ""}</button>
       <button class="mtile" data-nav="trades:market">${svgI("market",18)}Trade market</button>
       <button class="mtile" data-opentool="start">${svgI("start",18)}Start / Sit</button>
-      <button class="mtile" data-go="managers">${svgI("managers",18)}Managers</button>
+      <button class="mtile" data-go="matchups">${svgI("matchup",18)}Matchup preview</button>
+      <button class="mtile" data-go="managers">${svgI("managers",18)}Manager scout</button>
     </div></div>
     <div class="mgroup"><div class="lab">Players &amp; teams</div><div class="mgrid">
       <button class="mtile" data-go="rankings">${svgI("rankings",18)}Rankings</button>
-      <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Exposure</button>
+      <button class="mtile" data-nav="players:exposure">${svgI("exposure",18)}Player exposure</button>
       <button class="mtile" data-nav="teams:value">${svgI("reviews",18)}Now vs future</button>
       <button class="mtile" data-go="live">${svgI("live",18)}Live scores</button>
       <button class="mtile" data-go="weather">${svgI("weather",18)}Weather Watch</button>
