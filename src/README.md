@@ -14,6 +14,7 @@
 - `ui6.js` to `ui12.js`: later tools and chrome (see ROADMAP.md)
 - `ui13.js`: Trade Optimizer (best value-backed offers in every league)
 - `ui14.js`: hologram header: High priority red alert, mission feed, fly-bys
+- `ui15.js`: Week Path home (five weekly stages, Today's games, how-to popups, tour) and Matchup Preview
 - `weather.js`: game weather (NWS forecast) and the projection multiplier it applies
 
 Tests (Playwright, all network mocked): serve the repo root on port 8765, then

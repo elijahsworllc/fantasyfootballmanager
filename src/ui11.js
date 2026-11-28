@@ -44,7 +44,7 @@ ccRailHTML = function(){
   if(INBOX.all().some(x => x.status === "open") && act !== "offers") now.push("offers");
   if(now.length) h += `<div class="ccg"><span class="cl">Needs you</span></div>` + now.map(id => railBtn(defs[id])).join("");
   // related tools for this page; on Home the tools are already on screen, so show recent ones that aren't
-  const onScreen = onHome && HOME_V.get() !== "classic" ? new Set(topTools(HOME_V.get() === "launcher" ? 8 : 6).map(t => t.id)) : new Set();
+  const onScreen = onHome && HOME_V.get() === "week" ? new Set(Object.keys(toolDefs())) : onHome && HOME_V.get() !== "classic" ? new Set(topTools(HOME_V.get() === "launcher" ? 8 : 6).map(t => t.id)) : new Set();
   const key = v === "ask" ? "ask" : v;
   let rel = (RELATED[key] || []).filter(id => defs[id] && id !== act);
   let relLabel = "Related";
