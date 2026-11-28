@@ -83,7 +83,7 @@ setTimeout(hbFly, 6000);
 function hbFit(){
   const m = $("markBtn"), hl = m && m.querySelector(".hl"); if(!hl || !m.clientWidth) return;
   hl.style.fontSize = "";
-  const avail = m.clientWidth - 6, w = hl.scrollWidth;
+  const ic = m.querySelector(".hm"), avail = m.clientWidth - 6 - (ic ? ic.getBoundingClientRect().width + 10 : 0), w = hl.scrollWidth;
   if(w > avail) hl.style.fontSize = Math.max(15, parseFloat(getComputedStyle(hl).fontSize) * avail / w) + "px";
 }
 window.addEventListener("resize", hbFit, {passive: true});

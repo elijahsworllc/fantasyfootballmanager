@@ -90,7 +90,7 @@ async function confirmPlans(){
   }
   SLP.busy = false; renderSlp();
   const ok = SLP.results.filter(r => r.state === "ok").length;
-  if(ok){ showToast(ok === plans.length ? (plans.length > 1 ? `All ${ok} done in Sleeper` : "Done in Sleeper") : `${ok} of ${plans.length} done in Sleeper`); SKY.pulse(false);
+  if(ok){ showToast(ok === plans.length ? (plans.length > 1 ? `All ${ok} done in Sleeper` : "Done in Sleeper") : `${ok} of ${plans.length} done in Sleeper`); SKY.pulse(false); ffuLand();
     if(plans.some(p => p.kind === "lineup")) setTimeout(() => { try{ loadAll(S.week, {quiet:true}); }catch(_){} }, 1500); }
   render();
 }
@@ -176,4 +176,13 @@ function slpSettingsRow(){
 function slpClaimBtn(lid, add, drop, bid, faab){
   if(!slpOn() || !add) return "";
   return ` <button class="ghost tint sm slpclaim" data-slpclaim="${esc(lid)}|${esc(add)}|${esc(drop || "")}|${faab && bid != null ? Math.round(bid) : ""}">Claim${faab && bid != null ? ` $${Math.round(bid)}` : ""}</button>`;
+}
+
+// the FFU mark gives one quick turn when a move lands in Sleeper
+function ffuLand(){
+  if(reduceMotion()) return;
+  document.querySelectorAll("#markBtn .hm, .ccrail .jrhome .ffum").forEach(el => {
+    el.classList.remove("spin", "land"); void el.getBoundingClientRect(); el.classList.add("land");
+    setTimeout(() => el.classList.remove("land"), 950);
+  });
 }

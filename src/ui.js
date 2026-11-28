@@ -416,8 +416,8 @@ const ICON = {
   tick:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>`,
   brief:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" stroke="#C9B8FF" stroke-width="1.7"/><path d="M14 3v5h5" stroke="#C9B8FF" stroke-width="1.7"/><path d="M9 13h7M9 17h5" stroke="#8FEAF5" stroke-width="1.7"/></svg>`
 };
-const LOGO = `<svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true"><g class="ring-spin"><ellipse cx="16" cy="16" rx="15" ry="5.5" fill="none" stroke="url(#lgR)" stroke-width="1.4" stroke-dasharray="3 2.2" transform="rotate(-24 16 16)"/></g><circle cx="16" cy="16" r="9.5" fill="url(#lgO)"/><path d="M11.2 18.8L20.8 13.2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M13.6 15.9l1 1.7M15.7 14.7l1 1.7M17.8 13.5l1 1.7" stroke="#fff" stroke-width="1.1" stroke-linecap="round"/><circle cx="12.8" cy="11.8" r="1.6" fill="#fff" opacity=".85"/></svg>`;
-const brandRow = () => `<div class="brandrow">${LOGO}<span class="wm"><span class="a">Command</span> <span class="b">Center</span></span></div>`;
+const LOGO = `<svg class="ffum" width="44" height="44" viewBox="0 0 120 120" aria-hidden="true"><use href="#ffu-lite"/></svg>`;
+const brandRow = spin => `<div class="brandrow">${spin ? LOGO.replace('class="ffum"', 'class="ffum spin"') : LOGO}<span class="wm"><span class="a">Command</span> <span class="b">Center</span></span></div>`;
 
 function viewConnect(){
   return `<section class="connect">${brandRow()}
@@ -437,7 +437,7 @@ function viewConnect(){
     </div></div></section>`;
 }
 function viewLoading(){
-  return `<section class="connect scan">${brandRow()}
+  return `<section class="connect scan">${brandRow(true)}
     <div class="orbwrap${S.arrive ? " arrive" : ""}">${orbCanvas(220)}</div>
     <div><div class="sub">Welcome${S.displayName ? ", <b style=\"color:var(--ink)\">"+esc(S.displayName)+"</b>" : ""}</div><h1 class="h1" style="text-align:left;font-size:40px">Building your command center…</h1></div>
     <div style="display:flex;align-items:baseline;gap:10px"><span class="bignum" id="scanN">0</span><span class="sub">of <span id="scanT">your</span> leagues scanned</span></div>
@@ -647,6 +647,7 @@ function render(){
   const ready = !!S.results.length && v !== "loading";
   $("top").hidden = !ready; $("dock").hidden = !ready;
   $("refresh").classList.toggle("spin", !!(S.loading || S.refreshing));
+  { const hm = document.querySelector("#markBtn .hm"); if(hm && !hm.classList.contains("land")) hm.classList.toggle("spin", !!(S.loading || S.refreshing)); }
   if(S.week) $("wklabel").textContent = "WK " + S.week;
   const acs = $("acslot"); if(acs){ const ah = accountChipHTML(); if(acs.innerHTML !== ah) acs.innerHTML = ah; }
   document.querySelectorAll("[data-go]").forEach(b=>{ if(!b.classList.contains("navb") && b.id !== "orbBtn") return;

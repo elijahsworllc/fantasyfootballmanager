@@ -34,7 +34,7 @@ function sb(url, req){
   });
   const shot = async n => { await page.waitForTimeout(450); await page.screenshot({ path: `${OUT}/${n}.png` }); };
   const step = async (n, fn) => { try { await fn(); } catch (e) { errs.push(`step ${n}: ${e.message.split("\n")[0]}`); } };
-  await page.goto("http://localhost:8765/index.html"); await page.waitForTimeout(1500);
+  await page.goto("http://localhost:8765/index.html?home=classic"); await page.waitForTimeout(1500);
   await page.evaluate(()=>window.scrollTo(0, 400)); await shot("a01-connect-signin");
   await page.fill("#uname", "jahswor"); await page.click("#connectBtn");
   await page.waitForSelector(".teamrow-list", { timeout: 20000 }); await page.waitForTimeout(2500);
@@ -62,7 +62,7 @@ function sb(url, req){
   log.push("hash cleared: " + await page.evaluate(()=>location.hash === ""));
   // dormant mode
   await page.addInitScript(()=>{ window.CC_SB_KEY = ""; });
-  await page.goto("http://localhost:8765/index.html"); await page.waitForTimeout(3000);
+  await page.goto("http://localhost:8765/index.html?home=classic"); await page.waitForTimeout(3000);
   log.push("dormant: card=" + await page.evaluate(()=>!!document.querySelector(".acline")) + " chip=" + await page.evaluate(()=>!!document.querySelector(".acchip")));
   console.log(log.filter(l=>!l.startsWith("GET /rest")).join("\n")); console.log(errs.length ? errs.join("\n") : "NO ERRORS");
   await browser.close();

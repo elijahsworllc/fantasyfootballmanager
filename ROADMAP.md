@@ -271,3 +271,9 @@ Decision: FFU's own market values, built from trades in our users' leagues, repl
 - mysportsweather.com has no API and is all rights reserved, so we link to it rather than copy it. Licensing its feed (roof calls, meteorologist notes) is a possible later step.
 - **Weather Watch** (Game day; `viewWeather` in `src/weather.js`, route `weather`): week summary (outdoor games with weather, your starters affected, projected points the weather moves), your starters in the weather (biggest six, the rest folded), and every game this week sorted by impact with roof, forecast, per-position adjustment and which of your starters play in it. Listed in the rail (Game day), the menu and Launcher tiles; related to Start/Sit, Lineups and Live.
 - For other screens: `wxGameFlag(team)` returns `{text, level}` for a game whose weather matters (null otherwise), for the home "Today's games" spotlight and lineup cards.
+
+## Brand mark shipped (Nov 28, 2026)
+- New FFU mark: an NFL football whose outline is never drawn. A planet fills the middle, its ring becomes the two tips, and thin cuts of empty space separate them.
+- One source for everything: `node tools/brand.js` writes `brand/logo.svg` (depth), `brand/logo-flat.svg`, `brand/logo-mono.svg`, `favicon.svg` (tuned for 16–32 px), the PNG app icons, and the in-page symbols (`#ffu-lite`, `#ffu-tiny`) in `src/head.html`.
+- In the app: beside the hologram wordmark in the header, on the side-menu home button, on the welcome, loading and account screens. It turns slowly while leagues load and gives one quick turn when a move lands in Sleeper (off with reduced motion).
+- Home-screen install name is now "Fantasy Football Universe" (short name "FFU").

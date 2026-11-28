@@ -7,7 +7,7 @@
      focus and tucks back to icons when you leave it.
    - New header: FFU lockup, the crystal ball inline on desktop, a live status chip, week, account.
    ===================================================================== */
-const FFU_MARK = s => `<svg width="${s}" height="${s}" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="15" ry="5.5" fill="none" stroke="url(#lgR)" stroke-width="1.4" stroke-dasharray="3 2.2" transform="rotate(-24 16 16)"/><circle cx="16" cy="16" r="9.5" fill="url(#lgO)"/><circle cx="12.6" cy="12.4" r="2.6" fill="#fff" opacity=".55"/></svg>`;
+const FFU_MARK = s => `<svg class="ffum" width="${s}" height="${s}" viewBox="0 0 120 120" aria-hidden="true"><use href="#ffu-lite"/></svg>`;
 HOME_V.get = function(){ return store.get("homeV", "launcher"); };
 Object.assign(NI, {
   jump:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',

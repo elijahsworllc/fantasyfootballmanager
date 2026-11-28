@@ -10,6 +10,7 @@
 <title>Command Center</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1372,9 +1373,25 @@ body.cc .top.scrolled::after{background:linear-gradient(90deg,transparent,rgba(9
 .mpvs{color:var(--ink-3);font-size:12px;padding-bottom:3px}
 .mpgo{justify-self:start}
 .mpok{font-size:12.5px;color:var(--ink-3)}
+
+/* ===== FFU mark (Nov 28): a football whose outline is a planet and its ring. Source: tools/brand.js ===== */
+.ffum{flex:none;overflow:visible;display:block}
+.top .mark{gap:10px}
+.top .mark .hm{width:34px;height:34px;filter:drop-shadow(0 0 10px rgba(70,230,245,.25))}
+@media (max-width:420px){.top .mark .hm{width:28px;height:28px}.top .mark{gap:7px}}
+@media (min-width:1100px){body.cc.cc-ready .top .mark .hm{width:50px;height:50px}}
+.connect .brandrow .ffum{width:46px;height:46px}
+.achead .ffum{width:44px;height:44px}
+/* slow turn while leagues load, one quick turn when a move lands in Sleeper */
+.ffum.spin{animation:ffuspin 5s linear infinite}
+.ffum.land{animation:ffuland .9s cubic-bezier(.2,.75,.25,1) 1}
+@keyframes ffuspin{to{transform:rotate(360deg)}}
+@keyframes ffuland{0%{transform:rotate(0) scale(1)}45%{transform:rotate(220deg) scale(1.16)}100%{transform:rotate(360deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.ffum.spin,.ffum.land{animation:none}}
 </style>
 </head>
 <body>
+<!--FFU-MARK--><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><clipPath id="fmLcF"><path d="M8 60 C 50.64 20.009999999999998, 69.36 20.009999999999998, 112 60 C 69.36 99.99000000000001, 50.64 99.99000000000001, 8 60 Z"/></clipPath><mask id="fmLmP" maskUnits="userSpaceOnUse" x="-20" y="-20" width="160" height="160"><rect x="-20" y="-20" width="160" height="160" fill="#fff"/><path d="M8 60 A52 19 0 0 0 112 60 A52 11 0 0 1 8 60 Z" fill="#000" stroke="#000" stroke-width="6.4" stroke-linejoin="round"/><path d="M47 41.5 H73 M51 37.5 V45.5 M56.3 37 V45.8 M63.7 37 V45.8 M69 37.5 V45.5" stroke="#000" stroke-width="2.8"/></mask><mask id="fmLmW" maskUnits="userSpaceOnUse" x="-20" y="-20" width="160" height="160"><rect x="-20" y="-20" width="160" height="160" fill="#fff"/><circle cx="60" cy="60" r="33.7" fill="#000"/></mask><clipPath id="fmLcP"><circle cx="60" cy="60" r="30.5"/></clipPath><mask id="fmLmG" maskUnits="userSpaceOnUse" x="-40" y="-40" width="200" height="200"><rect x="-40" y="-40" width="200" height="200" fill="#fff"/><path d="M8 60 C 50.64 20.009999999999998, 69.36 20.009999999999998, 112 60 C 69.36 99.99000000000001, 50.64 99.99000000000001, 8 60 Z" fill="#000"/></mask><radialGradient id="fmLpl" cx="36%" cy="26%" r="78%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="0.14" stop-color="#C9F7FF"/><stop offset="0.38" stop-color="#46E6F5"/><stop offset="0.7" stop-color="#6A54EE"/><stop offset="1" stop-color="#1A1450"/></radialGradient><linearGradient id="fmLsh" x1="0.2" y1="0.15" x2="0.9" y2="1"><stop offset="0.45" stop-color="#070A1A" stop-opacity="0"/><stop offset="1" stop-color="#070A1A" stop-opacity="0.7"/></linearGradient><linearGradient id="fmLrg" gradientUnits="userSpaceOnUse" x1="10" y1="60" x2="110" y2="60"><stop offset="0" stop-color="#9B7BFF"/><stop offset="0.5" stop-color="#E6FCFF"/><stop offset="1" stop-color="#7B61FF"/></linearGradient><filter id="fmLgl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter><linearGradient id="fmTg" gradientUnits="userSpaceOnUse" x1="20" y1="20" x2="100" y2="100"><stop offset="0" stop-color="#46E6F5"/><stop offset="1" stop-color="#9B7BFF"/></linearGradient><clipPath id="fmTcF"><path d="M8 60 C 50.64 20.009999999999998, 69.36 20.009999999999998, 112 60 C 69.36 99.99000000000001, 50.64 99.99000000000001, 8 60 Z"/></clipPath><mask id="fmTmP" maskUnits="userSpaceOnUse" x="-20" y="-20" width="160" height="160"><rect x="-20" y="-20" width="160" height="160" fill="#fff"/><path d="M8 60 A52 21 0 0 0 112 60 A52 10 0 0 1 8 60 Z" fill="#000" stroke="#000" stroke-width="11.2" stroke-linejoin="round"/><path d="M46 41 H74 M51.5 36 V46 M60 35.5 V46.5 M68.5 36 V46" stroke="#000" stroke-width="4.6"/></mask><mask id="fmTmW" maskUnits="userSpaceOnUse" x="-20" y="-20" width="160" height="160"><rect x="-20" y="-20" width="160" height="160" fill="#fff"/><circle cx="60" cy="60" r="36.1" fill="#000"/></mask><symbol id="ffu-lite" viewBox="0 0 120 120" overflow="visible"><g transform="rotate(-28 60 60)"><g mask="url(#fmLmG)"><path d="M8 60 C 50.64 20.009999999999998, 69.36 20.009999999999998, 112 60 C 69.36 99.99000000000001, 50.64 99.99000000000001, 8 60 Z" fill="#46E6F5" opacity="0.4" filter="url(#fmLgl)"/></g><g clip-path="url(#fmLcF)"><g mask="url(#fmLmP)"><circle cx="60" cy="60" r="30.5" fill="url(#fmLpl)"/><g fill="none" stroke="#FFFFFF" stroke-width="0.9"><path d="M24 46 A40 9 0 0 0 96 46" opacity="0.2"/><path d="M26 34 A38 7 0 0 0 94 34" opacity="0.13"/><path d="M30 56 A34 6 0 0 0 90 56" opacity="0.09"/></g><circle cx="60" cy="60" r="30.5" fill="url(#fmLsh)"/></g><g mask="url(#fmLmW)"><path d="M8 60 C 50.64 20.009999999999998, 69.36 20.009999999999998, 112 60 C 69.36 99.99000000000001, 50.64 99.99000000000001, 8 60 Z" fill="url(#fmLrg)"/><g fill="none" stroke="#070A1A" stroke-width="0.8" opacity="0.35"><path d="M8 60 A52 8 0 0 0 112 60"/><path d="M8 60 A52 24 0 0 0 112 60"/><path d="M8 60 A52 8 0 0 1 112 60"/><path d="M8 60 A52 24 0 0 1 112 60"/></g></g><path d="M8 60 A52 19 0 0 0 112 60 A52 11 0 0 1 8 60 Z" fill="url(#fmLrg)"/><path d="M8 60 A52 15 0 0 0 112 60 A52 13 0 0 1 8 60 Z" fill="#FFFFFF" opacity="0.55"/></g></g></symbol><symbol id="ffu-tiny" viewBox="10 10 100 100"><g transform="rotate(-28 60 60)"><g clip-path="url(#fmTcF)"><g mask="url(#fmTmP)"><circle cx="60" cy="60" r="30.5" fill="url(#fmTg)"/></g><g mask="url(#fmTmW)"><path d="M8 60 C 50.64 20.009999999999998, 69.36 20.009999999999998, 112 60 C 69.36 99.99000000000001, 50.64 99.99000000000001, 8 60 Z" fill="#9B7BFF"/></g><path d="M8 60 A52 21 0 0 0 112 60 A52 10 0 0 1 8 60 Z" fill="#C9BCFF"/></g></g></symbol></defs></svg><!--/FFU-MARK-->
 <canvas id="space" aria-hidden="true"></canvas>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="lgO" cx="40%" cy="38%" r="65%"><stop offset="0" stop-color="#E9E3FF"/><stop offset=".35" stop-color="#A08CFF"/><stop offset=".75" stop-color="#4B3FA0"/><stop offset="1" stop-color="#15103A"/></radialGradient><linearGradient id="lgR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5FD6E6"/><stop offset="1" stop-color="#A08CFF"/></linearGradient></defs></svg>
 <div class="grain" id="grain" aria-hidden="true"></div>
@@ -1382,6 +1399,7 @@ body.cc .top.scrolled::after{background:linear-gradient(90deg,transparent,rgba(9
   <div class="toprow">
     <button class="menubtn" id="menuBtn" aria-label="Menu: every tool and team" aria-expanded="false" aria-controls="menu"><span class="mb" aria-hidden="true"><i></i><i></i><i></i></span><span class="mdot" id="menuDot" hidden></span></button>
     <button class="mark" id="markBtn" aria-label="Fantasy Football Universe home">
+    <svg class="ffum hm" viewBox="0 0 120 120" aria-hidden="true"><use href="#ffu-lite"/></svg>
     <span class="holo"><span class="hl">Fantasy Football Universe</span><span class="hs" aria-hidden="true">FFU</span></span>
   </button>
     <span class="hstat" id="hstat"></span>
