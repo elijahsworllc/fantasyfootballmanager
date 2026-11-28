@@ -12,7 +12,7 @@
 - `ui4.js`: My Rankings and Team review
 - `ui5.js`: accounts (Supabase) and sync
 - `ui6.js` to `ui12.js`: later tools and chrome (see ROADMAP.md)
-- `ui13.js`: Trade Optimizer (best value-backed offers in every league)
+- `ui13.js`: Trade Optimizer v3 (FFU Index pricing, season sim per league, offers that lean your way, market panel)
 - `ui14.js`: hologram header: High priority red alert, mission feed, fly-bys
 - `ui15.js`: Week Path home (five weekly stages, Today's games, how-to popups, tour) and Matchup Preview
 - `weather.js`: game weather (NWS forecast) and the projection multiplier it applies

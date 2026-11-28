@@ -5,7 +5,8 @@ const H = {
   index: require("../_lib/app/index.js"),      // GET  FFU Index value maps
   inhouse: require("../_lib/app/inhouse.js"),  // GET  in-house value factors
   managers: require("../_lib/app/managers.js"),// POST league-mate trade profiles
-  market: require("../_lib/app/market.js")     // GET  nightly transaction cache
+  market: require("../_lib/app/market.js"),    // GET  nightly transaction cache
+  pulse: require("../_lib/app/pulse.js")       // GET  trades in the last 24 hours, 7-day trade counts
 };
 module.exports = (req, res) => {
   const h = H[String((req.query || {}).name || "")];

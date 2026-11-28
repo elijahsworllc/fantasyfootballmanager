@@ -1147,6 +1147,52 @@ body.cc .top.scrolled::after{background:linear-gradient(90deg,transparent,rgba(9
 .oasset i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--ink-2);grid-row:1;grid-column:2}.oasset .sig{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}.oasset .sig:empty{display:none}
 .owhy{display:grid;grid-template-columns:1fr 1fr;gap:12px}.owhy ul{margin:4px 0 0;padding-left:16px;font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:3px}
 @media (max-width:560px){.otrade,.owhy{grid-template-columns:1fr}}
+/* Trade Optimizer v3: wide layout with the market panel beside the offers */
+main:has(> .optshell){max-width:1180px}
+.optshell{display:flex;flex-direction:column;gap:14px;min-width:0}
+.optmain{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (min-width:1100px){.optshell{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+  .optside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px);max-height:calc(100vh - 90px);overflow:auto}}
+@media (max-width:1099px){.optside.wide{display:none}}
+@media (min-width:1100px){.optside.narrow{display:none}}
+.optside{padding:14px 15px;border-radius:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.optpl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.optpl li{display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid var(--hair)}
+.optpl li:first-child{border-top:0;padding-top:2px}
+.optpl .r1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.optpl .r1 b{font-size:14px;font-weight:650}.optpl .r1 i{font-style:normal;font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.optpl small{font-size:11.5px;color:var(--ink-3)}.optpl p{margin:0;font-size:12.5px;line-height:1.4;color:var(--ink-2)}.optpl .own{font-size:11.5px;color:var(--cyan-2)}
+.optpl .tt{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.optpl .tt div{background:var(--sunk);box-shadow:inset 0 0 0 1px var(--hair);border-radius:10px;padding:6px 8px;font-size:12px;line-height:1.35;color:var(--ink-2);min-width:0;overflow-wrap:anywhere}
+.optpl .tt div b{display:block;color:var(--ink);font-family:var(--mono);font-size:11.5px;font-weight:600;margin-bottom:2px}
+.optpl .tt div.win{box-shadow:inset 0 0 0 1px rgba(76,194,122,.5)}
+.optpl .tmeta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--ink-3)}
+.optmore{align-self:stretch;justify-content:center}
+.optside.narrow:has(> .optsidebar){padding:0}
+.optsidebar{display:flex;align-items:center;gap:10px;width:100%;padding:12px 15px;background:none;border:0;color:var(--ink);text-align:left;cursor:pointer}
+.optsidebar b{font-family:var(--display);font-style:italic;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:15px}.optsidebar span{flex:1;font-size:12.5px;color:var(--ink-2)}.optsidebar i{font-style:normal;color:var(--ink-2);font-size:18px}
+.optview{max-width:420px}
+.optk{display:flex;flex-direction:column;gap:1px;min-width:0}.optk .kind{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}.optk .sub{font-size:12.5px}
+.optwho{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap}.optwho b{font-size:16px;font-weight:700}.optwho small{flex-basis:100%;font-size:12px;color:var(--ink-2)}.optwho small .linkbtn{padding:0;font-size:12px}
+.dirchip{font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:999px;background:rgba(170,190,255,.10);color:var(--ink-2)}
+.dirchip.Contender{background:var(--ok-bg);color:var(--ok)}.dirchip.Rebuild{background:rgba(160,140,255,.16);color:var(--violet-2)}
+.oside .lab{display:flex;justify-content:space-between}.oside .lab i{font-style:normal;font-family:var(--mono);color:var(--ink);letter-spacing:0}
+.oasset i small{display:block;text-align:right;font-size:10.5px;color:var(--ink-3)}
+.optchips{display:flex;gap:6px;flex-wrap:wrap}
+.optimp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.optimp > div{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:12px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--hair);min-width:0}
+.optimp b{font-size:14.5px;font-weight:700}.optimp small{font-size:11.5px;color:var(--ink-2)}
+.optstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.optstats div{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border-radius:12px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--hair);min-width:0}
+.optstats small{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}.optstats b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:560px){.optstats{grid-template-columns:repeat(2,minmax(0,1fr))}.optimp{grid-template-columns:1fr}}
+.optdet > summary{cursor:pointer;font-size:13px;font-weight:650;color:var(--cyan-2);list-style:none}.optdet > summary::-webkit-details-marker{display:none}
+.optdet > summary::before{content:"›";display:inline-block;margin-right:6px;transition:transform .2s var(--ease)}.optdet[open] > summary::before{transform:rotate(90deg)}
+.optdet[open] > summary{margin-bottom:8px}
+.optact{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.opttr{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+.opttrack{font-size:12px;color:var(--ink-2)}.opttrack b{font-weight:700;color:var(--cyan-2)}.opttrack.accepted b{color:var(--ok)}.opttrack.declined b{color:var(--crit)}.opttrack.countered b{color:var(--gold)}
+.ghost.sm{padding:5px 11px;font-size:12px}.ghost.sm.on{background:rgba(170,190,255,.18);box-shadow:none}
+@media (max-width:560px){.opttr{margin-left:0}}
 
 /* ===== V5 · Hologram banner (Nov 27): the full name on every width, a projected wordmark, ship status pods, mission feed ===== */
 .top .toprow{flex-wrap:wrap;row-gap:4px}
